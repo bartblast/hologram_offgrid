@@ -1,6 +1,7 @@
 defmodule Offgrid.Pages.TripPage do
   use Hologram.Page
 
+  alias Offgrid.Components.StopEditor
   alias Offgrid.Components.Terrain
 
   @moduledoc """
@@ -89,6 +90,8 @@ defmodule Offgrid.Pages.TripPage do
         </div>
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
+
+        <StopEditor cid="stop_editor" />
       </div>
     </div>
     """
