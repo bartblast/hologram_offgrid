@@ -1,4 +1,4 @@
-defmodule HologramSkeletonWeb.CoreComponents do
+defmodule OffgridWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
@@ -15,7 +15,7 @@ defmodule HologramSkeletonWeb.CoreComponents do
   Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
   """
   use Phoenix.Component
-  use Gettext, backend: HologramSkeletonWeb.Gettext
+  use Gettext, backend: OffgridWeb.Gettext
 
   alias Phoenix.LiveView.JS
 
@@ -661,9 +661,9 @@ defmodule HologramSkeletonWeb.CoreComponents do
     # with our gettext backend as first argument. Translations are
     # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
-      Gettext.dngettext(HologramSkeletonWeb.Gettext, "errors", msg, msg, count, opts)
+      Gettext.dngettext(OffgridWeb.Gettext, "errors", msg, msg, count, opts)
     else
-      Gettext.dgettext(HologramSkeletonWeb.Gettext, "errors", msg, opts)
+      Gettext.dgettext(OffgridWeb.Gettext, "errors", msg, opts)
     end
   end
 

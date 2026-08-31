@@ -1,4 +1,4 @@
-defmodule HologramSkeleton.DefaultLayout do
+defmodule Offgrid.DefaultLayout do
   use Hologram.Component
   
   def template do
@@ -6,7 +6,7 @@ defmodule HologramSkeleton.DefaultLayout do
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Hologram Skeleton</title>
+        <title>Offgrid</title>
         <Hologram.UI.Runtime />
       </head>
       <body>

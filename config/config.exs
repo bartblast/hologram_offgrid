@@ -7,19 +7,19 @@
 # General application configuration
 import Config
 
-config :hologram_skeleton,
-  ecto_repos: [HologramSkeleton.Repo],
+config :offgrid,
+  ecto_repos: [Offgrid.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configures the endpoint
-config :hologram_skeleton, HologramSkeletonWeb.Endpoint,
+config :offgrid, OffgridWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: HologramSkeletonWeb.ErrorHTML, json: HologramSkeletonWeb.ErrorJSON],
+    formats: [html: OffgridWeb.ErrorHTML, json: OffgridWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: HologramSkeleton.PubSub,
+  pubsub_server: Offgrid.PubSub,
   live_view: [signing_salt: "ANHfM8tL"]
 
 # Configures the mailer
@@ -29,12 +29,12 @@ config :hologram_skeleton, HologramSkeletonWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :hologram_skeleton, HologramSkeleton.Mailer, adapter: Swoosh.Adapters.Local
+config :offgrid, Offgrid.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
-  hologram_skeleton: [
+  offgrid: [
     args:
       ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
     cd: Path.expand("../assets", __DIR__),
@@ -44,7 +44,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "3.4.3",
-  hologram_skeleton: [
+  offgrid: [
     args: ~w(
       --config=tailwind.config.js
       --input=css/app.css

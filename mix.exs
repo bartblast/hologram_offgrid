@@ -1,9 +1,9 @@
-defmodule HologramSkeleton.MixProject do
+defmodule Offgrid.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :hologram_skeleton,
+      app: :offgrid,
       version: "0.1.0",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -19,7 +19,7 @@ defmodule HologramSkeleton.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {HologramSkeleton.Application, []},
+      mod: {Offgrid.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -77,10 +77,10 @@ defmodule HologramSkeleton.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind hologram_skeleton", "esbuild hologram_skeleton"],
+      "assets.build": ["tailwind offgrid", "esbuild offgrid"],
       "assets.deploy": [
-        "tailwind hologram_skeleton --minify",
-        "esbuild hologram_skeleton --minify",
+        "tailwind offgrid --minify",
+        "esbuild offgrid --minify",
         "phx.digest"
       ]
     ]

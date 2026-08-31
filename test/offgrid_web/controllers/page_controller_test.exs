@@ -1,5 +1,5 @@
-defmodule HologramSkeletonWeb.PageControllerTest do
-  use HologramSkeletonWeb.ConnCase
+defmodule OffgridWeb.PageControllerTest do
+  use OffgridWeb.ConnCase
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")

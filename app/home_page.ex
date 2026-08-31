@@ -1,9 +1,9 @@
-defmodule HologramSkeleton.HomePage do
+defmodule Offgrid.HomePage do
   use Hologram.Page
   
   route "/"
   
-  layout HologramSkeleton.DefaultLayout
+  layout Offgrid.DefaultLayout
   
   def template do
     ~HOLO"<h1>Hello from Hologram!</h1>"

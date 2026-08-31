@@ -1,12 +1,12 @@
-defmodule HologramSkeletonWeb do
+defmodule OffgridWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
-      use HologramSkeletonWeb, :controller
-      use HologramSkeletonWeb, :html
+      use OffgridWeb, :controller
+      use OffgridWeb, :html
 
   The definitions below will be executed for every controller,
   component, etc, so keep them short and clean, focused
@@ -40,9 +40,9 @@ defmodule HologramSkeletonWeb do
     quote do
       use Phoenix.Controller,
         formats: [:html, :json],
-        layouts: [html: HologramSkeletonWeb.Layouts]
+        layouts: [html: OffgridWeb.Layouts]
 
-      use Gettext, backend: HologramSkeletonWeb.Gettext
+      use Gettext, backend: OffgridWeb.Gettext
 
       import Plug.Conn
 
@@ -53,7 +53,7 @@ defmodule HologramSkeletonWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {HologramSkeletonWeb.Layouts, :app}
+        layout: {OffgridWeb.Layouts, :app}
 
       unquote(html_helpers())
     end
@@ -83,12 +83,12 @@ defmodule HologramSkeletonWeb do
   defp html_helpers do
     quote do
       # Translation
-      use Gettext, backend: HologramSkeletonWeb.Gettext
+      use Gettext, backend: OffgridWeb.Gettext
 
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
-      import HologramSkeletonWeb.CoreComponents
+      import OffgridWeb.CoreComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
@@ -101,9 +101,9 @@ defmodule HologramSkeletonWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: HologramSkeletonWeb.Endpoint,
-        router: HologramSkeletonWeb.Router,
-        statics: HologramSkeletonWeb.static_paths()
+        endpoint: OffgridWeb.Endpoint,
+        router: OffgridWeb.Router,
+        statics: OffgridWeb.static_paths()
     end
   end
 

@@ -1,6 +1,6 @@
-defmodule HologramSkeleton do
+defmodule Offgrid do
   @moduledoc """
-  HologramSkeleton keeps the contexts that define your domain
+  Offgrid keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless

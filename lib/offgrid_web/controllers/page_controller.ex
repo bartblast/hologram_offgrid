@@ -1,5 +1,5 @@
-defmodule HologramSkeletonWeb.PageController do
-  use HologramSkeletonWeb, :controller
+defmodule OffgridWeb.PageController do
+  use OffgridWeb, :controller
 
   def home(conn, _params) do
     # The home page is often custom made,

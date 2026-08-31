@@ -1,6 +1,6 @@
 
 
-# Hologram Skeleton
+# Offgrid
 
 This repository contains a bare-bones skeleton application for the Hologram web framework, built on top of Phoenix. It provides a minimal starting point for:
 
@@ -15,8 +15,8 @@ To start your Hologram application:
 
 1. Clone this repository
    ```bash
-   git clone https://github.com/bartblast/hologram_skeleton.git
-   cd hologram_skeleton
+   git clone https://github.com/bartblast/offgrid.git
+   cd offgrid
    ```
 
 2. Install dependencies
@@ -37,12 +37,12 @@ Hologram follows a convention of placing page and component files in the `app` d
 
 ## Database Configuration
 
-To enable database functionality, uncomment the `HologramSkeleton.Repo` line in `lib/hologram_skeleton/application.ex`:
+To enable database functionality, uncomment the `Offgrid.Repo` line in `lib/offgrid/application.ex`:
 
 ```elixir
 children = [
-  HologramSkeletonWeb.Telemetry,
-  HologramSkeleton.Repo,  # Uncomment this line
+  OffgridWeb.Telemetry,
+  Offgrid.Repo,  # Uncomment this line
   # ...
 ]
 ```

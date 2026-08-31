@@ -1,12 +1,12 @@
-defmodule HologramSkeletonWeb.Endpoint do
-  use Phoenix.Endpoint, otp_app: :hologram_skeleton
+defmodule OffgridWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :offgrid
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
   @session_options [
     store: :cookie,
-    key: "_hologram_skeleton_key",
+    key: "_offgrid_key",
     signing_salt: "fm4fcLdv",
     same_site: "Lax"
   ]
@@ -21,9 +21,9 @@ defmodule HologramSkeletonWeb.Endpoint do
   # when deploying your static files in production.
   plug Plug.Static,
     at: "/",
-    from: :hologram_skeleton,
+    from: :offgrid,
     gzip: false,
-    only: ["hologram" | HologramSkeletonWeb.static_paths()]
+    only: ["hologram" | OffgridWeb.static_paths()]
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -31,7 +31,7 @@ defmodule HologramSkeletonWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :hologram_skeleton
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :offgrid
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,
@@ -51,5 +51,5 @@ defmodule HologramSkeletonWeb.Endpoint do
   plug Plug.Session, @session_options
   
   plug Hologram.Router
-  plug HologramSkeletonWeb.Router
+  plug OffgridWeb.Router
 end
