@@ -10,6 +10,14 @@ config :offgrid, Offgrid.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+# Hologram's data layer owns its own connection to the same Postgres server, separate
+# from Ecto's. These are the dev defaults, spelled out so they are easy to change.
+config :hologram, :database,
+  database: "offgrid_dev",
+  host: "localhost",
+  password: "postgres",
+  user: "postgres"
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

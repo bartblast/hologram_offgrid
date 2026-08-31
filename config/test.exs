@@ -13,6 +13,14 @@ config :offgrid, Offgrid.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+# Hologram's data layer owns its own connection to the same Postgres server, separate
+# from Ecto's.
+config :hologram, :database,
+  database: "offgrid_test#{System.get_env("MIX_TEST_PARTITION")}",
+  host: "localhost",
+  password: "postgres",
+  user: "postgres"
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :offgrid, OffgridWeb.Endpoint,
