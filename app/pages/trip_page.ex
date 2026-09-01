@@ -1,9 +1,11 @@
 defmodule Offgrid.Pages.TripPage do
   use Hologram.Page
+  use Hologram.DB
 
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
+  alias Offgrid.Entities.Stop
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
@@ -61,7 +63,7 @@ defmodule Offgrid.Pages.TripPage do
                   </g>
                 </svg>
               </button>
-              <button class="addb" type="button" aria-label="Add a stop">+</button>
+              <button class="addb" type="button" aria-label="Add a stop" $click="add_stop">+</button>
             </div>
           </div>
 
@@ -84,6 +86,18 @@ defmodule Offgrid.Pages.TripPage do
       </div>
     </div>
     """
+  end
+
+  # The whole local-first claim in one function: the row is written to the client's own
+  # database, the list's query sees it in the same frame, and only then does any of it
+  # travel. Nothing here waits for the server.
+  def action(:add_stop, _params, component) do
+    {:ok, stop} =
+      %{date: ~D[2026-03-28], name: "New stop"}
+      |> Stop.new()
+      |> DB.create()
+
+    put_state(component, :open_stop_id, stop.id)
   end
 
   def action(:close_stop, _params, component) do
