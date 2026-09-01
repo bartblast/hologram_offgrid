@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.User
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
@@ -19,8 +20,12 @@ defmodule Offgrid.Pages.TripPage do
 
   layout Offgrid.DefaultLayout
 
-  def init(_params, component, _server) do
-    put_state(component, :open_stop_id, nil)
+  # init/3 runs on the server on every page load, client-side navigations included, so the
+  # session's user is readable here and the row it names can be looked up.
+  def init(_params, component, server) do
+    component
+    |> put_state(:open_stop_id, nil)
+    |> put_state(:you, initials(server.user_id))
   end
 
   def template do
@@ -73,7 +78,9 @@ defmodule Offgrid.Pages.TripPage do
         <div class="faces">
           <div class="face a">AK</div>
           <div class="face t">TR</div>
-          <div class="face y">BB</div>
+          {%if @you}
+            <div class="face y">{@you}</div>
+          {/if}
         </div>
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
@@ -115,5 +122,27 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:open_stop, params, component) do
     put_state(component, :open_stop_id, params.id)
+  end
+
+  # Nobody signed in has no face to show, which is a real state until the auth gates land.
+  defp initials(nil), do: nil
+
+  defp initials(user_id) do
+    user =
+      User
+      |> filter(id: user_id)
+      |> one()
+      |> DB.read()
+
+    if user, do: initials_of(user.name)
+  end
+
+  # The first letter of each of the first two words, which is what the mockup's faces are.
+  defp initials_of(name) do
+    name
+    |> String.split(" ", trim: true)
+    |> Enum.take(2)
+    |> Enum.map_join("", &String.first/1)
+    |> String.upcase()
   end
 end
