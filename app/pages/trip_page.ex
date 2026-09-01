@@ -17,6 +17,10 @@ defmodule Offgrid.Pages.TripPage do
 
   layout Offgrid.DefaultLayout
 
+  def init(_params, component, _server) do
+    put_state(component, :open_stop_id, nil)
+  end
+
   def template do
     ~HOLO"""
     <div class="app">
@@ -61,7 +65,7 @@ defmodule Offgrid.Pages.TripPage do
             </div>
           </div>
 
-          <StopsList cid="stops_list" />
+          <StopsList cid="stops_list" open_stop_id={@open_stop_id} />
         </div>
 
         <div class="faces">
@@ -72,9 +76,21 @@ defmodule Offgrid.Pages.TripPage do
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
 
-        <StopEditor cid="stop_editor" />
+        {%if @open_stop_id}
+          <document $key_down.escape="close_stop" />
+
+          <StopEditor cid="stop_editor" stop_id={@open_stop_id} />
+        {/if}
       </div>
     </div>
     """
+  end
+
+  def action(:close_stop, _params, component) do
+    put_state(component, :open_stop_id, nil)
+  end
+
+  def action(:open_stop, params, component) do
+    put_state(component, :open_stop_id, params.id)
   end
 end

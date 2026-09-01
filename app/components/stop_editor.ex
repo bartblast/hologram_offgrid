@@ -1,26 +1,40 @@
 defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
+  use Hologram.DB
+
+  alias Offgrid.Entities.Stop
 
   @moduledoc """
   The right-hand panel for one stop: what it is called, when it happens, and what
   people have said about it.
 
-  Static for now - every value below is hardcoded to the mockup's Ryokan stop. Phase C
-  replaces them field by field: real values in C5, editable name and description in C7,
-  the day calendar in C8, the time chips in C9, delete in C10, and comments in phase G.
+  The stop arrives through its own query, bound to the id the page says is open, so the
+  panel reads the same local database the list does.
+
+  The fields do not write anything back yet: editable name and description come in C7,
+  the day calendar in C8, the time chips in C9, delete in C10, and real comments in
+  phase G.
   """
+
+  prop :stop, Stop, from_query: &stop_query/1
+  prop :stop_id, :string
+
+  # The panel holds no state of its own - it renders what the page says is open. This
+  # exists because a stateful component appearing on an already-loaded page must have
+  # init/2, and the panel appears exactly that way when a stop is clicked.
+  def init(_props, component), do: component
 
   def template do
     ~HOLO"""
     <div class="editor">
-      <div class="ed-title">Ryokan</div>
-      <div class="ed-sub">Mon 30 Mar</div>
+      <div class="ed-title">{@stop.name}</div>
+      <div class="ed-sub">{day_label(@stop.date)}</div>
 
       <label>Name</label>
-      <input class="inp" value="Ryokan" />
+      <input class="inp" value={@stop.name} />
 
       <label>Description</label>
-      <input class="inp" value="Two nights in Hakone, onsen on site" />
+      <input class="inp" value={@stop.description} />
 
       <label>Day</label>
       <div class="cal">
@@ -63,4 +77,35 @@ defmodule Offgrid.Components.StopEditor do
     </div>
     """
   end
+
+  defp day_label(date) do
+    "#{weekday(Date.day_of_week(date))} #{date.day} #{month(date.month)}"
+  end
+
+  defp month(1), do: "Jan"
+  defp month(2), do: "Feb"
+  defp month(3), do: "Mar"
+  defp month(4), do: "Apr"
+  defp month(5), do: "May"
+  defp month(6), do: "Jun"
+  defp month(7), do: "Jul"
+  defp month(8), do: "Aug"
+  defp month(9), do: "Sep"
+  defp month(10), do: "Oct"
+  defp month(11), do: "Nov"
+  defp month(12), do: "Dec"
+
+  defp stop_query(stop_id) do
+    Stop
+    |> filter(id: stop_id)
+    |> one()
+  end
+
+  defp weekday(1), do: "Mon"
+  defp weekday(2), do: "Tue"
+  defp weekday(3), do: "Wed"
+  defp weekday(4), do: "Thu"
+  defp weekday(5), do: "Fri"
+  defp weekday(6), do: "Sat"
+  defp weekday(7), do: "Sun"
 end

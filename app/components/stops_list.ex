@@ -16,6 +16,7 @@ defmodule Offgrid.Components.StopsList do
   nulls last ascending, and so does the client's query kernel.
   """
 
+  prop :open_stop_id, :string, default: nil
   prop :stops, [Stop], from_query: &stops_query/0
 
   def template do
@@ -24,7 +25,7 @@ defmodule Offgrid.Components.StopsList do
       <div class="day">{day_label(day)}</div>
 
       {%for stop <- day}
-        <div class="stop">
+        <div class={row_class(stop, @open_stop_id)} $click={action: :open_stop, target: "page", params: %{id: stop.id}}>
           <h4>{stop.name}</h4>
           <p>{summary(stop)}</p>
         </div>
@@ -57,6 +58,10 @@ defmodule Offgrid.Components.StopsList do
   defp month(10), do: "Oct"
   defp month(11), do: "Nov"
   defp month(12), do: "Dec"
+
+  defp row_class(%Stop{id: id}, id), do: "stop open"
+
+  defp row_class(_stop, _open_stop_id), do: "stop"
 
   defp stops_query do
     order_by(Stop, [:date, :time, :created_at])
