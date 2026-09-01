@@ -1,4 +1,10 @@
 defmodule Offgrid.FeatureHelpers do
+  alias Hologram.DB
+  alias Hologram.DB.Connection
+  alias Hologram.DB.Mapper
+  alias Offgrid.Entities.Basemap
+  alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.Trip
   alias Wallaby.Browser
   alias Wallaby.Element
   alias Wallaby.Query
@@ -6,10 +12,59 @@ defmodule Offgrid.FeatureHelpers do
   alias Wallaby.StaleReferenceError
 
   @moduledoc """
-  Assertions the feature tests use in place of Wallaby's, imported by `Offgrid.FeatureCase`.
+  What every feature test needs and Wallaby does not give it, imported by
+  `Offgrid.FeatureCase`: the two assertions that replace Wallaby's, and the fixtures for
+  data the entity declarations make mandatory.
   """
 
   @max_wait_time Application.compile_env(:wallaby, :max_wait_time, 3_000)
+
+  @doc """
+  Creates a trip with a basemap under it and returns the trip - the two rows that have to
+  exist before any stop can, since a stop's trip is required and a trip's basemap is.
+  """
+  @spec create_trip() :: struct
+  def create_trip do
+    basemap =
+      %{
+        max_lat: 45.6,
+        max_lng: 146.0,
+        min_lat: 30.9,
+        min_lng: 128.4,
+        name: "Japan",
+        slug: "japan"
+      }
+      |> Basemap.new()
+      |> DB.create!()
+
+    %{
+      basemap_id: basemap.id,
+      ends_on: ~D[2026-04-06],
+      name: "Japan, blossom run",
+      starts_on: ~D[2026-03-28]
+    }
+    |> Trip.new()
+    |> DB.create!()
+  end
+
+  @doc """
+  Empties every table a trip's data lives in, in one statement.
+
+  One statement because PostgreSQL refuses to truncate a table something references unless
+  the referencing one goes with it, and the three form a chain: a stop names its trip, a
+  trip names its basemap.
+  """
+  @spec truncate_trip_data() :: :ok
+  def truncate_trip_data do
+    tables =
+      Enum.map_join([Stop, Trip, Basemap], ", ", fn entity_type ->
+        ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
+      end)
+
+    {:ok, _result} = Connection.query("TRUNCATE #{tables}", [])
+
+    :ok
+  end
 
   @doc """
   Asserts that the element `query` finds inside `parent` contains `text`, and returns

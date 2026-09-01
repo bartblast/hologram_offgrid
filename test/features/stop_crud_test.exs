@@ -2,22 +2,20 @@ defmodule Offgrid.Features.StopCrudTest do
   use Offgrid.FeatureCase, async: false
 
   alias Hologram.DB
-  alias Hologram.DB.Connection
-  alias Hologram.DB.Mapper
   alias Offgrid.Entities.Stop
   alias Offgrid.Pages.TripPage
 
   setup do
-    {:ok, _result} =
-      Connection.query(~s(TRUNCATE "hologram_data"."#{Mapper.table_name(Stop)}"), [])
+    truncate_trip_data()
 
-    :ok
+    [trip: create_trip()]
   end
 
   feature "adds a stop, renames it, moves it to another day, times it and deletes it", %{
-    session: session
+    session: session,
+    trip: trip
   } do
-    %{date: ~D[2026-03-28], name: "Haneda arrival", time: ~T[09:00:00]}
+    %{date: ~D[2026-03-28], name: "Haneda arrival", time: ~T[09:00:00], trip_id: trip.id}
     |> Stop.new()
     |> DB.create!()
 

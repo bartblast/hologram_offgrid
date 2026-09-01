@@ -6,23 +6,31 @@ defmodule Offgrid.Entities.StopTest do
   alias Hologram.Entity
   alias Offgrid.Entities.Stop
 
+  @trip_id "01a05d38-ffc6-7db6-8bc1-152cf7dca119"
+
   describe "Entity.validate/1" do
     test "accepts a complete stop" do
-      stop = new(date: ~D[2026-03-30], name: "Ryokan", time: ~T[11:00:00])
+      stop = new(date: ~D[2026-03-30], name: "Ryokan", time: ~T[11:00:00], trip_id: @trip_id)
 
       assert Entity.validate(stop) == :ok
     end
 
     test "refuses a missing name" do
-      stop = new(date: ~D[2026-03-30])
+      stop = new(date: ~D[2026-03-30], trip_id: @trip_id)
 
       assert Entity.validate(stop) == {:error, %{name: [:required]}}
     end
 
     test "refuses a time that is not a time" do
-      stop = new(date: ~D[2026-03-30], name: "Ryokan", time: "11:00")
+      stop = new(date: ~D[2026-03-30], name: "Ryokan", time: "11:00", trip_id: @trip_id)
 
       assert Entity.validate(stop) == {:error, %{time: [{:type, :time}]}}
+    end
+
+    test "refuses a stop with no trip" do
+      stop = new(date: ~D[2026-03-30], name: "Ryokan")
+
+      assert Entity.validate(stop) == {:error, %{trip_id: [:required]}}
     end
   end
 

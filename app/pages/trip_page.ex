@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
 
@@ -26,6 +27,7 @@ defmodule Offgrid.Pages.TripPage do
   def init(_params, component, server) do
     component
     |> put_state(:open_stop_id, nil)
+    |> put_state(:trip_id, trip_id())
     |> put_state(:you, initials(server.user_id))
   end
 
@@ -103,7 +105,7 @@ defmodule Offgrid.Pages.TripPage do
   # travel. Nothing here waits for the server.
   def action(:add_stop, _params, component) do
     {:ok, stop} =
-      %{date: ~D[2026-03-28], name: "New stop"}
+      %{date: ~D[2026-03-28], name: "New stop", trip_id: component.state.trip_id}
       |> Stop.new()
       |> DB.create()
 
@@ -141,6 +143,18 @@ defmodule Offgrid.Pages.TripPage do
     server
     |> delete_user_id()
     |> put_action(:logged_out)
+  end
+
+  # TODO: read the trip from the route once this page is addressed per trip. Until then the
+  # screen shows whichever trip is oldest, which in a seeded database is the only one.
+  defp trip_id do
+    trip =
+      Trip
+      |> order_by(:created_at)
+      |> one()
+      |> DB.read()
+
+    if trip, do: trip.id
   end
 
   # Nobody signed in has no face to show, which is a real state until the auth gates land.
