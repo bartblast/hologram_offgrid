@@ -1,10 +1,18 @@
 defmodule Offgrid.FeatureHelpers do
+  import Hologram.Test.FeatureHelpers, only: [assert_page: 2, visit: 3]
+  import Wallaby.Query, only: [button: 1, css: 2]
+
+  alias Hologram.Auth
+  alias Hologram.Auth.RoleGrant
   alias Hologram.DB
   alias Hologram.DB.Connection
   alias Hologram.DB.Mapper
   alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
+  alias Offgrid.Entities.User
+  alias Offgrid.Pages.LogInPage
+  alias Offgrid.Pages.TripPage
   alias Wallaby.Browser
   alias Wallaby.Element
   alias Wallaby.Query
@@ -48,16 +56,49 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
+  Signs the browser in as a member of the given trip and returns the session, landing on the
+  trip screen.
+
+  A stop is visible only to a member of its trip, so a test that wants to see one needs both
+  halves: a user with a grant on that trip, and a browser carrying that user's session. The
+  grant is written directly - the interface for adding members does not exist yet - and the
+  signing in goes through the log-in card, because a session cookie is the server's to mint
+  and there is no other door to it.
+  """
+  @spec sign_in_as_member(struct, struct) :: struct
+  def sign_in_as_member(session, trip) do
+    password = "hakone-2026"
+
+    user =
+      %{
+        email: "member@offgrid.test",
+        name: "Nora Vale",
+        password_hash: Bcrypt.hash_pwd_salt(password)
+      }
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(user, trip, :member)
+
+    session
+    |> visit(LogInPage, [])
+    |> Browser.fill_in(css(".card .inp", at: 0), with: user.email)
+    |> Browser.fill_in(css(".card .inp", at: 1), with: password)
+    |> Browser.click(button("Log in"))
+    |> assert_page(TripPage)
+  end
+
+  @doc """
   Empties every table a trip's data lives in, in one statement.
 
   One statement because PostgreSQL refuses to truncate a table something references unless
-  the referencing one goes with it, and the three form a chain: a stop names its trip, a
-  trip names its basemap.
+  the referencing one goes with it, and these form a chain: a stop names its trip, a trip
+  names its basemap, and a grant names both a user and the resource it is held on.
   """
   @spec truncate_trip_data() :: :ok
   def truncate_trip_data do
     tables =
-      Enum.map_join([Stop, Trip, Basemap], ", ", fn entity_type ->
+      Enum.map_join([Stop, Trip, RoleGrant, User, Basemap], ", ", fn entity_type ->
         ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
       end)
 

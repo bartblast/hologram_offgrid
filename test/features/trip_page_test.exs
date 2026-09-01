@@ -3,7 +3,6 @@ defmodule Offgrid.Features.TripPageTest do
 
   alias Hologram.DB
   alias Offgrid.Entities.Stop
-  alias Offgrid.Pages.TripPage
 
   setup do
     truncate_trip_data()
@@ -17,7 +16,7 @@ defmodule Offgrid.Features.TripPageTest do
     |> DB.create!()
 
     session
-    |> visit(TripPage)
+    |> sign_in_as_member(trip)
     |> assert_text(css(".lpanel"), "Fushimi Inari")
   end
 end

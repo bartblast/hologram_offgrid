@@ -3,7 +3,6 @@ defmodule Offgrid.Features.StopCrudTest do
 
   alias Hologram.DB
   alias Offgrid.Entities.Stop
-  alias Offgrid.Pages.TripPage
 
   setup do
     truncate_trip_data()
@@ -20,7 +19,7 @@ defmodule Offgrid.Features.StopCrudTest do
     |> DB.create!()
 
     session
-    |> visit(TripPage)
+    |> sign_in_as_member(trip)
     |> assert_text(css(".lpanel"), "Haneda arrival")
     |> assert_has(css(".day", count: 1))
     |> click(css(".addb"))
