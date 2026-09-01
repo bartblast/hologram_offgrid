@@ -2,6 +2,7 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
   use Hologram.DB
 
+  alias Offgrid.Components.TripCalendar
   alias Offgrid.Entities.Stop
 
   @moduledoc """
@@ -12,8 +13,8 @@ defmodule Offgrid.Components.StopEditor do
   panel reads the same local database the list does.
 
   Name and description write straight to the database as you type - there is no save
-  button, because there is nothing to save to. The day calendar comes in C8, the time
-  chips in C9, delete in C10, and real comments in phase G.
+  button, because there is nothing to save to. The day comes from the calendar below.
+  Time chips arrive in C9, delete in C10, and real comments in phase G.
   """
 
   prop :stop, Stop, from_query: &stop_query/1
@@ -37,18 +38,7 @@ defmodule Offgrid.Components.StopEditor do
       <input class="inp" value={@stop.description} $change={:edit, field: :description} />
 
       <label>Day</label>
-      <div class="cal">
-        <button type="button"><span class="dw">Sat</span><span class="nm">28</span><span class="dt"><i></i><i></i></span></button>
-        <button type="button"><span class="dw">Sun</span><span class="nm">29</span><span class="dt"></span></button>
-        <button type="button" class="on"><span class="dw">Mon</span><span class="nm">30</span><span class="dt"><i></i></span></button>
-        <button type="button"><span class="dw">Tue</span><span class="nm">31</span><span class="dt"></span></button>
-        <button type="button"><span class="dw">Wed</span><span class="nm">1</span><span class="dt"><i></i></span></button>
-        <button type="button"><span class="dw">Thu</span><span class="nm">2</span><span class="dt"></span></button>
-        <button type="button"><span class="dw">Fri</span><span class="nm">3</span><span class="dt"></span></button>
-        <button type="button"><span class="dw">Sat</span><span class="nm">4</span><span class="dt"></span></button>
-        <button type="button"><span class="dw">Sun</span><span class="nm">5</span><span class="dt"></span></button>
-        <button type="button"><span class="dw">Mon</span><span class="nm">6</span><span class="dt"></span></button>
-      </div>
+      <TripCalendar cid="trip_calendar" date={@stop.date} stop_id={@stop_id} />
 
       <label>Time</label>
       <div class="times">
