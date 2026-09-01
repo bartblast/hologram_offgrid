@@ -7,6 +7,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.User
+  alias Offgrid.Pages.LogInPage
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
@@ -80,6 +81,8 @@ defmodule Offgrid.Pages.TripPage do
           <div class="face t">TR</div>
           {%if @you}
             <div class="face y">{@you}</div>
+            <span class="sep"></span>
+            <button class="signout" type="button" $click="log_out">Log out</button>
           {/if}
         </div>
 
@@ -120,8 +123,24 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :open_stop_id, nil)
   end
 
+  def action(:log_out, _params, component) do
+    put_command(component, :log_out)
+  end
+
+  def action(:logged_out, _params, component) do
+    put_page(component, LogInPage)
+  end
+
   def action(:open_stop, params, component) do
     put_state(component, :open_stop_id, params.id)
+  end
+
+  # Only the server can forget an identity - the session cookie it is kept in is the
+  # server's to write, which is why this is a command and not an action.
+  def command(:log_out, _params, server) do
+    server
+    |> delete_user_id()
+    |> put_action(:logged_out)
   end
 
   # Nobody signed in has no face to show, which is a real state until the auth gates land.

@@ -77,6 +77,9 @@ overflow: hidden;
 .faces.mid { right: 16px; }
 .face { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-label); font-size: 11.5px; font-weight: 700; color: #fff; margin-left: -7px; border: 2px solid var(--panel); }
 .face:first-child { margin-left: 0; }
+.sep { width: 1px; align-self: stretch; margin: 0 9px 0 11px; background: var(--line); }
+.signout { font-family: var(--f-body); font-size: 12.5px; font-weight: 500; color: var(--ink2); background: none; border: 0; padding: 0 2px; cursor: pointer; }
+.signout:hover { color: var(--accent); }
 .face.a { background: var(--anna); }
  .face.t { background: var(--tom); }
  .face.y { background: var(--you); }
