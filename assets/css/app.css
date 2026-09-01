@@ -134,6 +134,19 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .card .sub { margin: 2px 0 4px; font-size: 13px; color: var(--muted); }
 .btn { display: block; width: 100%; margin-top: 16px; font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--accentc); background: var(--accent); border: 0; border-radius: var(--r); padding: 9px 12px; cursor: pointer; }
 .alt { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+
+/* ---------- trips list ---------- */
+
+.rowlist { margin-top: 12px; }
+.triprow { display: grid; grid-template-columns: 78px 1fr; align-items: center; gap: 12px; padding: 9px 8px; margin: 0 -8px; border-radius: var(--r); text-decoration: none; color: inherit; }
+.triprow + .triprow { border-top: 1px solid var(--line); border-radius: 0; }
+.triprow:hover { background: var(--panel2); }
+.triprow b { display: block; font-size: 14px; font-weight: 600; letter-spacing: -.012em; }
+.triprow span { display: block; margin-top: 1px; font-size: 12px; color: var(--muted); }
+.thumb-svg { display: block; width: 78px; height: 38px; border-radius: 7px; border: 1px solid var(--line); }
+.blank { text-align: center; padding: 26px 6px 10px; }
+.blank b { display: block; font-family: var(--f-disp); font-size: 15px; font-weight: 600; letter-spacing: -.012em; }
+.blank span { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .err { margin: 6px 0 0; font-size: 12.5px; color: #d70015; }
 .alt a { color: var(--ink2); }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
