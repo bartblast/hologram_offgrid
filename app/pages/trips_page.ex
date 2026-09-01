@@ -1,8 +1,10 @@
 defmodule Offgrid.Pages.TripsPage do
   use Hologram.Page
 
+  alias Hologram.UI.Link
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripsList
+  alias Offgrid.Pages.NewTripPage
 
   @moduledoc """
   The screen a person lands on after signing in: the trips they are on, and the way to
@@ -29,7 +31,7 @@ defmodule Offgrid.Pages.TripsPage do
 
           <TripsList cid="trips_list" />
 
-          <button class="btn" type="button">New trip</button>
+          <Link class="btn" to={NewTripPage}>New trip</Link>
         </div>
       </div>
     </div>

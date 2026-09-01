@@ -89,6 +89,27 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
+  Sets the date input with the given id to `value` (an ISO date) and returns the session.
+
+  Neither `fill_in` nor `Element.set_value/2` works here, and both fail the same way: a
+  `type="date"` control is segmented, and both send keystrokes, so the characters go to
+  whichever segment has focus. "2026-05-15" typed into one lands as year 60515, month 02,
+  day 20 - a real Date, five digits wide, which then fails the wire format. Assigning the
+  value and dispatching `input` is what the browser's own picker does, and the only way to
+  put a whole date in from a test.
+  """
+  @spec fill_date(struct, String.t(), String.t()) :: struct
+  def fill_date(session, id, value) do
+    Browser.execute_script(session, """
+    const input = document.getElementById("#{id}");
+    input.value = "#{value}";
+    input.dispatchEvent(new Event("input", {bubbles: true}));
+    """)
+
+    session
+  end
+
+  @doc """
   Empties every table a trip's data lives in, in one statement.
 
   One statement because PostgreSQL refuses to truncate a table something references unless
