@@ -2,8 +2,10 @@ defmodule Offgrid.Pages.SignUpPage do
   use Hologram.Page
   use Hologram.DB
 
+  alias Hologram.UI.Link
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.User
+  alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.TripPage
 
   @moduledoc """
@@ -61,8 +63,7 @@ defmodule Offgrid.Pages.SignUpPage do
 
           <button class="btn" type="button" $click="sign_up">Create account</button>
 
-          <!-- TODO: point this at the log-in page once that page exists. -->
-          <p class="alt">Have an account? <a href="#">Log in</a></p>
+          <p class="alt">Have an account? <Link to={LogInPage}>Log in</Link></p>
         </div>
       </div>
     </div>
