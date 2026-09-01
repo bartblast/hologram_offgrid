@@ -7,10 +7,10 @@ defmodule Offgrid.Entities.Trip do
   attribute :name, :string
   attribute :starts_on, :date
 
-  relationship :map, Basemap
+  relationship :basemap, Basemap
 
   @moduledoc """
-  A trip: a name, the days it runs, and the map its stops are drawn on.
+  A trip: a name, the days it runs, and the basemap its stops are drawn on.
 
   Membership is the framework's role grants rather than a table this app writes. Whoever
   creates a trip is its organizer, granted by the declaration below rather than by any code

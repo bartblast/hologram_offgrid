@@ -6,14 +6,14 @@ defmodule Offgrid.Entities.TripTest do
   alias Hologram.Entity
   alias Offgrid.Entities.Trip
 
-  @map_id "01a05d37-84be-7b66-b163-1da2ce773bcf"
+  @basemap_id "01a05d37-84be-7b66-b163-1da2ce773bcf"
 
   describe "Entity.validate/1" do
     test "accepts a complete trip" do
       trip =
         new(
           ends_on: ~D[2026-04-06],
-          map_id: @map_id,
+          basemap_id: @basemap_id,
           name: "Japan, blossom run",
           starts_on: ~D[2026-03-28]
         )
@@ -21,17 +21,17 @@ defmodule Offgrid.Entities.TripTest do
       assert Entity.validate(trip) == :ok
     end
 
-    test "refuses a missing map" do
+    test "refuses a missing basemap" do
       trip = new(ends_on: ~D[2026-04-06], name: "Japan, blossom run", starts_on: ~D[2026-03-28])
 
-      assert Entity.validate(trip) == {:error, %{map_id: [:required]}}
+      assert Entity.validate(trip) == {:error, %{basemap_id: [:required]}}
     end
 
     test "refuses a date that is not a date" do
       trip =
         new(
           ends_on: "2026-04-06",
-          map_id: @map_id,
+          basemap_id: @basemap_id,
           name: "Japan, blossom run",
           starts_on: ~D[2026-03-28]
         )
@@ -53,18 +53,18 @@ defmodule Offgrid.Entities.TripTest do
   end
 
   describe "new/1" do
-    test "holds the days the trip runs and the map it is drawn on" do
+    test "holds the days the trip runs and the basemap it is drawn on" do
       trip =
         new(
           ends_on: ~D[2026-04-06],
-          map_id: @map_id,
+          basemap_id: @basemap_id,
           name: "Japan, blossom run",
           starts_on: ~D[2026-03-28]
         )
 
       assert %Trip{
                ends_on: ~D[2026-04-06],
-               map_id: @map_id,
+               basemap_id: @basemap_id,
                name: "Japan, blossom run",
                starts_on: ~D[2026-03-28],
                created_at: nil,
