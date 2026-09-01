@@ -17,9 +17,12 @@ defmodule Offgrid.Pages.SignUpPage do
   signing up is local-first, and that is the correct answer rather than a gap - a browser
   cannot be trusted to say who it is.
 
-  The write is trusted because nobody is signed in yet. A command runs under whatever actor
-  the session carries, so the same call made by an already signed-in visitor is judged
-  against the policy instead, where nothing grants :create, and refused.
+  The write claims the server's own authority with `trust/1`, and that claim is what makes
+  creating an account server-side by construction rather than by luck: `User` grants nobody
+  `:create`, so there is no rule a browser could use, and the only path that works is a
+  command saying the write is the server's. A claim lives in the struct's metadata and is
+  set by server code - a client's batch carries field values and never a claim - so this is
+  not something a browser can spell.
 
   What comes back is an action either way. On success the server has already put the user
   id on the session, so the page just navigates. On failure the message renders under the
@@ -101,6 +104,7 @@ defmodule Offgrid.Pages.SignUpPage do
     result =
       %{email: params.email, name: params.name, password_hash: password_hash}
       |> User.new()
+      |> trust()
       |> DB.create()
 
     case result do
