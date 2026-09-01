@@ -63,7 +63,11 @@ defmodule Offgrid.Components.StopEditor do
       <input class="inp" placeholder="Add a comment…" />
 
       <div class="ed-foot">
-        <button class="danger" type="button">Delete stop</button>
+        <button
+          class="danger"
+          type="button"
+          $click={action: :delete_stop, target: "page", params: %{id: @stop_id}}
+        >Delete stop</button>
       </div>
     </div>
     """

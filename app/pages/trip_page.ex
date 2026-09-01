@@ -100,6 +100,15 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :open_stop_id, stop.id)
   end
 
+  # Deleting closes in the SAME action, not through a follow-up: the editor renders the
+  # row being deleted, so if it were still mounted for one render in between it would ask
+  # the database for a row that is gone.
+  def action(:delete_stop, params, component) do
+    :ok = DB.delete(Stop, params.id)
+
+    put_state(component, :open_stop_id, nil)
+  end
+
   def action(:close_stop, _params, component) do
     put_state(component, :open_stop_id, nil)
   end
