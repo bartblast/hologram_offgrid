@@ -1,5 +1,5 @@
-# Seeds the trip the demo opens on. Idempotent - a stop already there is left alone,
-# so running this twice is safe.
+# Seeds the maps the app offers and the trip the demo opens on. Idempotent - a row already
+# there is left alone, so running this twice is safe.
 #
 #     HOLOGRAM_START=1 mix run priv/seeds.exs
 #
@@ -9,7 +9,58 @@
 import Hologram.Query, only: [filter: 2, one: 1]
 
 alias Hologram.DB
+alias Offgrid.Entities.Basemap
 alias Offgrid.Entities.Stop
+
+# The three maps a trip can be drawn on, at three deliberately different scales - a country,
+# a city and a mountain range - so the projection is exercised by more than one size of box.
+# Real bounds: they decide where a stop's coordinates land on screen, so inventing them would
+# put the pins in the wrong places.
+basemaps = [
+  %{
+    max_lat: 45.6,
+    max_lng: 146.0,
+    min_lat: 30.9,
+    min_lng: 128.4,
+    name: "Japan",
+    slug: "japan"
+  },
+  %{
+    max_lat: 52.37,
+    max_lng: 21.27,
+    min_lat: 52.09,
+    min_lng: 20.85,
+    name: "Warsaw",
+    slug: "warsaw"
+  },
+  %{
+    max_lat: 48.0,
+    max_lng: 16.2,
+    min_lat: 43.6,
+    min_lng: 5.0,
+    name: "The Alps",
+    slug: "alps"
+  }
+]
+
+Enum.each(basemaps, fn attrs ->
+  existing =
+    Basemap
+    |> filter(slug: attrs.slug)
+    |> one()
+    |> DB.read()
+
+  if existing do
+    IO.puts("· #{attrs.name}")
+  else
+    {:ok, _basemap} =
+      attrs
+      |> Basemap.new()
+      |> DB.create()
+
+    IO.puts("+ #{attrs.name}")
+  end
+end)
 
 # Real coordinates - the map they are drawn on is stylised, the places are not.
 stops = [
