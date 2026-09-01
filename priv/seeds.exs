@@ -77,27 +77,31 @@ japan =
 
 trip_name = "Japan, blossom run"
 
+existing_trip =
+  Trip
+  |> filter(name: trip_name)
+  |> one()
+  |> DB.read()
+
 trip =
-  case Trip |> filter(name: trip_name) |> one() |> DB.read() do
-    nil ->
-      {:ok, created} =
-        %{
-          basemap_id: japan.id,
-          ends_on: ~D[2026-04-06],
-          name: trip_name,
-          starts_on: ~D[2026-03-28]
-        }
-        |> Trip.new()
-        |> DB.create()
+  if existing_trip do
+    IO.puts("· #{trip_name}")
 
-      IO.puts("+ #{trip_name}")
+    existing_trip
+  else
+    {:ok, created} =
+      %{
+        basemap_id: japan.id,
+        ends_on: ~D[2026-04-06],
+        name: trip_name,
+        starts_on: ~D[2026-03-28]
+      }
+      |> Trip.new()
+      |> DB.create()
 
-      created
+    IO.puts("+ #{trip_name}")
 
-    existing ->
-      IO.puts("· #{trip_name}")
-
-      existing
+    created
   end
 
 stops = [
