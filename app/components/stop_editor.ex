@@ -11,9 +11,9 @@ defmodule Offgrid.Components.StopEditor do
   The stop arrives through its own query, bound to the id the page says is open, so the
   panel reads the same local database the list does.
 
-  The fields do not write anything back yet: editable name and description come in C7,
-  the day calendar in C8, the time chips in C9, delete in C10, and real comments in
-  phase G.
+  Name and description write straight to the database as you type - there is no save
+  button, because there is nothing to save to. The day calendar comes in C8, the time
+  chips in C9, delete in C10, and real comments in phase G.
   """
 
   prop :stop, Stop, from_query: &stop_query/1
@@ -31,10 +31,10 @@ defmodule Offgrid.Components.StopEditor do
       <div class="ed-sub">{day_label(@stop.date)}</div>
 
       <label>Name</label>
-      <input class="inp" value={@stop.name} />
+      <input class="inp" value={@stop.name} $change={:edit, field: :name} />
 
       <label>Description</label>
-      <input class="inp" value={@stop.description} />
+      <input class="inp" value={@stop.description} $change={:edit, field: :description} />
 
       <label>Day</label>
       <div class="cal">
@@ -76,6 +76,14 @@ defmodule Offgrid.Components.StopEditor do
       </div>
     </div>
     """
+  end
+
+  # Every keystroke is a write. It lands in the client's own database first, so the row
+  # and this panel agree immediately, and travels afterwards.
+  def action(:edit, params, component) do
+    :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
+
+    component
   end
 
   defp day_label(date) do
