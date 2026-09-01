@@ -18,8 +18,13 @@ defmodule Offgrid.Entities.Trip do
   it impossible to forget.
 
   An organizer is a member too, so every rule written for members reaches organizers without
-  being written twice. That is what `extends:` buys, and it is why deleting is the only thing
-  the two roles differ on here.
+  being written twice. That is what `extends:` buys, and it is why deleting and changing who
+  is here are the only things the two roles differ on.
+
+  `allow :grant_role` and `allow :revoke_role` name no role, which means the derived one:
+  a holder may hand out or take back their own role and anything it extends, and nothing
+  above it. So an organizer may make somebody a member or an organizer, and a member may do
+  neither - without this file having to say so twice.
 
   Anyone may start one, and that is what makes starting one work offline. A create is a
   client write like any other - it lands in the browser's own database first and travels
@@ -37,7 +42,8 @@ defmodule Offgrid.Entities.Trip do
 
   allow :create
   allow :delete, to: :organizer
-  allow :manage_roles, to: :organizer
+  allow :grant_role, to: :organizer
   allow :read, to: :member
+  allow :revoke_role, to: :organizer
   allow :update, to: :member
 end
