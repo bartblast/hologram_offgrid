@@ -131,6 +131,7 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .card .sub { margin: 2px 0 4px; font-size: 13px; color: var(--muted); }
 .btn { display: block; width: 100%; margin-top: 16px; font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--accentc); background: var(--accent); border: 0; border-radius: var(--r); padding: 9px 12px; cursor: pointer; }
 .alt { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.err { margin: 6px 0 0; font-size: 12.5px; color: #d70015; }
 .alt a { color: var(--ink2); }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .thumbs { display: flex; gap: 6px; }
