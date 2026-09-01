@@ -2,14 +2,15 @@ defmodule Offgrid.Pages.TripPage do
   use Hologram.Page
 
   alias Offgrid.Components.StopEditor
+  alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
-  Everything here is still hardcoded - the stops, the days, the pins and the faces. The
-  data layer arrives in phase C, which replaces the markup below piece by piece without
-  changing the shape of the screen.
+  The stops come from the database. The pins, the route and the faces are still
+  hardcoded - phases F and G replace them in turn, without changing the shape of the
+  screen.
   """
 
   route "/"
@@ -60,27 +61,7 @@ defmodule Offgrid.Pages.TripPage do
             </div>
           </div>
 
-          <div class="day">Sat 28 Mar</div>
-          <div class="stop">
-            <h4>Haneda → Shinjuku</h4>
-            <p>14:20 arrival</p>
-          </div>
-          <div class="stop">
-            <h4>Coffee at Fuglen</h4>
-            <p>Best pour-over in town</p>
-          </div>
-
-          <div class="day">Mon 30 Mar</div>
-          <div class="stop open">
-            <h4>Ryokan</h4>
-            <p>11:00 · Two nights, onsen on site</p>
-          </div>
-
-          <div class="day">Wed 1 Apr</div>
-          <div class="stop">
-            <h4>Fushimi Inari</h4>
-            <p>06:30 · Before 7am or forget it</p>
-          </div>
+          <StopsList cid="stops_list" />
         </div>
 
         <div class="faces">
