@@ -25,8 +25,9 @@ defmodule Offgrid.FeatureCase do
   a sync get watched at once.
 
   `visit/2` is Hologram's, which takes a page module rather than a URL and waits for the
-  client runtime to finish mounting. `assert_text/3` is `Offgrid.FeatureHelpers`', which
-  stays pipeable.
+  client runtime to finish mounting. `assert_text/3` and `refute_has/2` are
+  `Offgrid.FeatureHelpers`' - the first stays pipeable, the second returns as soon as the
+  element is absent instead of always waiting out `:max_wait_time`.
   """
 
   using do
@@ -45,6 +46,7 @@ defmodule Offgrid.FeatureCase do
       import Wallaby.Browser,
         except: [
           assert_text: 3,
+          refute_has: 2,
           visit: 2
         ]
 
