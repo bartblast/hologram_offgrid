@@ -59,9 +59,8 @@ defmodule Offgrid.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
-      {:hologram,
-       github: "bartblast/hologram",
-       ref: "a8ddad998056adc88b0757f67c49e59ed26507d0"}
+      {:wallaby, "~> 0.30", only: :test},
+      {:hologram, github: "bartblast/hologram", ref: "a8ddad998056adc88b0757f67c49e59ed26507d0"}
     ]
   end
 

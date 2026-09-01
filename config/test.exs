@@ -21,12 +21,11 @@ config :hologram, :database,
   password: "postgres",
   user: "postgres"
 
-# We don't run a server during test. If one is required,
-# you can enable the server option below.
+# The server runs during test because the feature tests drive a real browser against it.
 config :offgrid, OffgridWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "LcC86i/is+nf1SYJGqwN4sWCTaSM3uRv0i1EhTv7JbpElGX+r7QKvyHKX+0o3NhB",
-  server: false
+  server: true
 
 # In test we don't send emails
 config :offgrid, Offgrid.Mailer, adapter: Swoosh.Adapters.Test
@@ -43,3 +42,29 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+config :wallaby,
+  chromedriver: [
+    capabilities: %{
+      chromeOptions: %{
+        args: [
+          "--disable-background-timer-throttling",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--headless",
+          "--no-sandbox",
+          "--window-size=1280,800"
+        ]
+      }
+    },
+    # The default 10s is not always enough for chromedriver to come up.
+    readiness_timeout: 60_000
+  ],
+  driver: Wallaby.Chrome,
+  hackney_options: [timeout: 60_000, recv_timeout: 60_000],
+  max_wait_time: 30_000,
+  # No :otp_app on purpose. Wallaby uses it for one thing only - checking the app's Ecto
+  # repos out into the SQL sandbox - and the data under test is Hologram's, which holds its
+  # own connection and knows nothing about that sandbox.
+  screenshot_dir: "./tmp/screenshots",
+  screenshot_on_failure: true
