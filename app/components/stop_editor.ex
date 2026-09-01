@@ -42,12 +42,13 @@ defmodule Offgrid.Components.StopEditor do
 
       <label>Time</label>
       <div class="times">
-        <button type="button">—</button>
-        <button type="button">10:00</button>
-        <button type="button">10:30</button>
-        <button type="button" class="on">11:00</button>
-        <button type="button">11:30</button>
-        <button type="button">12:00</button>
+        <button type="button" class={time_class(nil, @stop.time)} $click={:set_time, time: nil}>—</button>
+
+        {%for time <- times()}
+          <button type="button" class={time_class(time, @stop.time)} $click={:set_time, time: time}>
+            {time_label(time)}
+          </button>
+        {/for}
       </div>
 
       <label>Comments</label>
@@ -66,6 +67,14 @@ defmodule Offgrid.Components.StopEditor do
       </div>
     </div>
     """
+  end
+
+  # Clearing the time is as legitimate as setting one - an untimed stop sinks to the end
+  # of its day rather than disappearing.
+  def action(:set_time, params, component) do
+    :ok = DB.update(Stop, component.props.stop_id, %{time: params.time})
+
+    component
   end
 
   # Every keystroke is a write. It lands in the client's own database first, so the row
@@ -93,10 +102,36 @@ defmodule Offgrid.Components.StopEditor do
   defp month(11), do: "Nov"
   defp month(12), do: "Dec"
 
+  defp pad(number) when number < 10, do: "0#{number}"
+
+  defp pad(number), do: "#{number}"
+
   defp stop_query(stop_id) do
     Stop
     |> filter(id: stop_id)
     |> one()
+  end
+
+  # Time.compare/2 rather than a pattern match or ==: a time read back from the database
+  # carries microsecond precision (~T[09:00:00.000000]) while a time built here does not
+  # (~T[09:00:00]), so the two structs differ while naming the same moment.
+  defp time_class(nil, nil), do: "on"
+
+  defp time_class(nil, _selected), do: nil
+
+  defp time_class(_time, nil), do: nil
+
+  defp time_class(time, selected) do
+    if Time.compare(time, selected) == :eq, do: "on"
+  end
+
+  defp time_label(time), do: "#{pad(time.hour)}:#{pad(time.minute)}"
+
+  # Half-hourly through the part of the day an itinerary actually uses.
+  defp times do
+    Enum.map(16..40, fn half_hours ->
+      Time.new!(div(half_hours, 2), rem(half_hours, 2) * 30, 0)
+    end)
   end
 
   defp weekday(1), do: "Mon"
