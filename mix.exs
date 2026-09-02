@@ -61,7 +61,7 @@ defmodule Offgrid.MixProject do
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:wallaby, "~> 0.30", only: :test},
-      {:hologram, github: "bartblast/hologram", ref: "7861841499d3fcf5accbefe6c3f8896a734f58fb"}
+      {:hologram, github: "bartblast/hologram", ref: "558ebc1f7b11713036a1a439daec4b8802e9e074"}
     ]
   end
 
