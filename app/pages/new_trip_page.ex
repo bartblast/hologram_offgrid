@@ -2,7 +2,9 @@ defmodule Offgrid.Pages.NewTripPage do
   use Hologram.Page
   use Hologram.DB
 
+  alias Hologram.Auth
   alias Offgrid.Components.BasemapPicker
+  alias Offgrid.Components.MemberChips
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
@@ -15,6 +17,11 @@ defmodule Offgrid.Pages.NewTripPage do
   browser's own database first and travels afterwards. Starting a trip works with no
   network, and the person who started it sees it immediately - before the server has been
   told, and before the organizer grant that write will earn them exists.
+
+  The people invited are granted their membership in the same action, which works for the
+  same reason: a grant is a client write too, and the organizer grant the create earns rides
+  in that create's own batch. So a trip can be named, mapped, filled with people and started
+  on a plane, and the whole thing lands as one when the network comes back.
 
   Dates arrive from the browser's own date control as "2026-03-28", which is picked apart
   here rather than parsed: `Date.from_iso8601!/1` is not among the functions that reach the
@@ -30,6 +37,7 @@ defmodule Offgrid.Pages.NewTripPage do
     |> put_state(:basemap_id, nil)
     |> put_state(:ends_on, "")
     |> put_state(:error, nil)
+    |> put_state(:invites, [])
     |> put_state(:name, "")
     |> put_state(:starts_on, "")
   end
@@ -73,6 +81,9 @@ defmodule Offgrid.Pages.NewTripPage do
           <label>Map</label>
           <BasemapPicker cid="basemap_picker" selected_id={@basemap_id} />
 
+          <label>Members</label>
+          <MemberChips cid="member_chips" invites={@invites} />
+
           {%if @error}
             <p class="err">{@error}</p>
           {/if}
@@ -93,12 +104,28 @@ defmodule Offgrid.Pages.NewTripPage do
     create(component, state, starts_on, ends_on)
   end
 
+  def action(:add_invite, params, component) do
+    invites = component.state.invites
+
+    if Enum.any?(invites, &(&1.id == params.user.id)) do
+      component
+    else
+      put_state(component, :invites, invites ++ [params.user])
+    end
+  end
+
   def action(:edit, params, component) do
     put_state(component, params.field, params.event.value)
   end
 
   def action(:pick_basemap, params, component) do
     put_state(component, :basemap_id, params.id)
+  end
+
+  def action(:remove_invite, params, component) do
+    invites = Enum.reject(component.state.invites, &(&1.id == params.id))
+
+    put_state(component, :invites, invites)
   end
 
   # Everything the row needs, said in the order the form asks for it, so the message names
@@ -120,7 +147,7 @@ defmodule Offgrid.Pages.NewTripPage do
   end
 
   defp create(component, state, starts_on, ends_on) do
-    {:ok, _trip} =
+    {:ok, trip} =
       %{
         basemap_id: state.basemap_id,
         ends_on: ends_on,
@@ -129,6 +156,11 @@ defmodule Offgrid.Pages.NewTripPage do
       }
       |> Trip.new()
       |> DB.create()
+
+    # The create wrote the organizer grant this needs, into the same batch, so the browser
+    # already knows whose trip it is - which is what lets a trip be started and filled in
+    # with nobody watching.
+    Enum.each(state.invites, &(:ok = Auth.grant_role(&1, trip, :member)))
 
     # Back to the list, where the new trip is already the top row. TODO: open the trip
     # itself once a trip has an address to open - today every trip answers at "/", so

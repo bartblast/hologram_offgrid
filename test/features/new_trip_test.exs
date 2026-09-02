@@ -1,6 +1,11 @@
 defmodule Offgrid.Features.NewTripTest do
   use Offgrid.FeatureCase, async: false
+  use Hologram.DB
 
+  alias Hologram.Auth
+  alias Hologram.DB
+  alias Offgrid.Entities.Trip
+  alias Offgrid.Entities.User
   alias Offgrid.Pages.NewTripPage
   alias Offgrid.Pages.TripsPage
 
@@ -30,6 +35,53 @@ defmodule Offgrid.Features.NewTripTest do
     |> release_mutations()
     |> assert_text(css(".card"), "Warsaw, long weekend")
     |> assert_text(css(".card"), "Japan, blossom run")
+  end
+
+  feature "starts a trip offline with people already on it", %{session: session, trip: trip} do
+    anna =
+      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    session
+    |> sign_in_as_member(trip)
+    |> visit(NewTripPage)
+    |> fill_in(css(".card .inp", at: 0), with: "Alps, hut to hut")
+    |> fill_date("starts_on", "2026-08-02")
+    |> fill_date("ends_on", "2026-08-09")
+    |> click(css(".thumbs .thumb", at: 0))
+    # Finding Anna by her address is a local query - every account syncs - so this works with
+    # the network already held.
+    |> hold_mutation_requests()
+    |> fill_in(css(".card .inp", at: 3), with: "anna@offgrid.test")
+    |> send_keys([:enter])
+    |> assert_text(css(".chips"), "anna@offgrid.test")
+    |> click(button("Create trip"))
+    |> assert_page(TripsPage)
+    |> assert_text(css(".card"), "Alps, hut to hut")
+    |> release_mutations()
+    # Zero pending batches is what says the server has answered - the trip being on screen
+    # before this only proves the browser wrote it.
+    |> await_pending_writes(0)
+    |> assert_text(css(".card"), "Alps, hut to hut")
+
+    # The trip and the grant it carried both landed, so Anna is on it.
+    alps =
+      Trip
+      |> filter(name: "Alps, hut to hut")
+      |> one()
+      |> DB.read()
+
+    assert Auth.can?(anna.id, :read, alps)
+  end
+
+  feature "refuses an address nobody here uses", %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    |> visit(NewTripPage)
+    |> fill_in(css(".card .inp", at: 3), with: "stranger@offgrid.test")
+    |> send_keys([:enter])
+    |> assert_text(css(".card"), "Nobody here uses that address.")
   end
 
   feature "refuses a trip with no name", %{session: session, trip: trip} do
