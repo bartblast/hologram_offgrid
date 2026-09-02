@@ -21,11 +21,9 @@ defmodule Offgrid.Components.MemberChips do
   prop :invites, [User]
   prop :users, [User], from_query: &users_query/0
 
-  # Both, and they are not the same callback: init/3 is what the SERVER renders the first paint
-  # with, init/2 is what the client mounts with. A component holding state needs each - with
-  # only the client one, the first render reaches a template whose state does not exist yet.
-  def init(_props, component), do: blank(component)
-
+  # init/3, because every page comes from the server - a Link navigation fetches one too - so a
+  # component the page always renders is always initialized there. init/2 is for a component
+  # that appears in a page ALREADY loaded, the way the stop editor does when a stop is opened.
   def init(_props, component, server), do: {blank(component), server}
 
   def template do
