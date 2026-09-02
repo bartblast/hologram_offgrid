@@ -4,6 +4,7 @@ defmodule Offgrid.Pages.TripPage do
 
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
+  alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
@@ -86,6 +87,11 @@ defmodule Offgrid.Pages.TripPage do
             <span class="sep"></span>
             <button class="signout" type="button" $click="log_out">Log out</button>
           {/if}
+        </div>
+
+        <!-- TODO: move into the members popover, which opens from the faces above. -->
+        <div class="members">
+          <MembersList cid="members_list" trip_id={@trip_id} />
         </div>
 
         <button class="pen" type="button" aria-label="Draw">✎</button>

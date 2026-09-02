@@ -21,6 +21,10 @@ defmodule Offgrid.Entities.Trip do
   being written twice. That is what `extends:` buys, and it is why deleting and changing who
   is here are the only things the two roles differ on.
 
+  `allow :read_roles` is what lets a member see who else is here. Left undeclared it would
+  default to the roles that may change the list - organizers - and a member opening the
+  members list would find only themselves in it.
+
   `allow :grant_role` and `allow :revoke_role` name no role, which means the derived one:
   a holder may hand out or take back their own role and anything it extends, and nothing
   above it. So an organizer may make somebody a member or an organizer, and a member may do
@@ -44,6 +48,7 @@ defmodule Offgrid.Entities.Trip do
   allow :delete, to: :organizer
   allow :grant_role, to: :organizer
   allow :read, to: :member
+  allow :read_roles, to: :member
   allow :revoke_role, to: :organizer
   allow :update, to: :member
 end

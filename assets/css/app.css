@@ -162,6 +162,7 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
  .chip i.t { background: var(--tom); }
 .chip b { font-weight: 400; color: var(--muted); }
 .note { margin: 7px 0 0; font-family: var(--f-label); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.members { position: absolute; top: 56px; right: 336px; width: 240px; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--line); border-radius: var(--rl); box-shadow: var(--shadow); padding: 10px 13px; z-index: 4; }
 .mrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
 .mrow i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .mrow i.a { background: var(--anna); }
