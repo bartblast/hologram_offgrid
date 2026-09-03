@@ -69,9 +69,6 @@ defmodule Offgrid.Pages.TripPage do
 
         <MapRoute cid="map_route" trip_id={@trip_id} />
 
-        <!-- TODO: the stroke itself. $pointer_down, $pointer_move and $pointer_up do not
-             dispatch in Hologram 0.11.1 - see the findings log - so this surface takes the
-             pointer and the actions below it are unreachable until that lands. -->
         <div
           class={ink_class(@drawing)}
           $pointer_down="ink_start"
@@ -220,18 +217,25 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
+  # Lifting the pointer ends the stroke and leaves it on screen. It is drawn and nowhere else
+  # yet - G6 is what turns it into a row - so putting the pen away is what discards it.
   def action(:ink_finish, _params, component) do
-    component
-    |> put_state(:stroke, [])
-    |> put_state(:stroke_box, nil)
+    put_state(component, :stroke_box, nil)
   end
 
   # The box is read from the DOM once, when the pointer goes down, and held for the length of
   # the stroke: every move after it is arithmetic, with nothing asked of the browser.
+  #
+  # Whether the pen is armed is checked here and not left to the layer's `pointer-events`,
+  # which only decides what the pointer HITS - it is the app's rule, so the app states it.
   def action(:ink_start, params, component) do
-    started = put_state(component, :stroke_box, Box.size("canvas"))
+    if component.state.drawing do
+      started = put_state(component, :stroke_box, Box.size("canvas"))
 
-    put_state(started, :stroke, [ink_point(started, params.event)])
+      put_state(started, :stroke, [ink_point(started, params.event)])
+    else
+      component
+    end
   end
 
   # The one place the app asks the DOM anything. Runs once from init/3, right after the first
