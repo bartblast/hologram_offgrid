@@ -78,7 +78,7 @@ defmodule Offgrid.Pages.TripPage do
           $pointer_up="ink_finish"
         ></div>
 
-        <Ink cid="ink" trip_id={@trip_id} />
+        <Ink cid="ink" drawing={@drawing} trip_id={@trip_id} user_id={@user_id} />
 
         <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {%if @stroke != []}

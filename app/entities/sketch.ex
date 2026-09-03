@@ -24,11 +24,15 @@ defmodule Offgrid.Entities.Sketch do
   asks questions about.
 
   The rules go through the trip rather than a stop, because ink belongs to the map: you may
-  draw on a trip exactly when you may add a stop to it. Creating pins the author to the actor,
-  and only the author may rub out their own line.
+  draw on a trip exactly when you may add a stop to it. Creating pins the author to the actor.
+
+  Rubbing out is your own line, or anybody's if you organize the trip - the two delete lines
+  are read as one or the other. A member cannot clear somebody else's ink, and an organizer
+  can, because a map nobody may tidy fills up.
   """
 
   allow :create, author_id: user_id(), via: :trip
   allow :delete, author_id: user_id()
+  allow :delete, to: {:trip, :organizer}
   allow :read, via: :trip
 end

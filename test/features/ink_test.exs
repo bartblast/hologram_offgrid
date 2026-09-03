@@ -4,6 +4,7 @@ defmodule Offgrid.Features.InkTest do
 
   alias Hologram.DB
   alias Offgrid.Entities.Sketch
+  alias Offgrid.Entities.User
   alias Offgrid.Pages.TripPage
   alias Wallaby.Element
 
@@ -42,7 +43,7 @@ defmodule Offgrid.Features.InkTest do
 
     assert await_pending_writes(session, 0)
            |> refute_has(css(".ink-paper polyline", visible: :any))
-           |> assert_has(css(".ink-saved polyline", count: 1, visible: :any))
+           |> assert_has(css(".ink-line", count: 1, visible: :any))
 
     [sketch] = Sketch |> include(:author) |> DB.read()
     assert sketch.author.email == "member@offgrid.test"
@@ -52,7 +53,43 @@ defmodule Offgrid.Features.InkTest do
     # And it is still there on a reload, drawn from the row rather than from the screen.
     session
     |> visit(TripPage, id: trip.id)
-    |> assert_has(css(".ink-saved polyline", count: 1, visible: :any))
+    |> assert_has(css(".ink-line", count: 1, visible: :any))
+  end
+
+  feature "rubs out a line with the pen out, and only one it may", %{session: session, trip: trip} do
+    other =
+      %{email: "tom@offgrid.test", name: "Tom Reyes", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    theirs =
+      %{
+        author_id: other.id,
+        color: "#30b0c7",
+        points: "35.1,135.7 35.2,135.9",
+        trip_id: trip.id
+      }
+      |> Sketch.new()
+      |> DB.create!()
+
+    session =
+      session
+      |> sign_in_as_member(trip)
+      |> click(css(".pen"))
+      # Straight, so the middle of the line is the middle of its box - what a click aims at.
+      |> drag([{200, 150}, {240, 190}, {280, 230}])
+
+    assert await_pending_writes(session, 0)
+           |> assert_has(css(".ink-line", count: 2, visible: :any))
+           # A member may rub out their own line and not somebody else's, which the browser decides
+           # for itself - so only one of the two takes the pointer at all.
+           |> assert_has(css(".ink-hit", count: 1, visible: :any))
+           |> click(css(".ink-hit"))
+           |> assert_has(css(".ink-line", count: 1, visible: :any))
+
+    assert await_pending_writes(session, 0)
+    assert [remaining] = DB.read(Sketch)
+    assert remaining.id == theirs.id
   end
 
   feature "a tap is not a line", %{session: session, trip: trip} do
