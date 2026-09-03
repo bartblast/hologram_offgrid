@@ -22,6 +22,26 @@ defmodule Offgrid.Features.MembersTest do
     |> refute_has(css(".members"))
   end
 
+  feature "shows a person holding two roles once", %{session: session, trip: trip} do
+    anna =
+      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(anna, trip, :member)
+    :ok = Auth.grant_role(anna, trip, :organizer)
+
+    session
+    # Signing in grants this browser's user :member on the trip.
+    |> sign_in_as_member(trip)
+    |> click(css(".facepile"))
+    # Anna and Nora - not Anna twice and Nora, which is what the grant store holds.
+    |> assert_has(css(".mrow", count: 2))
+    |> assert_text(css(".members"), "Anna Kim")
+    # The stronger of Anna's two roles is the one that survives.
+    |> assert_text(css(".members"), "ORGANIZER")
+  end
+
   feature "shows everyone on the trip", %{session: session, trip: trip} do
     anna =
       %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}

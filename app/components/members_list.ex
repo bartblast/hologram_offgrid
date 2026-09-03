@@ -14,6 +14,10 @@ defmodule Offgrid.Components.MembersList do
   What the query returns is already filtered by `allow :read_roles` on Trip: a member sees the
   whole list, and somebody with no role on the trip sees nothing, without this component
   asking who is looking.
+
+  One person can hold several roles on one trip - the creator of a trip they were invited to
+  holds both - so the store answers a row per grant and the collapsing to a row per person
+  happens here.
   """
 
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -26,7 +30,7 @@ defmodule Offgrid.Components.MembersList do
 
   def template do
     ~HOLO"""
-    {%for grant <- @grants}
+    {%for grant <- one_per_person(@grants)}
       <div class="mrow">
         <i class="off"></i>{grant.user.name} <em>{role_label(grant.role)}</em>
       </div>
@@ -41,6 +45,21 @@ defmodule Offgrid.Components.MembersList do
     |> filter(resource_id: trip_id)
     |> include(:user)
     |> order_by(:created_at)
+  end
+
+  # The strongest role each person holds, which for Offgrid means organizer over member, since
+  # organizer extends it. This is the app's answer and not the framework's: "strongest" is only
+  # well-defined where an app's roles form a chain, and two roles neither of which extends the
+  # other have no order to pick by.
+  defp one_per_person(grants) do
+    grants
+    |> Enum.map(& &1.user_id)
+    |> Enum.uniq()
+    |> Enum.map(fn user_id ->
+      held = Enum.filter(grants, &(&1.user_id == user_id))
+
+      Enum.find(held, &(&1.role == :organizer)) || hd(held)
+    end)
   end
 
   defp role_label(:member), do: "Member"
