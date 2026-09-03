@@ -29,22 +29,32 @@ defmodule Offgrid.FeatureHelpers do
   @max_wait_time Application.compile_env(:wallaby, :max_wait_time, 3_000)
 
   @doc """
+  Creates a basemap with the given name and slug and returns it.
+
+  The bounds are Japan's whatever the map is called. Nothing reads them yet - the projection
+  arrives with the pins - and a test that needs honest ones will say so by needing them.
+  """
+  @spec create_basemap(String.t(), String.t()) :: struct
+  def create_basemap(name, slug) do
+    %{
+      max_lat: 45.6,
+      max_lng: 146.0,
+      min_lat: 30.9,
+      min_lng: 128.4,
+      name: name,
+      slug: slug
+    }
+    |> Basemap.new()
+    |> DB.create!()
+  end
+
+  @doc """
   Creates a trip with a basemap under it and returns the trip - the two rows that have to
   exist before any stop can, since a stop's trip is required and a trip's basemap is.
   """
   @spec create_trip() :: struct
   def create_trip do
-    basemap =
-      %{
-        max_lat: 45.6,
-        max_lng: 146.0,
-        min_lat: 30.9,
-        min_lng: 128.4,
-        name: "Japan",
-        slug: "japan"
-      }
-      |> Basemap.new()
-      |> DB.create!()
+    basemap = create_basemap("Japan", "japan")
 
     %{
       basemap_id: basemap.id,

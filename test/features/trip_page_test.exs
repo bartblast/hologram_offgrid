@@ -53,6 +53,28 @@ defmodule Offgrid.Features.TripPageTest do
     |> refute_has(css(".stop", text: "Fushimi Inari"))
   end
 
+  feature "draws the map the trip is on, and changes it", %{session: session, trip: trip} do
+    create_basemap("Alps", "alps")
+
+    session
+    |> sign_in_as_member(trip)
+    # The city, because that is the basemap the trip was made on.
+    |> assert_has(css(".terrain.japan"))
+    |> click(css(".swatch"))
+    # Upper case because `.thumb b` is text-transform: uppercase and a browser reports what it
+    # rendered - the same trap the member roles set.
+    |> click(css(".thumb", text: "ALPS"))
+    # One local write, and the map behind the panel is drawn from the row it changed - no
+    # round trip between the click and the new terrain.
+    |> assert_has(css(".terrain.alps"))
+    |> refute_has(css(".terrain.japan"))
+    |> await_pending_writes(0)
+    # And it was a real write, not a screen that only agrees with itself: the reload reads
+    # the trip back from the server.
+    |> visit(TripPage, id: trip.id)
+    |> assert_has(css(".terrain.alps"))
+  end
+
   feature "renders the stops the database holds", %{session: session, trip: trip} do
     %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
     |> Stop.new()

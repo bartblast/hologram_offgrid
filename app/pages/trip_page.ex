@@ -4,6 +4,7 @@ defmodule Offgrid.Pages.TripPage do
 
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
+  alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripHeader
@@ -33,6 +34,7 @@ defmodule Offgrid.Pages.TripPage do
   # the rows the trip's own rules allow - none, for a trip that is not theirs.
   def init(params, component, server) do
     component
+    |> put_state(:maps_open, false)
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
     |> put_state(:trip_id, params.id)
@@ -44,7 +46,7 @@ defmodule Offgrid.Pages.TripPage do
     ~HOLO"""
     <div class="app">
       <div class="map">
-        <Terrain />
+        <Terrain trip_id={@trip_id} />
 
         <svg class="lay" viewBox="0 0 1200 520" preserveAspectRatio="none" aria-hidden="true">
           <polyline
@@ -64,7 +66,7 @@ defmodule Offgrid.Pages.TripPage do
           <div class="lp-head">
             <TripHeader cid="trip_header" trip_id={@trip_id} />
             <div class="lp-tools">
-              <button class="swatch" type="button" aria-label="Change map">
+              <button class="swatch" type="button" aria-label="Change map" $click="toggle_maps">
                 <svg viewBox="0 0 90 44" aria-hidden="true">
                   <rect width="90" height="44" fill="var(--land)" />
                   <rect x="8" y="6" width="20" height="13" fill="var(--park)" />
@@ -80,6 +82,10 @@ defmodule Offgrid.Pages.TripPage do
               <button class="addb" type="button" aria-label="Add a stop" $click="add_stop">+</button>
             </div>
           </div>
+
+          {%if @maps_open}
+            <MapPicker cid="map_picker" trip_id={@trip_id} />
+          {/if}
 
           <StopsList cid="stops_list" open_stop_id={@open_stop_id} trip_id={@trip_id} />
         </div>
@@ -157,6 +163,10 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:open_stop, params, component) do
     put_state(component, :open_stop_id, params.id)
+  end
+
+  def action(:toggle_maps, _params, component) do
+    put_state(component, :maps_open, !component.state.maps_open)
   end
 
   def action(:toggle_members, _params, component) do
