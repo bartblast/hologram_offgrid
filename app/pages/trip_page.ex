@@ -7,6 +7,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
+  alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.User
@@ -34,6 +35,7 @@ defmodule Offgrid.Pages.TripPage do
   # the rows the trip's own rules allow - none, for a trip that is not theirs.
   def init(params, component, server) do
     component
+    |> put_state(:details_open, false)
     |> put_state(:maps_open, false)
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
@@ -118,6 +120,12 @@ defmodule Offgrid.Pages.TripPage do
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
 
+        {%if @details_open}
+          <document $key_down.escape="close_details" />
+
+          <TripDetails cid="trip_details" trip_id={@trip_id} />
+        {/if}
+
         {%if @open_stop_id}
           <document $key_down.escape="close_stop" />
 
@@ -149,6 +157,10 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :open_stop_id, nil)
   end
 
+  def action(:close_details, _params, component) do
+    put_state(component, :details_open, false)
+  end
+
   def action(:close_stop, _params, component) do
     put_state(component, :open_stop_id, nil)
   end
@@ -159,6 +171,10 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:logged_out, _params, component) do
     put_page(component, LogInPage)
+  end
+
+  def action(:open_details, _params, component) do
+    put_state(component, :details_open, true)
   end
 
   def action(:open_stop, params, component) do

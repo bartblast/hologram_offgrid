@@ -53,6 +53,27 @@ defmodule Offgrid.Features.TripPageTest do
     |> refute_has(css(".stop", text: "Fushimi Inari"))
   end
 
+  feature "renames a trip and moves its dates from its own card",
+          %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    |> assert_text(css(".lp-title"), "Japan, blossom run")
+    |> click(css(".lp-title"))
+    |> fill_in(css(".card .inp", at: 0), with: "Japan, cherry run")
+    # The header behind the card is a second component reading the same row, so it renames
+    # itself in the same frame - nothing was passed between them.
+    |> assert_text(css(".lp-title"), "Japan, cherry run")
+    |> fill_date("details_starts_on", "2026-03-30")
+    |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
+    |> send_keys([:escape])
+    |> refute_has(css(".card"))
+    |> await_pending_writes(0)
+    # Read back from the server, so the card wrote a row rather than a screen.
+    |> visit(TripPage, id: trip.id)
+    |> assert_text(css(".lp-title"), "Japan, cherry run")
+    |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
+  end
+
   feature "draws the map the trip is on, and changes it", %{session: session, trip: trip} do
     create_basemap("Alps", "alps")
 

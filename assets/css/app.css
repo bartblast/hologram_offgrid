@@ -132,6 +132,9 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 /* cards (auth, new trip, details) */
 .card { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 330px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--rl); box-shadow: var(--shadow); padding: 22px 20px 18px; max-height: calc(100% - 40px); overflow: auto; }
 .card.wide { width: 400px; }
+.card { z-index: 6; }
+.scrim { position: absolute; inset: 0; background: rgba(20, 20, 24, .2); z-index: 5; }
+.lp-title { cursor: pointer; }
 .card h2 { font-family: var(--f-disp); font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
 .card .sub { margin: 2px 0 4px; font-size: 13px; color: var(--muted); }
 .btn { display: block; width: 100%; margin-top: 16px; font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--accentc); background: var(--accent); border: 0; border-radius: var(--r); padding: 9px 12px; cursor: pointer; }

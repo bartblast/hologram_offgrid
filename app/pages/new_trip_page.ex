@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.NewTripPage do
   alias Offgrid.Components.BasemapPicker
   alias Offgrid.Components.MemberChips
   alias Offgrid.Components.Terrain
+  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
 
@@ -98,8 +99,8 @@ defmodule Offgrid.Pages.NewTripPage do
   def action(:create, _params, component) do
     state = component.state
 
-    ends_on = to_date(state.ends_on)
-    starts_on = to_date(state.starts_on)
+    ends_on = Dates.parse(state.ends_on)
+    starts_on = Dates.parse(state.starts_on)
 
     create(component, state, starts_on, ends_on)
   end
@@ -166,15 +167,5 @@ defmodule Offgrid.Pages.NewTripPage do
     # itself once a trip has an address to open - today every trip answers at "/", so
     # "the trip you just made" is not a thing this page can navigate to.
     put_page(component, TripsPage)
-  end
-
-  defp to_date(value) do
-    case String.split(value, "-") do
-      [year, month, day] ->
-        Date.new!(String.to_integer(year), String.to_integer(month), String.to_integer(day))
-
-      _other ->
-        nil
-    end
   end
 end

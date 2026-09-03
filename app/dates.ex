@@ -7,6 +7,36 @@ defmodule Offgrid.Dates do
   """
 
   @doc """
+  Returns the date a `type="date"` input spells as `value`, or nil when it spells nothing yet.
+
+  Written out rather than handed to `Date.from_iso8601/1`, which the client does not have.
+  """
+  @spec parse(String.t()) :: Date.t() | nil
+  def parse(value) do
+    case String.split(value, "-") do
+      [year, month, day] ->
+        Date.new!(String.to_integer(year), String.to_integer(month), String.to_integer(day))
+
+      _other ->
+        nil
+    end
+  end
+
+  @doc """
+  Returns the date spelled the way a `type="date"` input wants its `value`, and the empty
+  string for no date at all.
+  """
+  @spec to_input(Date.t() | nil) :: String.t()
+  def to_input(nil), do: ""
+
+  def to_input(date) do
+    month = if date.month < 10, do: "0#{date.month}", else: "#{date.month}"
+    day = if date.day < 10, do: "0#{date.day}", else: "#{date.day}"
+
+    "#{date.year}-#{month}-#{day}"
+  end
+
+  @doc """
   Returns the span between the two dates as one line: "28 Mar – 6 Apr", or "28 – 30 Mar" when
   a single month covers it.
 
