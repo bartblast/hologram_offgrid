@@ -8,6 +8,7 @@ defmodule Offgrid.FeatureHelpers do
   alias Hologram.DB.Connection
   alias Hologram.DB.Mapper
   alias Offgrid.Entities.Basemap
+  alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
@@ -118,13 +119,14 @@ defmodule Offgrid.FeatureHelpers do
   Empties every table a trip's data lives in, in one statement.
 
   One statement because PostgreSQL refuses to truncate a table something references unless
-  the referencing one goes with it, and these form a chain: a stop names its trip, a trip
-  names its basemap, and a grant names both a user and the entity it is held on.
+  the referencing one goes with it, and these form a chain: a comment names its stop and its
+  author, a stop names its trip, a trip names its basemap, and a grant names both a user and
+  the entity it is held on.
   """
   @spec truncate_trip_data() :: :ok
   def truncate_trip_data do
     tables =
-      Enum.map_join([Stop, Trip, RoleGrant, User, Basemap], ", ", fn entity_type ->
+      Enum.map_join([Comment, Stop, Trip, RoleGrant, User, Basemap], ", ", fn entity_type ->
         ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
       end)
 
