@@ -74,10 +74,14 @@ defmodule Offgrid.MixProject do
   defp aliases do
     [
       # setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
-      setup: ["deps.get", "assets.setup", "assets.build"],
+      # ecto.create rather than a repo that runs: Hologram keeps its rows in the same database
+      # and creates its own schema at boot, so this is only here to make the database exist.
+      setup: ["deps.get", "ecto.create", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      # assets.build, because feature tests serve the built stylesheet: without it a CSS change
+      # is invisible to them and they fail describing something else entirely.
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "assets.build", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind offgrid", "esbuild offgrid"],
       "assets.deploy": [

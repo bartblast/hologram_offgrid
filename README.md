@@ -1,56 +1,47 @@
-
-
 # Offgrid
 
-This repository contains a bare-bones skeleton application for the Hologram web framework, built on top of Phoenix. It provides a minimal starting point for:
+A collaborative trip planner, and the demo application for [Hologram](https://hologram.page) -
+an Elixir framework that compiles your application to JavaScript and runs it in the browser.
 
-- Experimenting with Hologram
-- Reproducing issues for bug reports
-- Learning the basics of Hologram development
-- Creating new Hologram applications
+Plan a trip with other people: stops with a day and a time, pins and a route on a map, remarks
+on a stop, freehand ink, and who else is looking at it right now. Everything but signing in
+works with the network off and syncs when it comes back.
 
-## Getting Started
+It runs alongside a stock Phoenix application rather than replacing one - the endpoint, the
+router and the layouts are Phoenix's, and every page is Hologram's.
 
-To start your Hologram application:
+## Setup
 
-1. Clone this repository
-   ```bash
-   git clone https://github.com/bartblast/offgrid.git
-   cd offgrid
-   ```
+You need Elixir 1.19 or later, Erlang/OTP 27 or later, and PostgreSQL running locally.
 
-2. Install dependencies
-   ```bash
-   mix setup
-   ```
-
-3. Start the Phoenix server
-   ```bash
-   mix phx.server
-   ```
-
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser to see the Hologram application running.
-
-## File Organization
-
-Hologram follows a convention of placing page and component files in the `app` directory. However, you can place your files in any directory that is compiled by the Elixir compiler, such as the `lib` directory.
-
-## Database Configuration
-
-To enable database functionality, uncomment the `Offgrid.Repo` line in `lib/offgrid/application.ex`:
-
-```elixir
-children = [
-  OffgridWeb.Telemetry,
-  Offgrid.Repo,  # Uncomment this line
-  # ...
-]
+```bash
+git clone https://github.com/bartblast/offgrid.git
+cd offgrid
+mix setup
+HOLOGRAM_START=1 mix run priv/seeds.exs
 ```
 
-## Learn More
+The seeds add the three maps a trip can be drawn on and one trip to look at.
 
-Visit the official Hologram website at [https://hologram.page](https://hologram.page) for comprehensive documentation and guides.
+## Running it
 
-## License
+```bash
+mix holo
+```
 
-This project is licensed under the same license as Hologram itself.
+Then open [localhost:4000](http://localhost:4000) and create an account. `mix holo` is
+`mix phx.server` with Hologram switched on - in dev and test it stays off unless
+`HOLOGRAM_START=1` is set, which is why the seeds command above sets it too.
+
+The trip the seeds create belongs to nobody, so a new account will not see it. Make your own
+from the trips screen.
+
+## Tests
+
+```bash
+mix test                  # unit tests
+mix test --only feature   # feature tests, in a real browser
+```
+
+Feature tests drive Chrome through Wallaby, so they need Chrome and a matching ChromeDriver on
+your PATH.
