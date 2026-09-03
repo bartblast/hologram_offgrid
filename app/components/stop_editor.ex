@@ -2,6 +2,7 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
   use Hologram.DB
 
+  alias Hologram.DB
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
@@ -26,10 +27,10 @@ defmodule Offgrid.Components.StopEditor do
   prop :stop_id, :string
   prop :user_id, :string
 
-  # The panel holds no state of its own - it renders what the page says is open. This
-  # exists because a stateful component appearing on an already-loaded page must have
-  # init/2, and the panel appears exactly that way when a stop is clicked.
-  def init(_props, component), do: component
+  # The draft of a remark is the panel's own business, so it is state here - everything else
+  # the panel shows is a row. init/2 because the panel appears in a page that is already
+  # loaded, the way it does when a stop is clicked.
+  def init(_props, component), do: put_state(component, :draft, "")
 
   def template do
     ~HOLO"""
@@ -64,7 +65,13 @@ defmodule Offgrid.Components.StopEditor do
           <p>{comment.body}</p>
         </div>
       {/for}
-      <input class="inp" placeholder="Add a comment…" />
+      <input
+        class="inp"
+        placeholder="Add a comment…"
+        value={@draft}
+        $change={:edit_draft}
+        $key_down.enter="add_comment"
+      />
 
       <div class="ed-foot">
         <button
@@ -79,6 +86,29 @@ defmodule Offgrid.Components.StopEditor do
 
   # Clearing the time is as legitimate as setting one - an untimed stop sinks to the end
   # of its day rather than disappearing.
+  # Enter with nothing typed is not a remark. Anything else becomes a row at once - the list
+  # above reads the same rows, so it grows in the same frame - and travels afterwards.
+  def action(:add_comment, _params, component) do
+    if String.trim(component.state.draft) == "" do
+      component
+    else
+      {:ok, _comment} =
+        %{
+          author_id: component.props.user_id,
+          body: component.state.draft,
+          stop_id: component.props.stop_id
+        }
+        |> Comment.new()
+        |> DB.create()
+
+      put_state(component, :draft, "")
+    end
+  end
+
+  def action(:edit_draft, params, component) do
+    put_state(component, :draft, params.event.value)
+  end
+
   def action(:set_time, params, component) do
     :ok = DB.update(Stop, component.props.stop_id, %{time: params.time})
 

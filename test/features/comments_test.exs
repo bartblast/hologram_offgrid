@@ -1,5 +1,6 @@
 defmodule Offgrid.Features.CommentsTest do
   use Offgrid.FeatureCase, async: false
+  use Hologram.DB
 
   alias Hologram.DB
   alias Offgrid.Entities.Comment
@@ -46,6 +47,45 @@ defmodule Offgrid.Features.CommentsTest do
     # Coloured by the order they first spoke here: Tom first, Anna second.
     session |> find(css(".cmt", at: 0)) |> assert_has(css("i.a"))
     session |> find(css(".cmt", at: 1)) |> assert_has(css("i.t"))
+  end
+
+  feature "leaves a remark from the editor, which shows before it travels", %{
+    session: session,
+    stop: stop,
+    trip: trip
+  } do
+    remark(person("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
+
+    session =
+      session
+      |> sign_in_as_member(trip)
+      |> click(css(".stop", text: "Ryokan"))
+      |> assert_has(css(".cmt", count: 1))
+      # Enter on an empty field leaves nothing behind.
+      |> click(css(".editor .inp", at: 2))
+      |> send_keys([:enter])
+      |> assert_has(css(".cmt", count: 1))
+      |> fill_in(css(".editor .inp", at: 2), with: "I can call tomorrow morning")
+      |> send_keys([:enter])
+      # Appended after Tom's, signed by whoever is typing, in their own colour - and the field
+      # is empty again for the next one.
+      |> assert_has(css(".cmt", count: 2))
+      |> assert_text(css(".cmt", at: 1), "NORA VALE")
+      |> assert_text(css(".cmt", at: 1), "I can call tomorrow morning")
+
+    session |> find(css(".cmt", at: 1)) |> assert_has(css("i.y"))
+    assert session |> find(css(".editor .inp", at: 2)) |> Wallaby.Element.value() == ""
+
+    # It was a row, not a screen: read back from the server, with the author the gate pinned.
+    await_pending_writes(session, 0)
+
+    [comment] =
+      Comment
+      |> filter(body: "I can call tomorrow morning")
+      |> include(:author)
+      |> DB.read()
+
+    assert comment.author.email == "member@offgrid.test"
   end
 
   defp person(name, email) do
