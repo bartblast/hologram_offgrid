@@ -67,25 +67,19 @@ defmodule Offgrid.FeatureHelpers do
   """
   @spec sign_in_as_member(struct, struct) :: struct
   def sign_in_as_member(session, trip) do
-    password = "hakone-2026"
+    sign_in(session, trip, :member, "Nora Vale")
+  end
 
-    user =
-      %{
-        email: "member@offgrid.test",
-        name: "Nora Vale",
-        password_hash: Bcrypt.hash_pwd_salt(password)
-      }
-      |> User.new()
-      |> DB.create!()
+  @doc """
+  Signs the browser in as an organizer of the given trip and returns the session, landing on
+  the trip screen.
 
-    :ok = Auth.grant_role(user, trip, :member)
-
-    session
-    |> visit(LogInPage, [])
-    |> Browser.fill_in(css(".card .inp", at: 0), with: user.email)
-    |> Browser.fill_in(css(".card .inp", at: 1), with: password)
-    |> Browser.click(button("Log in"))
-    |> assert_page(TripPage)
+  The same two halves as `sign_in_as_member/2`, with the role that may change who else is on
+  the trip - which is what the controls for adding and removing people are gated on.
+  """
+  @spec sign_in_as_organizer(struct, struct) :: struct
+  def sign_in_as_organizer(session, trip) do
+    sign_in(session, trip, :organizer, "Iris Kalm")
   end
 
   @doc """
@@ -165,6 +159,28 @@ defmodule Offgrid.FeatureHelpers do
       {:ok, found_query} ->
         raise Wallaby.ExpectationNotMetError, ErrorMessage.message(found_query, :found)
     end
+  end
+
+  defp sign_in(session, trip, role, name) do
+    password = "hakone-2026"
+
+    user =
+      %{
+        email: "#{role}@offgrid.test",
+        name: name,
+        password_hash: Bcrypt.hash_pwd_salt(password)
+      }
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(user, trip, role)
+
+    session
+    |> visit(LogInPage, [])
+    |> Browser.fill_in(css(".card .inp", at: 0), with: user.email)
+    |> Browser.fill_in(css(".card .inp", at: 1), with: password)
+    |> Browser.click(button("Log in"))
+    |> assert_page(TripPage)
   end
 
   defp apply_at(query, elements) do

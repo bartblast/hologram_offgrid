@@ -12,6 +12,28 @@ defmodule Offgrid.Features.MembersTest do
     [trip: create_trip()]
   end
 
+  feature "an organizer removes somebody from the trip", %{session: session, trip: trip} do
+    anna =
+      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(anna, trip, :member)
+
+    session
+    |> sign_in_as_organizer(trip)
+    |> click(css(".facepile"))
+    |> assert_text(css(".members"), "Anna Kim")
+    # The only cross on screen is Anna's - an organizer's own row carries none.
+    |> click(css(".mrow u"))
+    # Gone from the panel without a round trip, and the organizer is who is left.
+    |> assert_has(css(".mrow", count: 1))
+    |> assert_text(css(".members"), "Iris Kalm")
+    |> refute_has(css(".mrow u"))
+    |> assert_text(css(".members"), "Iris Kalm")
+    |> refute_has(css(".mrow u"))
+  end
+
   feature "opens and closes the list from the faces", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)
@@ -40,6 +62,23 @@ defmodule Offgrid.Features.MembersTest do
     |> assert_text(css(".members"), "Anna Kim")
     # The stronger of Anna's two roles is the one that survives.
     |> assert_text(css(".members"), "ORGANIZER")
+  end
+
+  feature "shows a member the list without the remove controls", %{session: session, trip: trip} do
+    anna =
+      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(anna, trip, :member)
+
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".facepile"))
+    |> assert_text(css(".members"), "Anna Kim")
+    # A member sees who is on the trip and cannot change it, which the browser decides for
+    # itself from the grants it holds.
+    |> refute_has(css(".mrow u"))
   end
 
   feature "shows everyone on the trip", %{session: session, trip: trip} do

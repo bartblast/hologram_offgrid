@@ -30,6 +30,7 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
     |> put_state(:trip_id, trip_id())
+    |> put_state(:user_id, server.user_id)
     |> put_state(:you, initials(server.user_id))
   end
 
@@ -102,7 +103,7 @@ defmodule Offgrid.Pages.TripPage do
 
         {%if @members_open}
           <div class="members">
-            <MembersList cid="members_list" trip_id={@trip_id} />
+            <MembersList cid="members_list" trip_id={@trip_id} user_id={@user_id} />
           </div>
         {/if}
 
