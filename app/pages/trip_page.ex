@@ -41,10 +41,13 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:box, nil)
     |> put_state(:details_open, false)
+    |> put_state(:drawing, false)
     |> put_state(:maps_open, false)
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
     |> put_state(:placing, false)
+    |> put_state(:stroke, [])
+    |> put_state(:stroke_box, nil)
     |> put_state(:trip_id, params.id)
     |> put_state(:user_id, server.user_id)
     |> put_state(:you, initials(server.user_id))
@@ -65,6 +68,27 @@ defmodule Offgrid.Pages.TripPage do
         <div id="canvas" class={canvas_class(@placing)} $click="place_stop"></div>
 
         <MapRoute cid="map_route" trip_id={@trip_id} />
+
+        <!-- TODO: the stroke itself. $pointer_down, $pointer_move and $pointer_up do not
+             dispatch in Hologram 0.11.1 - see the findings log - so this surface takes the
+             pointer and the actions below it are unreachable until that lands. -->
+        <div
+          class={ink_class(@drawing)}
+          $pointer_down="ink_start"
+          $pointer_move="ink_extend"
+          $pointer_up="ink_finish"
+        ></div>
+
+        <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {%if @stroke != []}
+            <polyline
+              class="ink-mine"
+              points={stroke_points(@stroke)}
+              fill="none"
+              vector-effect="non-scaling-stroke"
+            />
+          {/if}
+        </svg>
 
         <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
@@ -129,7 +153,7 @@ defmodule Offgrid.Pages.TripPage do
           </div>
         {/if}
 
-        <button class="pen" type="button" aria-label="Draw">✎</button>
+        <button class={pen_class(@drawing)} type="button" aria-label="Draw" $click="toggle_drawing">✎</button>
 
         <!-- The canvas only ever resizes with the window, and a window binding is torn down with
              the page, where an observer on the canvas fires once more as the element goes and
@@ -138,6 +162,10 @@ defmodule Offgrid.Pages.TripPage do
 
         {%if @placing}
           <document $key_down.escape="toggle_placing" />
+        {/if}
+
+        {%if @drawing}
+          <document $key_down.escape="toggle_drawing" />
         {/if}
 
         {%if @details_open}
@@ -181,6 +209,31 @@ defmodule Offgrid.Pages.TripPage do
     put_page(component, LogInPage)
   end
 
+  # A stroke is kept in screen space while it is being drawn - hundredths of the map's width
+  # and height - so a move costs one division and nothing else. It becomes real coordinates
+  # when it is saved, which is the only moment the map's bounds matter.
+  def action(:ink_extend, params, component) do
+    if component.state.stroke_box do
+      put_state(component, :stroke, [ink_point(component, params.event) | component.state.stroke])
+    else
+      component
+    end
+  end
+
+  def action(:ink_finish, _params, component) do
+    component
+    |> put_state(:stroke, [])
+    |> put_state(:stroke_box, nil)
+  end
+
+  # The box is read from the DOM once, when the pointer goes down, and held for the length of
+  # the stroke: every move after it is arithmetic, with nothing asked of the browser.
+  def action(:ink_start, params, component) do
+    started = put_state(component, :stroke_box, Box.size("canvas"))
+
+    put_state(started, :stroke, [ink_point(started, params.event)])
+  end
+
   # The one place the app asks the DOM anything. Runs once from init/3, right after the first
   # render, and again on every change of the canvas's size, so the box in state is never the
   # box of a window that has since been resized.
@@ -212,10 +265,22 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :members_open, !component.state.members_open)
   end
 
+  # The two armed modes are exclusive: the map can be waiting for a place or waiting for ink,
+  # and arming either is how you say which.
+  def action(:toggle_drawing, _params, component) do
+    component
+    |> put_state(:drawing, !component.state.drawing)
+    |> put_state(:placing, false)
+    |> put_state(:stroke, [])
+    |> put_state(:stroke_box, nil)
+  end
+
   # + arms placing rather than creating anything, and a second press disarms. Adding a stop
   # means pointing at a place, so the button has exactly one meaning and the map has the other.
   def action(:toggle_placing, _params, component) do
-    put_state(component, :placing, !component.state.placing)
+    component
+    |> put_state(:drawing, false)
+    |> put_state(:placing, !component.state.placing)
   end
 
   # Only the server can forget an identity - the session cookie it is kept in is the
@@ -234,6 +299,26 @@ defmodule Offgrid.Pages.TripPage do
   defp canvas_class(true), do: "canvas placing"
 
   defp canvas_class(false), do: "canvas"
+
+  defp ink_class(true), do: "ink on"
+
+  defp ink_class(false), do: "ink"
+
+  defp ink_point(component, event) do
+    {width, height} = component.state.stroke_box
+
+    {event.offset_x / width * 100, event.offset_y / height * 100}
+  end
+
+  defp pen_class(true), do: "pen on"
+
+  defp pen_class(false), do: "pen"
+
+  defp stroke_points(stroke) do
+    stroke
+    |> Enum.reverse()
+    |> Enum.map_join(" ", fn {x, y} -> "#{x},#{y}" end)
+  end
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the
   # control they are rather than as decoration that happened to be clicked.
