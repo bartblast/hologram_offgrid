@@ -6,7 +6,7 @@ defmodule Offgrid.Pages.LogInPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.User
   alias Offgrid.Pages.SignUpPage
-  alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   @moduledoc """
   The card a person comes back through.
@@ -77,8 +77,10 @@ defmodule Offgrid.Pages.LogInPage do
     put_state(component, :error, "Wrong email or password.")
   end
 
+  # The trips list rather than a trip: which trip a person wants is theirs to say, and after
+  # this commit a trip's page needs one named in its address.
   def action(:logged_in, _params, component) do
-    put_page(component, TripPage)
+    put_page(component, TripsPage)
   end
 
   def command(:log_in, params, server) do

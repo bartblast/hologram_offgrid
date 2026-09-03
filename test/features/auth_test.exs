@@ -9,6 +9,7 @@ defmodule Offgrid.Features.AuthTest do
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   @password "hakone-2026"
 
@@ -33,16 +34,19 @@ defmodule Offgrid.Features.AuthTest do
     |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
     |> fill_in(css(".card .inp", at: 2), with: @password)
     |> click(button("Create account"))
-    # Signing up leaves you signed in, so the trip screen carries the face the name derives
-    # - NV rather than either of the two placeholder faces beside it.
-    |> assert_page(TripPage)
+    # Signing up leaves you signed in and on your trips, which for a new account is none of
+    # them. The trip screen is where the proof shows: it carries the face the name derives -
+    # NV rather than either of the two placeholder faces beside it.
+    |> assert_page(TripsPage)
+    |> visit(TripPage)
     |> assert_text(css(".faces"), "NV")
     |> click(button("Log out"))
     |> assert_page(LogInPage)
     |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
     |> fill_in(css(".card .inp", at: 1), with: @password)
     |> click(button("Log in"))
-    |> assert_page(TripPage)
+    |> assert_page(TripsPage)
+    |> visit(TripPage)
     |> assert_text(css(".faces"), "NV")
   end
 

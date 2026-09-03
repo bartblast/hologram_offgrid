@@ -6,7 +6,7 @@ defmodule Offgrid.Pages.SignUpPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
-  alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   @moduledoc """
   The card a person makes an account on, over the same map every other screen shows.
@@ -94,8 +94,10 @@ defmodule Offgrid.Pages.SignUpPage do
     put_state(component, :error, params.message)
   end
 
+  # Somebody signing up is on no trips at all, so the list they land on is empty and says so -
+  # which is the screen that offers them the way to make one.
   def action(:signed_up, _params, component) do
-    put_page(component, TripPage)
+    put_page(component, TripsPage)
   end
 
   def command(:sign_up, params, server) do

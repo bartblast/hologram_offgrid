@@ -13,6 +13,7 @@ defmodule Offgrid.FeatureHelpers do
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
   alias Wallaby.Browser
   alias Wallaby.Element
   alias Wallaby.Query
@@ -180,7 +181,10 @@ defmodule Offgrid.FeatureHelpers do
     |> Browser.fill_in(css(".card .inp", at: 0), with: user.email)
     |> Browser.fill_in(css(".card .inp", at: 1), with: password)
     |> Browser.click(button("Log in"))
-    |> assert_page(TripPage)
+    # Signing in lands on the trips list. The helper goes on to the trip screen, which is what
+    # every caller of it is actually after.
+    |> assert_page(TripsPage)
+    |> visit(TripPage, [])
   end
 
   defp apply_at(query, elements) do

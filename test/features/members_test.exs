@@ -5,6 +5,7 @@ defmodule Offgrid.Features.MembersTest do
   alias Hologram.DB
   alias Offgrid.Entities.User
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   setup do
     truncate_trip_data()
@@ -146,7 +147,8 @@ defmodule Offgrid.Features.MembersTest do
     |> fill_in(css(".card .inp", at: 0), with: stranger.email)
     |> fill_in(css(".card .inp", at: 1), with: password)
     |> click(button("Log in"))
-    |> assert_page(TripPage)
+    |> assert_page(TripsPage)
+    |> visit(TripPage)
     # Opened, so that finding nothing is the policy answering and not the panel being shut.
     |> click(css(".facepile"))
     # The list is read through the trip's own rules, so a stranger is told nothing about who
