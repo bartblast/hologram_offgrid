@@ -7,11 +7,13 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Box
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
+  alias Offgrid.Components.Ink
   alias Offgrid.Components.MapRoute
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
+  alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
@@ -75,6 +77,8 @@ defmodule Offgrid.Pages.TripPage do
           $pointer_move="ink_extend"
           $pointer_up="ink_finish"
         ></div>
+
+        <Ink cid="ink" trip_id={@trip_id} />
 
         <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {%if @stroke != []}
@@ -217,10 +221,13 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
-  # Lifting the pointer ends the stroke and leaves it on screen. It is drawn and nowhere else
-  # yet - G6 is what turns it into a row - so putting the pen away is what discards it.
+  # Lifting the pointer is what makes the stroke a row. The screen-space points become real
+  # coordinates here - the one moment the map's bounds matter - and the local copy is dropped
+  # in the same breath, because from now on the saved layer draws it.
+  #
+  # A stroke of one point is a tap, not a line, and is not worth a row.
   def action(:ink_finish, _params, component) do
-    put_state(component, :stroke_box, nil)
+    finish(component, Enum.reverse(component.state.stroke))
   end
 
   # The box is read from the DOM once, when the pointer goes down, and held for the length of
@@ -308,15 +315,70 @@ defmodule Offgrid.Pages.TripPage do
 
   defp ink_class(false), do: "ink"
 
+  # The colour a person's ink takes on this trip: the order they first drew on it. Two people
+  # drawing at once while offline can pick the same one, which is a cost worth a sentence
+  # rather than a coordinator.
+  defp ink_color(sketches, user_id) do
+    drawn_by = sketches |> Enum.map(& &1.author_id) |> Enum.uniq()
+
+    case Enum.find_index(drawn_by, &(&1 == user_id)) do
+      nil -> Enum.at(["#ff2d55", "#af52de", "#30b0c7"], rem(length(drawn_by), 3))
+      index -> Enum.at(["#ff2d55", "#af52de", "#30b0c7"], rem(index, 3))
+    end
+  end
+
   defp ink_point(component, event) do
     {width, height} = component.state.stroke_box
 
     {event.offset_x / width * 100, event.offset_y / height * 100}
   end
 
+  defp finish(component, [_single_point]), do: idle_stroke(component)
+
+  defp finish(component, []), do: idle_stroke(component)
+
+  defp finish(component, points) do
+    trip =
+      Trip
+      |> filter(id: component.state.trip_id)
+      |> include(:basemap)
+      |> one()
+      |> DB.read()
+
+    sketches = Sketch |> filter(trip_id: trip.id) |> order_by([:created_at, :id]) |> DB.read()
+
+    {:ok, _sketch} =
+      %{
+        author_id: component.state.user_id,
+        color: ink_color(sketches, component.state.user_id),
+        points: sketch_points(points, trip),
+        trip_id: trip.id
+      }
+      |> Sketch.new()
+      |> DB.create()
+
+    idle_stroke(component)
+  end
+
+  defp idle_stroke(component) do
+    component
+    |> put_state(:stroke, [])
+    |> put_state(:stroke_box, nil)
+  end
+
   defp pen_class(true), do: "pen on"
 
   defp pen_class(false), do: "pen"
+
+  # Screen space to the coordinates a sketch is stored in. The percentages ARE offsets in a
+  # box a hundred wide, so the projection needs no other size.
+  defp sketch_points(points, trip) do
+    Enum.map_join(points, " ", fn {x, y} ->
+      {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
+
+      "#{lat},#{lng}"
+    end)
+  end
 
   defp stroke_points(stroke) do
     stroke

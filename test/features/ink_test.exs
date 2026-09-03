@@ -1,6 +1,10 @@
 defmodule Offgrid.Features.InkTest do
   use Offgrid.FeatureCase, async: false
+  use Hologram.DB
 
+  alias Hologram.DB
+  alias Offgrid.Entities.Sketch
+  alias Offgrid.Pages.TripPage
   alias Wallaby.Element
 
   setup do
@@ -21,24 +25,44 @@ defmodule Offgrid.Features.InkTest do
     session
     |> click(css(".pen"))
     |> assert_has(css(".pen.on"))
-    |> drag([{200, 150}, {240, 170}, {280, 210}, {320, 200}])
-    # The stroke stays on screen after the pointer lifts - it is drawn and nowhere else.
+    # Still pressed: the live stroke follows the pointer and nothing has been written.
+    |> press([{200, 150}, {240, 170}, {280, 210}, {320, 200}])
     |> assert_has(css(".ink-paper polyline", visible: :any))
 
-    # One point per event, in the order the pointer went, and none of it sent anywhere.
+    # One point per event, in the order the pointer went, left to right.
     points = stroke_points(session)
     assert length(points) == 4
-    assert await_pending_writes(session, 0)
-
-    # Left to right, so the points went in the order they were made rather than reversed.
-    [{first_x, _}, {_, _}, {_, _}, {last_x, _}] = points
+    [{first_x, _first_y}, _second, _third, {last_x, _last_y}] = points
     assert first_x < last_x
 
-    # Putting the pen away discards it - G6 is what makes a stroke last.
+    assert DB.read(Sketch) == []
+
+    # Lifting the pointer is what writes it. The live layer hands over to the saved one.
+    session = release(session, {320, 200})
+
+    assert await_pending_writes(session, 0)
+           |> refute_has(css(".ink-paper polyline", visible: :any))
+           |> assert_has(css(".ink-saved polyline", count: 1, visible: :any))
+
+    [sketch] = Sketch |> include(:author) |> DB.read()
+    assert sketch.author.email == "member@offgrid.test"
+    assert sketch.color == "#ff2d55"
+    assert length(String.split(sketch.points, " ", trim: true)) == 4
+
+    # And it is still there on a reload, drawn from the row rather than from the screen.
     session
-    |> send_keys([:escape])
-    |> refute_has(css(".pen.on"))
-    |> refute_has(css(".ink-paper polyline", visible: :any))
+    |> visit(TripPage, id: trip.id)
+    |> assert_has(css(".ink-saved polyline", count: 1, visible: :any))
+  end
+
+  feature "a tap is not a line", %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".pen"))
+    |> drag([{200, 150}])
+    |> refute_has(css(".ink-saved polyline", visible: :any))
+
+    assert DB.read(Sketch) == []
   end
 
   feature "the map can only be waiting for one thing", %{session: session, trip: trip} do
@@ -54,24 +78,38 @@ defmodule Offgrid.Features.InkTest do
     |> refute_has(css(".addb.on"))
   end
 
-  # A press, a run of moves and a release over the ink layer, at offsets from its top left.
-  defp drag(session, points) do
-    [{first_x, first_y} | rest] = points
-    {last_x, last_y} = List.last(points)
-
+  # A press and a run of moves over the ink layer, at offsets from its top left, with the
+  # pointer still down at the end.
+  defp press(session, [{first_x, first_y} | rest]) do
     moves =
       Enum.map_join(rest, "\n", fn {x, y} ->
         "layer.dispatchEvent(new PointerEvent('pointermove', at(#{x}, #{y})));"
       end)
 
+    ink_script(session, """
+    layer.dispatchEvent(new PointerEvent('pointerdown', at(#{first_x}, #{first_y})));
+    #{moves}
+    """)
+  end
+
+  defp release(session, {x, y}) do
+    ink_script(session, "layer.dispatchEvent(new PointerEvent('pointerup', at(#{x}, #{y})));")
+  end
+
+  # A whole stroke, pressed and released.
+  defp drag(session, points) do
+    session
+    |> press(points)
+    |> release(List.last(points))
+  end
+
+  defp ink_script(session, body) do
     execute_script(session, """
     const layer = document.querySelector('.ink');
     const box = layer.getBoundingClientRect();
     const at = (x, y) => ({bubbles: true, clientX: box.left + x, clientY: box.top + y});
 
-    layer.dispatchEvent(new PointerEvent('pointerdown', at(#{first_x}, #{first_y})));
-    #{moves}
-    layer.dispatchEvent(new PointerEvent('pointerup', at(#{last_x}, #{last_y})));
+    #{body}
     """)
 
     session
