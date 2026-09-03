@@ -14,11 +14,9 @@ defmodule OffgridWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", OffgridWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
-  end
+  # No routes of its own. Every page this app serves is a Hologram page, and `Hologram.Router`
+  # is plugged ahead of this one in the endpoint - what stays here is the browser pipeline it
+  # shares, the error views, and the dev-only dashboard below.
 
   # Other scopes may use custom stacks.
   # scope "/api", OffgridWeb do

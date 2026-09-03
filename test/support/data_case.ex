@@ -33,11 +33,20 @@ defmodule Offgrid.DataCase do
   end
 
   @doc """
-  Sets up the sandbox based on the test tags.
+  Sets up the sandbox based on the test tags, when there is a repo to set it up against.
+
+  `Offgrid.Repo` is commented out of the supervision tree while Hologram's own data layer is
+  what this app stores anything in, so a checkout here would raise before a test that never
+  touches Ecto had begun - which is what the error view tests were doing. This changes nothing
+  once the repo is started again: it is only absent that it steps aside.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Offgrid.Repo, shared: not tags[:async])
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+    if Process.whereis(Offgrid.Repo) do
+      pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Offgrid.Repo, shared: not tags[:async])
+      on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+    end
+
+    :ok
   end
 
   @doc """
