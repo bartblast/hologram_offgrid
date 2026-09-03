@@ -104,6 +104,44 @@ defmodule Offgrid.Features.TripPageTest do
     |> assert_has(css(".pin.mine"))
   end
 
+  feature "draws the route through the pins in itinerary order", %{session: session, trip: trip} do
+    # Tokyo first in the database and second on the itinerary, so that the line following
+    # creation order would run the wrong way.
+    %{
+      date: ~D[2026-03-29],
+      lat: 35.6762,
+      lng: 139.6503,
+      name: "Shibuya crossing",
+      trip_id: trip.id
+    }
+    |> Stop.new()
+    |> DB.create!()
+
+    %{date: ~D[2026-03-28], lat: 35.0116, lng: 135.7681, name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    # Off this map, so not on the line either.
+    %{date: ~D[2026-03-30], lat: 52.23, lng: 21.01, name: "Old Town at dusk", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session = sign_in_as_member(session, trip)
+
+    assert_has(session, css(".pin", count: 2))
+
+    points =
+      session
+      |> find(css(".lay polyline"))
+      |> Wallaby.Element.attr("points")
+
+    # Two pairs, Kyoto then Tokyo: the first x is the smaller one, because Kyoto is west.
+    assert [kyoto, tokyo] = String.split(points, " ")
+    [kyoto_x, _kyoto_y] = String.split(kyoto, ",")
+    [tokyo_x, _tokyo_y] = String.split(tokyo, ",")
+    assert String.to_float(kyoto_x) < String.to_float(tokyo_x)
+  end
+
   feature "an organizer deletes a trip that has an itinerary",
           %{session: session, trip: trip} do
     %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}

@@ -7,6 +7,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Box
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
+  alias Offgrid.Components.MapRoute
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
@@ -20,9 +21,8 @@ defmodule Offgrid.Pages.TripPage do
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
-  The stops and their pins come from the database. The route and the faces are still
-  hardcoded - the rest of phases F and G replaces them in turn, without changing the shape
-  of the screen.
+  The stops, their pins and the route between them come from the database. The faces are
+  still hardcoded - phase G replaces them, without changing the shape of the screen.
   """
 
   route "/trips/:id"
@@ -64,14 +64,7 @@ defmodule Offgrid.Pages.TripPage do
              element around it, so the surface is a plain element with nothing inside. -->
         <div id="canvas" class={canvas_class(@placing)} $click="place_stop"></div>
 
-        <svg class="lay" viewBox="0 0 1200 520" preserveAspectRatio="none" aria-hidden="true">
-          <polyline
-            class="rt"
-            points="492,125 528,104 540,208 684,385"
-            fill="none"
-            vector-effect="non-scaling-stroke"
-          />
-        </svg>
+        <MapRoute cid="map_route" trip_id={@trip_id} />
 
         <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
@@ -211,28 +204,6 @@ defmodule Offgrid.Pages.TripPage do
     if component.state.placing, do: place(component, params.event), else: component
   end
 
-  defp place(component, event) do
-    {width, height} = component.state.box
-
-    trip =
-      Trip
-      |> filter(id: component.state.trip_id)
-      |> include(:basemap)
-      |> one()
-      |> DB.read()
-
-    {lat, lng} = Geo.from_offset(event.offset_x, event.offset_y, width, height, trip.basemap)
-
-    {:ok, stop} =
-      %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
-      |> Stop.new()
-      |> DB.create()
-
-    component
-    |> put_state(:open_stop_id, stop.id)
-    |> put_state(:placing, false)
-  end
-
   def action(:toggle_maps, _params, component) do
     put_state(component, :maps_open, !component.state.maps_open)
   end
@@ -290,5 +261,27 @@ defmodule Offgrid.Pages.TripPage do
     |> Enum.take(2)
     |> Enum.map_join("", &String.first/1)
     |> String.upcase()
+  end
+
+  defp place(component, event) do
+    {width, height} = component.state.box
+
+    trip =
+      Trip
+      |> filter(id: component.state.trip_id)
+      |> include(:basemap)
+      |> one()
+      |> DB.read()
+
+    {lat, lng} = Geo.from_offset(event.offset_x, event.offset_y, width, height, trip.basemap)
+
+    {:ok, stop} =
+      %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
+      |> Stop.new()
+      |> DB.create()
+
+    component
+    |> put_state(:open_stop_id, stop.id)
+    |> put_state(:placing, false)
   end
 end
