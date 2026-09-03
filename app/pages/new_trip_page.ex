@@ -33,6 +33,8 @@ defmodule Offgrid.Pages.NewTripPage do
 
   layout Offgrid.DefaultLayout
 
+  middleware Offgrid.Middleware.RequireSession
+
   def init(_params, component, _server) do
     component
     |> put_state(:basemap_id, nil)

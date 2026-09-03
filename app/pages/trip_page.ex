@@ -33,6 +33,8 @@ defmodule Offgrid.Pages.TripPage do
 
   layout Offgrid.DefaultLayout
 
+  middleware Offgrid.Middleware.RequireSession
+
   # init/3 runs on the server on every page load, client-side navigations included, so the
   # session's user is readable here and the row it names can be looked up.
   #

@@ -61,6 +61,32 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(LogInPage)
   end
 
+  feature "keeps a visitor with no session off every screen that needs one",
+          %{session: session, trip: trip} do
+    session
+    |> visit("/trips")
+    |> assert_page(LogInPage)
+    |> visit("/trips/new")
+    |> assert_page(LogInPage)
+    |> visit("/trips/#{trip.id}")
+    |> assert_page(LogInPage)
+  end
+
+  feature "keeps somebody already signed in off the cards for signing in", %{session: session} do
+    register("nora@offgrid.test")
+
+    session
+    |> visit(LogInPage)
+    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 1), with: @password)
+    |> click(button("Log in"))
+    |> assert_page(TripsPage)
+    |> visit("/log-in")
+    |> assert_page(TripsPage)
+    |> visit("/sign-up")
+    |> assert_page(TripsPage)
+  end
+
   feature "refuses a password that does not match", %{session: session, trip: trip} do
     register("nora@offgrid.test")
 
@@ -71,10 +97,11 @@ defmodule Offgrid.Features.AuthTest do
     |> click(button("Log in"))
     |> assert_text(css(".card"), "Wrong email or password.")
     |> assert_page(LogInPage)
-    # Asking the trip screen is what proves no session was made. Refuting the log-out
-    # control on the log-in card would pass whatever happened - that card never has one.
-    |> visit(TripPage, id: trip.id)
-    |> refute_has(css(".signout"))
+    # Asking for the trip screen is what proves no session was made: with none, the gate sends
+    # you straight back to the card. Refuting the log-out control on the card itself would pass
+    # whatever happened - that card never has one.
+    |> visit("/trips/#{trip.id}")
+    |> assert_page(LogInPage)
   end
 
   feature "refuses an address nobody registered, in the same words", %{session: session} do

@@ -19,6 +19,8 @@ defmodule Offgrid.Pages.TripsPage do
 
   layout Offgrid.DefaultLayout
 
+  middleware Offgrid.Middleware.RequireSession
+
   def template do
     ~HOLO"""
     <div class="app">

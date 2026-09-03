@@ -33,6 +33,8 @@ defmodule Offgrid.Pages.SignUpPage do
 
   layout Offgrid.DefaultLayout
 
+  middleware Offgrid.Middleware.GuestOnly
+
   def init(_params, component, _server) do
     component
     |> put_state(:email, "")
