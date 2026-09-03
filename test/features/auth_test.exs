@@ -41,6 +41,26 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_text(css(".faces"), "NV")
   end
 
+  feature "sends a signed-in visitor at the root to their trips", %{session: session} do
+    register("nora@offgrid.test")
+
+    session
+    |> visit(LogInPage)
+    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 1), with: @password)
+    |> click(button("Log in"))
+    |> assert_page(TripsPage)
+    # The root is a door, not a page: it never renders, so what proves it is where you end up.
+    |> visit("/")
+    |> assert_page(TripsPage)
+  end
+
+  feature "sends a visitor at the root with no session to the log-in card", %{session: session} do
+    session
+    |> visit("/")
+    |> assert_page(LogInPage)
+  end
+
   feature "refuses a password that does not match", %{session: session, trip: trip} do
     register("nora@offgrid.test")
 
