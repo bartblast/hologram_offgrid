@@ -149,7 +149,7 @@ defmodule Offgrid.Pages.TripPage do
         {%if @open_stop_id}
           <document $key_down.escape="close_stop" />
 
-          <StopEditor cid="stop_editor" stop_id={@open_stop_id} />
+          <StopEditor cid="stop_editor" stop_id={@open_stop_id} user_id={@user_id} />
         {/if}
       </div>
     </div>

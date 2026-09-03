@@ -3,6 +3,7 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.DB
 
   alias Offgrid.Components.TripCalendar
+  alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
 
   @moduledoc """
@@ -14,11 +15,16 @@ defmodule Offgrid.Components.StopEditor do
 
   Name and description write straight to the database as you type - there is no save
   button, because there is nothing to save to. The day comes from the calendar below.
+
+  The remarks under it are their own rows, read by the stop and written by whoever is on the
+  trip, and shown in the order they were left.
   Time chips arrive in C9, delete in C10, and real comments in phase G.
   """
 
+  prop :comments, [Comment], from_query: &comments_query/1
   prop :stop, Stop, from_query: &stop_query/1
   prop :stop_id, :string
+  prop :user_id, :string
 
   # The panel holds no state of its own - it renders what the page says is open. This
   # exists because a stateful component appearing on an already-loaded page must have
@@ -52,14 +58,12 @@ defmodule Offgrid.Components.StopEditor do
       </div>
 
       <label>Comments</label>
-      <div class="cmt">
-        <b><i class="t"></i>Tom · 2h ago</b>
-        <p>Onsen booked. Dinner is not, someone call them before Friday</p>
-      </div>
-      <div class="cmt">
-        <b><i class="a"></i>Anna · 1h ago</b>
-        <p>I can call tomorrow morning</p>
-      </div>
+      {%for comment <- @comments}
+        <div class="cmt">
+          <b><i class={dot_class(comment, @comments, @user_id)}></i>{comment.author.name} · {clock(comment.created_at)}</b>
+          <p>{comment.body}</p>
+        </div>
+      {/for}
       <input class="inp" placeholder="Add a comment…" />
 
       <div class="ed-foot">
@@ -87,6 +91,40 @@ defmodule Offgrid.Components.StopEditor do
     :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
 
     component
+  end
+
+  # The time the remark was left, as a clock reading rather than "2h ago". A relative time
+  # needs a "now", and this browser's now against a stamp another device wrote is not a
+  # number worth showing - offline for a day, it would say a comment is from the future.
+  defp clock(at), do: "#{pad(at.hour)}:#{pad(at.minute)}"
+
+  # The id breaks a tie in the stamp: ids are time-ordered too, and two remarks written in
+  # the same millisecond must still come out in the order they were left.
+  defp comments_query(stop_id) do
+    Comment
+    |> filter(stop_id: stop_id)
+    |> include(:author)
+    |> order_by([:created_at, :id])
+  end
+
+  # Your own remarks carry your colour. Everyone else's are coloured by the order they first
+  # spoke on this stop - the two the theme names, then the neutral dot for anyone after.
+  defp dot_class(comment, comments, user_id) do
+    if comment.author_id == user_id do
+      "y"
+    else
+      others =
+        comments
+        |> Enum.map(& &1.author_id)
+        |> Enum.reject(&(&1 == user_id))
+        |> Enum.uniq()
+
+      case Enum.find_index(others, &(&1 == comment.author_id)) do
+        0 -> "a"
+        1 -> "t"
+        _later -> "off"
+      end
+    end
   end
 
   defp day_label(date) do
