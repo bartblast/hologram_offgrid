@@ -19,6 +19,11 @@ defmodule Offgrid.Components.MembersList do
   prop :grants, [RoleGrant], from_query: &members_query/1
   prop :trip_id, :string
 
+  # The list holds no state of its own - it renders what the query answers. This exists
+  # because a stateful component appearing on an already-loaded page must have init/2, and
+  # the list appears exactly that way once the popover opens.
+  def init(_props, component), do: component
+
   def template do
     ~HOLO"""
     {%for grant <- @grants}

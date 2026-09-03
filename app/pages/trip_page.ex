@@ -27,6 +27,7 @@ defmodule Offgrid.Pages.TripPage do
   # session's user is readable here and the row it names can be looked up.
   def init(_params, component, server) do
     component
+    |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
     |> put_state(:trip_id, trip_id())
     |> put_state(:you, initials(server.user_id))
@@ -79,20 +80,31 @@ defmodule Offgrid.Pages.TripPage do
           <StopsList cid="stops_list" open_stop_id={@open_stop_id} />
         </div>
 
-        <div class="faces">
-          <div class="face a">AK</div>
-          <div class="face t">TR</div>
+        <div class={faces_class(@members_open)}>
+          <button
+            class="facepile"
+            type="button"
+            aria-label="Who is on this trip"
+            $click="toggle_members"
+          >
+            <div class="face a">AK</div>
+            <div class="face t">TR</div>
+            {%if @you}
+              <div class="face y">{@you}</div>
+            {/if}
+          </button>
+
           {%if @you}
-            <div class="face y">{@you}</div>
             <span class="sep"></span>
             <button class="signout" type="button" $click="log_out">Log out</button>
           {/if}
         </div>
 
-        <!-- TODO: move into the members popover, which opens from the faces above. -->
-        <div class="members">
-          <MembersList cid="members_list" trip_id={@trip_id} />
-        </div>
+        {%if @members_open}
+          <div class="members">
+            <MembersList cid="members_list" trip_id={@trip_id} />
+          </div>
+        {/if}
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
 
@@ -143,6 +155,10 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :open_stop_id, params.id)
   end
 
+  def action(:toggle_members, _params, component) do
+    put_state(component, :members_open, !component.state.members_open)
+  end
+
   # Only the server can forget an identity - the session cookie it is kept in is the
   # server's to write, which is why this is a command and not an action.
   def command(:log_out, _params, server) do
@@ -150,6 +166,12 @@ defmodule Offgrid.Pages.TripPage do
     |> delete_user_id()
     |> put_action(:logged_out)
   end
+
+  # The pill takes an accent ring while the panel it opens is up, so the faces read as the
+  # control they are rather than as decoration that happened to be clicked.
+  defp faces_class(true), do: "faces open"
+
+  defp faces_class(false), do: "faces"
 
   # TODO: read the trip from the route once this page is addressed per trip. Until then the
   # screen shows whichever trip is oldest, which in a seeded database is the only one.
