@@ -5,6 +5,7 @@ defmodule Offgrid.Components.MembersList do
   alias Hologram.Auth
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Entities.Trip
+  alias Offgrid.Entities.User
 
   @moduledoc """
   Who is on this trip, read from the grants themselves.
@@ -21,19 +22,25 @@ defmodule Offgrid.Components.MembersList do
   holds both - so the store answers a row per grant and the collapsing to a row per person
   happens here.
 
-  Whether the remove controls are drawn at all is a question the browser answers for itself,
-  from the grants it already holds. Nobody is asked, and the answer is the same one the server
-  gives when the write lands.
+  Whether the controls for changing the list are drawn at all is a question the browser answers
+  for itself, from the grants it already holds. Nobody is asked, and the answer is the same one
+  the server gives when the write lands.
+
+  Adding is by email and the lookup is LOCAL, the way `MemberChips` does it when a trip is
+  first made: every account syncs to every browser, so turning an address into a person needs
+  no network. Both changing verbs are plain actions, which is what puts membership on the
+  offline side of the line.
   """
 
   prop :grants, [RoleGrant], from_query: &members_query/1
   prop :trip_id, :string
   prop :user_id, :string
+  prop :users, [User], from_query: &users_query/0
 
-  # The list holds no state of its own - it renders what the query answers. This exists
-  # because a stateful component appearing on an already-loaded page must have init/2, and
-  # the list appears exactly that way once the popover opens.
-  def init(_props, component), do: component
+  # The typed address is this component's own business, so it is state here. init/2 rather than
+  # init/3 because the list appears in a page that is ALREADY loaded, the way the stop editor
+  # does - the popover opening is what mounts it, on the client.
+  def init(_props, component), do: blank(component)
 
   def template do
     ~HOLO"""
@@ -46,7 +53,29 @@ defmodule Offgrid.Components.MembersList do
         {/if}
       </div>
     {/for}
+
+    {%if may_add?(@user_id, @trip_id)}
+      <input
+        class="inp"
+        placeholder="Add a member by email…"
+        value={@email}
+        $change={:edit_email}
+        $key_down.enter="add"
+      />
+
+      {%if @error}
+        <p class="err">{@error}</p>
+      {/if}
+    {/if}
     """
+  end
+
+  def action(:add, _params, component) do
+    add(component, found(component.props.users, component.state.email))
+  end
+
+  def action(:edit_email, params, component) do
+    put_state(component, :email, params.event.value)
   end
 
   # Removing somebody means they hold NO role on the trip afterwards, so every grant of theirs
@@ -69,6 +98,33 @@ defmodule Offgrid.Components.MembersList do
     |> filter(resource_id: trip_id)
     |> include(:user)
     |> order_by(:created_at)
+  end
+
+  # An address the app has never seen is the one failure worth naming - anything else and the
+  # person is already in the list above, which says it without a sentence. Granting a role
+  # somebody already holds keeps the grant they have, so adding twice is not an error either.
+  defp add(component, nil) do
+    put_state(component, :error, "Nobody here uses that address.")
+  end
+
+  defp add(component, user) do
+    :ok = Auth.grant_role(user, trip(component.props.trip_id), :member)
+
+    blank(component)
+  end
+
+  defp blank(component) do
+    component
+    |> put_state(:email, "")
+    |> put_state(:error, nil)
+  end
+
+  defp found(users, email) do
+    Enum.find(users, &(&1.email == email))
+  end
+
+  defp may_add?(user_id, trip_id) do
+    Auth.can?(user_id, :grant_role, trip(trip_id))
   end
 
   # The strongest role each person holds, which for Offgrid means organizer over member, since
@@ -99,4 +155,6 @@ defmodule Offgrid.Components.MembersList do
 
   # The gate and the write both name the trip, and neither reads anything off it but its id.
   defp trip(trip_id), do: %Trip{id: trip_id}
+
+  defp users_query, do: order_by(User, :email)
 end

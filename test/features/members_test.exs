@@ -12,6 +12,23 @@ defmodule Offgrid.Features.MembersTest do
     [trip: create_trip()]
   end
 
+  feature "an organizer adds somebody by email", %{session: session, trip: trip} do
+    %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
+    |> User.new()
+    |> DB.create!()
+
+    session
+    |> sign_in_as_organizer(trip)
+    |> click(css(".facepile"))
+    # Anna has an account and no role on this trip, so she is nowhere in the list yet.
+    |> assert_has(css(".mrow", count: 1))
+    |> fill_in(css(".members .inp"), with: "anna@offgrid.test")
+    |> send_keys([:enter])
+    # The address became a person without asking the server - every account is already here.
+    |> assert_text(css(".members"), "Anna Kim")
+    |> assert_has(css(".mrow", count: 2))
+  end
+
   feature "an organizer removes somebody from the trip", %{session: session, trip: trip} do
     anna =
       %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
@@ -32,6 +49,16 @@ defmodule Offgrid.Features.MembersTest do
     |> refute_has(css(".mrow u"))
     |> assert_text(css(".members"), "Iris Kalm")
     |> refute_has(css(".mrow u"))
+  end
+
+  feature "names an address nobody uses", %{session: session, trip: trip} do
+    session
+    |> sign_in_as_organizer(trip)
+    |> click(css(".facepile"))
+    |> fill_in(css(".members .inp"), with: "nobody@offgrid.test")
+    |> send_keys([:enter])
+    |> assert_text(css(".members"), "Nobody here uses that address.")
+    |> assert_has(css(".mrow", count: 1))
   end
 
   feature "opens and closes the list from the faces", %{session: session, trip: trip} do
@@ -77,8 +104,9 @@ defmodule Offgrid.Features.MembersTest do
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     # A member sees who is on the trip and cannot change it, which the browser decides for
-    # itself from the grants it holds.
+    # itself from the grants it holds - neither the crosses nor the field to add by.
     |> refute_has(css(".mrow u"))
+    |> refute_has(css(".members .inp"))
   end
 
   feature "shows everyone on the trip", %{session: session, trip: trip} do
