@@ -8,6 +8,7 @@ defmodule Offgrid.Features.TripPageTest do
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   setup do
     truncate_trip_data()
@@ -72,6 +73,33 @@ defmodule Offgrid.Features.TripPageTest do
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".lp-title"), "Japan, cherry run")
     |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
+  end
+
+  feature "an organizer deletes a trip that has an itinerary",
+          %{session: session, trip: trip} do
+    %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session
+    |> sign_in_as_organizer(trip)
+    |> assert_text(css(".lpanel"), "Fushimi Inari")
+    |> click(css(".lp-title"))
+    |> click(button("Delete trip"))
+    |> assert_page(TripsPage)
+    |> await_pending_writes(0)
+    # The stops went with it. A trip's stop requires its trip, so one left behind would have
+    # been refused by the database rather than orphaned.
+    |> assert_text(css(".card"), "No trips yet")
+  end
+
+  feature "shows a member the trip card without a way to delete it",
+          %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".lp-title"))
+    |> assert_text(css(".card"), "Trip details")
+    |> refute_has(button("Delete trip"))
   end
 
   feature "draws the map the trip is on, and changes it", %{session: session, trip: trip} do

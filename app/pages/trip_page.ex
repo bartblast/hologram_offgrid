@@ -123,7 +123,7 @@ defmodule Offgrid.Pages.TripPage do
         {%if @details_open}
           <document $key_down.escape="close_details" />
 
-          <TripDetails cid="trip_details" trip_id={@trip_id} />
+          <TripDetails cid="trip_details" trip_id={@trip_id} user_id={@user_id} />
         {/if}
 
         {%if @open_stop_id}
