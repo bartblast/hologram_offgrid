@@ -2,8 +2,10 @@ defmodule Offgrid.Components.TripsList do
   use Hologram.Component
   use Hologram.DB
 
+  alias Hologram.UI.Link
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Trip
+  alias Offgrid.Pages.TripPage
 
   @moduledoc """
   Every trip the person is on, newest first.
@@ -29,15 +31,14 @@ defmodule Offgrid.Components.TripsList do
 
     <div class="rowlist">
       {%for trip <- @trips}
-        <!-- TODO: point at the trip's own address once the page has one. -->
-        <a class="triprow" href="/">
+        <Link class="triprow" to={TripPage, id: trip.id}>
           <BasemapThumb slug={trip.basemap.slug} />
 
           <div>
             <b>{trip.name}</b>
             <span>{days(trip)}</span>
           </div>
-        </a>
+        </Link>
       {/for}
     </div>
     """

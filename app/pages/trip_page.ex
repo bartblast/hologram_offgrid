@@ -7,7 +7,6 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
 
@@ -19,17 +18,23 @@ defmodule Offgrid.Pages.TripPage do
   screen.
   """
 
-  route "/"
+  route "/trips/:id"
+
+  param :id, :string
 
   layout Offgrid.DefaultLayout
 
   # init/3 runs on the server on every page load, client-side navigations included, so the
   # session's user is readable here and the row it names can be looked up.
-  def init(_params, component, server) do
+  #
+  # The trip comes from the address rather than from a lookup. Nothing here checks that the id
+  # names a trip this person may see: the queries below it are the check, and they answer with
+  # the rows the trip's own rules allow - none, for a trip that is not theirs.
+  def init(params, component, server) do
     component
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
-    |> put_state(:trip_id, trip_id())
+    |> put_state(:trip_id, params.id)
     |> put_state(:user_id, server.user_id)
     |> put_state(:you, initials(server.user_id))
   end
@@ -57,6 +62,7 @@ defmodule Offgrid.Pages.TripPage do
         <div class="lpanel">
           <div class="lp-head">
             <div>
+              <!-- TODO: E8d gives the header the trip's own name and dates. -->
               <div class="lp-title">Japan, blossom run</div>
               <div class="lp-dates">28 Mar – 6 Apr</div>
             </div>
@@ -78,7 +84,7 @@ defmodule Offgrid.Pages.TripPage do
             </div>
           </div>
 
-          <StopsList cid="stops_list" open_stop_id={@open_stop_id} />
+          <StopsList cid="stops_list" open_stop_id={@open_stop_id} trip_id={@trip_id} />
         </div>
 
         <div class={faces_class(@members_open)}>
@@ -173,18 +179,6 @@ defmodule Offgrid.Pages.TripPage do
   defp faces_class(true), do: "faces open"
 
   defp faces_class(false), do: "faces"
-
-  # TODO: read the trip from the route once this page is addressed per trip. Until then the
-  # screen shows whichever trip is oldest, which in a seeded database is the only one.
-  defp trip_id do
-    trip =
-      Trip
-      |> order_by(:created_at)
-      |> one()
-      |> DB.read()
-
-    if trip, do: trip.id
-  end
 
   # Nobody signed in has no face to show, which is a real state until the auth gates land.
   defp initials(nil), do: nil

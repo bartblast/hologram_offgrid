@@ -184,7 +184,7 @@ defmodule Offgrid.FeatureHelpers do
     # Signing in lands on the trips list. The helper goes on to the trip screen, which is what
     # every caller of it is actually after.
     |> assert_page(TripsPage)
-    |> visit(TripPage, [])
+    |> visit(TripPage, id: trip.id)
   end
 
   defp apply_at(query, elements) do

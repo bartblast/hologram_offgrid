@@ -17,7 +17,8 @@ defmodule Offgrid.Components.StopsList do
   """
 
   prop :open_stop_id, :string, default: nil
-  prop :stops, [Stop], from_query: &stops_query/0
+  prop :stops, [Stop], from_query: &stops_query/1
+  prop :trip_id, :string
 
   def template do
     ~HOLO"""
@@ -63,8 +64,13 @@ defmodule Offgrid.Components.StopsList do
 
   defp row_class(_stop, _open_stop_id), do: "stop"
 
-  defp stops_query do
-    order_by(Stop, [:date, :time, :created_at])
+  # Scoped by trip, now that a screen is one trip's. The policy would already keep another
+  # person's stops out, but it would not keep out the ones on YOUR other trips - membership is
+  # what it answers, not which trip is on screen.
+  defp stops_query(trip_id) do
+    Stop
+    |> filter(trip_id: trip_id)
+    |> order_by([:date, :time, :created_at])
   end
 
   # The second line of a row: the time when there is one, then whatever the stop says

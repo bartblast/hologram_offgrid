@@ -1,10 +1,7 @@
 defmodule Offgrid.Features.AuthTest do
   use Offgrid.FeatureCase, async: false
 
-  alias Hologram.Auth.RoleGrant
   alias Hologram.DB
-  alias Hologram.DB.Connection
-  alias Hologram.DB.Mapper
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.SignUpPage
@@ -13,21 +10,15 @@ defmodule Offgrid.Features.AuthTest do
 
   @password "hakone-2026"
 
-  # Both tables in one statement: the grant store holds two foreign keys into the user
-  # table, and PostgreSQL refuses to truncate a table something references unless the
-  # referencing one goes with it.
+  # A trip, because the trip screen is where a face proves a session was made, and that screen
+  # now needs one named in its address.
   setup do
-    tables =
-      Enum.map_join([RoleGrant, User], ", ", fn entity_type ->
-        ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
-      end)
+    truncate_trip_data()
 
-    {:ok, _result} = Connection.query("TRUNCATE #{tables}", [])
-
-    :ok
+    [trip: create_trip()]
   end
 
-  feature "signs up, logs out and comes back", %{session: session} do
+  feature "signs up, logs out and comes back", %{session: session, trip: trip} do
     session
     |> visit(SignUpPage)
     |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
@@ -38,7 +29,7 @@ defmodule Offgrid.Features.AuthTest do
     # them. The trip screen is where the proof shows: it carries the face the name derives -
     # NV rather than either of the two placeholder faces beside it.
     |> assert_page(TripsPage)
-    |> visit(TripPage)
+    |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
     |> click(button("Log out"))
     |> assert_page(LogInPage)
@@ -46,11 +37,11 @@ defmodule Offgrid.Features.AuthTest do
     |> fill_in(css(".card .inp", at: 1), with: @password)
     |> click(button("Log in"))
     |> assert_page(TripsPage)
-    |> visit(TripPage)
+    |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
   end
 
-  feature "refuses a password that does not match", %{session: session} do
+  feature "refuses a password that does not match", %{session: session, trip: trip} do
     register("nora@offgrid.test")
 
     session
@@ -62,7 +53,7 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(LogInPage)
     # Asking the trip screen is what proves no session was made. Refuting the log-out
     # control on the log-in card would pass whatever happened - that card never has one.
-    |> visit(TripPage)
+    |> visit(TripPage, id: trip.id)
     |> refute_has(css(".signout"))
   end
 

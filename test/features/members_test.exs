@@ -130,7 +130,7 @@ defmodule Offgrid.Features.MembersTest do
     |> assert_text(css(".members"), "MEMBER")
   end
 
-  feature "shows nothing to somebody with no role on the trip", %{session: session} do
+  feature "shows nothing to somebody with no role on the trip", %{session: session, trip: trip} do
     password = "hakone-2026"
 
     stranger =
@@ -148,7 +148,7 @@ defmodule Offgrid.Features.MembersTest do
     |> fill_in(css(".card .inp", at: 1), with: password)
     |> click(button("Log in"))
     |> assert_page(TripsPage)
-    |> visit(TripPage)
+    |> visit(TripPage, id: trip.id)
     # Opened, so that finding nothing is the policy answering and not the panel being shut.
     |> click(css(".facepile"))
     # The list is read through the trip's own rules, so a stranger is told nothing about who
