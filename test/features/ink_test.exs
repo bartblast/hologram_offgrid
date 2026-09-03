@@ -92,6 +92,32 @@ defmodule Offgrid.Features.InkTest do
     assert remaining.id == theirs.id
   end
 
+  feature "draws in the colour that was picked", %{session: session, trip: trip} do
+    session =
+      session
+      |> sign_in_as_member(trip)
+      # The row of colours belongs to the pen, so it is not there until the pen is out.
+      |> refute_has(css(".cpop"))
+      |> click(css(".pen"))
+      |> assert_has(css(".cdot", count: 5))
+      |> assert_has(css(".cdot.on", count: 1))
+      |> click(css(".cdot", at: 1))
+      |> drag([{200, 150}, {240, 190}, {280, 230}])
+
+    assert await_pending_writes(session, 0)
+
+    [sketch] = DB.read(Sketch)
+    assert sketch.color == "#af52de"
+
+    # And the line on screen is drawn in it, read from the row rather than from the picker.
+    stroke =
+      session
+      |> find(css(".ink-line", visible: :any))
+      |> Element.attr("stroke")
+
+    assert stroke == "#af52de"
+  end
+
   feature "a tap is not a line", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)

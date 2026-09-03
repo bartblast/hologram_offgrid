@@ -44,6 +44,7 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:box, nil)
     |> put_state(:details_open, false)
     |> put_state(:drawing, false)
+    |> put_state(:ink_color, "#ff2d55")
     |> put_state(:maps_open, false)
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
@@ -155,6 +156,20 @@ defmodule Offgrid.Pages.TripPage do
         {/if}
 
         <button class={pen_class(@drawing)} type="button" aria-label="Draw" $click="toggle_drawing">✎</button>
+
+        {%if @drawing}
+          <div class="cpop">
+            {%for color <- ink_colors()}
+              <button
+                class={cdot_class(color, @ink_color)}
+                type="button"
+                style={"background:#{color}"}
+                aria-label={color}
+                $click={:pick_color, color: color}
+              ></button>
+            {/for}
+          </div>
+        {/if}
 
         <!-- The canvas only ever resizes with the window, and a window binding is torn down with
              the page, where an observer on the canvas fires once more as the element goes and
@@ -272,6 +287,10 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :maps_open, !component.state.maps_open)
   end
 
+  def action(:pick_color, params, component) do
+    put_state(component, :ink_color, params.color)
+  end
+
   def action(:toggle_members, _params, component) do
     put_state(component, :members_open, !component.state.members_open)
   end
@@ -291,6 +310,7 @@ defmodule Offgrid.Pages.TripPage do
   def action(:toggle_placing, _params, component) do
     component
     |> put_state(:drawing, false)
+    |> put_state(:ink_color, "#ff2d55")
     |> put_state(:placing, !component.state.placing)
   end
 
@@ -311,21 +331,16 @@ defmodule Offgrid.Pages.TripPage do
 
   defp canvas_class(false), do: "canvas"
 
+  defp cdot_class(color, color), do: "cdot on"
+
+  defp cdot_class(_color, _chosen), do: "cdot"
+
   defp ink_class(true), do: "ink on"
 
   defp ink_class(false), do: "ink"
 
-  # The colour a person's ink takes on this trip: the order they first drew on it. Two people
-  # drawing at once while offline can pick the same one, which is a cost worth a sentence
-  # rather than a coordinator.
-  defp ink_color(sketches, user_id) do
-    drawn_by = sketches |> Enum.map(& &1.author_id) |> Enum.uniq()
-
-    case Enum.find_index(drawn_by, &(&1 == user_id)) do
-      nil -> Enum.at(["#ff2d55", "#af52de", "#30b0c7"], rem(length(drawn_by), 3))
-      index -> Enum.at(["#ff2d55", "#af52de", "#30b0c7"], rem(index, 3))
-    end
-  end
+  # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
+  defp ink_colors, do: ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
 
   defp ink_point(component, event) do
     {width, height} = component.state.stroke_box
@@ -345,12 +360,10 @@ defmodule Offgrid.Pages.TripPage do
       |> one()
       |> DB.read()
 
-    sketches = Sketch |> filter(trip_id: trip.id) |> order_by([:created_at, :id]) |> DB.read()
-
     {:ok, _sketch} =
       %{
         author_id: component.state.user_id,
-        color: ink_color(sketches, component.state.user_id),
+        color: component.state.ink_color,
         points: sketch_points(points, trip),
         trip_id: trip.id
       }
