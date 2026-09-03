@@ -92,10 +92,11 @@ defmodule Offgrid.Components.MembersList do
   end
 
   # Oldest first, which puts whoever made the trip at the top without storing an order - they
-  # hold the creator's grant, written in the same breath as the trip.
+  # hold the creator's grant, written in the same breath as the trip. The nil beside the id is
+  # the type-wide grant, "member of every trip", which the gate counts and this list must too.
   defp members_query(trip_id) do
     RoleGrant
-    |> filter(resource_id: trip_id)
+    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
     |> include(:user)
     |> order_by(:created_at)
   end

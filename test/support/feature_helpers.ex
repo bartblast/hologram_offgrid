@@ -119,7 +119,7 @@ defmodule Offgrid.FeatureHelpers do
 
   One statement because PostgreSQL refuses to truncate a table something references unless
   the referencing one goes with it, and these form a chain: a stop names its trip, a trip
-  names its basemap, and a grant names both a user and the resource it is held on.
+  names its basemap, and a grant names both a user and the entity it is held on.
   """
   @spec truncate_trip_data() :: :ok
   def truncate_trip_data do
