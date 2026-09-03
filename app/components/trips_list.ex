@@ -4,6 +4,7 @@ defmodule Offgrid.Components.TripsList do
 
   alias Hologram.UI.Link
   alias Offgrid.Components.BasemapThumb
+  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripPage
 
@@ -36,36 +37,13 @@ defmodule Offgrid.Components.TripsList do
 
           <div>
             <b>{trip.name}</b>
-            <span>{days(trip)}</span>
+            <span>{Dates.span(trip.starts_on, trip.ends_on)}</span>
           </div>
         </Link>
       {/for}
     </div>
     """
   end
-
-  # "28 Mar – 6 Apr", and "28 – 30 Mar" when one month covers it - repeating the month is
-  # noise the reader has to look past.
-  defp days(%Trip{ends_on: ends_on, starts_on: starts_on}) do
-    if starts_on.month == ends_on.month do
-      "#{starts_on.day} – #{ends_on.day} #{month(ends_on.month)}"
-    else
-      "#{starts_on.day} #{month(starts_on.month)} – #{ends_on.day} #{month(ends_on.month)}"
-    end
-  end
-
-  defp month(1), do: "Jan"
-  defp month(2), do: "Feb"
-  defp month(3), do: "Mar"
-  defp month(4), do: "Apr"
-  defp month(5), do: "May"
-  defp month(6), do: "Jun"
-  defp month(7), do: "Jul"
-  defp month(8), do: "Aug"
-  defp month(9), do: "Sep"
-  defp month(10), do: "Oct"
-  defp month(11), do: "Nov"
-  defp month(12), do: "Dec"
 
   defp trips_query do
     Trip

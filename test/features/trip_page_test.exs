@@ -41,9 +41,14 @@ defmodule Offgrid.Features.TripPageTest do
     :ok = Auth.grant_role(signed_in_user(), other_trip, :member)
 
     session
+    # The header names the trip in the address, not the one the mockup was drawn from.
+    |> assert_text(css(".lp-title"), "Japan, blossom run")
+    |> assert_text(css(".lp-dates"), "28 MAR – 6 APR")
     |> assert_text(css(".lpanel"), "Fushimi Inari")
     |> refute_has(css(".stop", text: "Old Town at dusk"))
     |> visit(TripPage, id: other_trip.id)
+    |> assert_text(css(".lp-title"), "Warsaw, long weekend")
+    |> assert_text(css(".lp-dates"), "15 – 17 MAY")
     |> assert_text(css(".lpanel"), "Old Town at dusk")
     |> refute_has(css(".stop", text: "Fushimi Inari"))
   end

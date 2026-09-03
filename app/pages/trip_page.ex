@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
+  alias Offgrid.Components.TripHeader
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
@@ -61,11 +62,7 @@ defmodule Offgrid.Pages.TripPage do
 
         <div class="lpanel">
           <div class="lp-head">
-            <div>
-              <!-- TODO: E8d gives the header the trip's own name and dates. -->
-              <div class="lp-title">Japan, blossom run</div>
-              <div class="lp-dates">28 Mar – 6 Apr</div>
-            </div>
+            <TripHeader cid="trip_header" trip_id={@trip_id} />
             <div class="lp-tools">
               <button class="swatch" type="button" aria-label="Change map">
                 <svg viewBox="0 0 90 44" aria-hidden="true">

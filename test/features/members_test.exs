@@ -149,6 +149,8 @@ defmodule Offgrid.Features.MembersTest do
     |> click(button("Log in"))
     |> assert_page(TripsPage)
     |> visit(TripPage, id: trip.id)
+    # The trip's own rules answer the header too, so a stranger is not even told its name.
+    |> refute_has(css(".lp-title"))
     # Opened, so that finding nothing is the policy answering and not the panel being shut.
     |> click(css(".facepile"))
     # The list is read through the trip's own rules, so a stranger is told nothing about who
