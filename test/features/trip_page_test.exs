@@ -75,6 +75,35 @@ defmodule Offgrid.Features.TripPageTest do
     |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
   end
 
+  feature "pins the stops that have a place, and only those",
+          %{session: session, trip: trip} do
+    # Kyoto, inside the Japan bounds.
+    %{date: ~D[2026-03-28], lat: 35.0116, lng: 135.7681, name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    # Warsaw, which is on another of the app's maps entirely.
+    %{date: ~D[2026-03-29], lat: 52.23, lng: 21.01, name: "Old Town at dusk", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    # No place at all, which is every stop until somebody points at the map.
+    %{date: ~D[2026-03-30], name: "Somewhere to decide", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session
+    |> sign_in_as_member(trip)
+    # All three are on the itinerary. Only the one with a place on this map is on the map.
+    |> assert_text(css(".lpanel"), "Somewhere to decide")
+    |> assert_has(css(".pin", count: 1))
+    |> assert_text(css(".pin"), "FUSHIMI INARI")
+    # Clicking the pin opens the same editor the itinerary row opens.
+    |> click(css(".pin"))
+    |> assert_text(css(".editor"), "Fushimi Inari")
+    |> assert_has(css(".pin.mine"))
+  end
+
   feature "an organizer deletes a trip that has an itinerary",
           %{session: session, trip: trip} do
     %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}

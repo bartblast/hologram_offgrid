@@ -5,6 +5,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.MapPicker
+  alias Offgrid.Components.MapPins
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
@@ -16,9 +17,9 @@ defmodule Offgrid.Pages.TripPage do
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
-  The stops come from the database. The pins, the route and the faces are still
-  hardcoded - phases F and G replace them in turn, without changing the shape of the
-  screen.
+  The stops and their pins come from the database. The route and the faces are still
+  hardcoded - the rest of phases F and G replaces them in turn, without changing the shape
+  of the screen.
   """
 
   route "/trips/:id"
@@ -59,10 +60,7 @@ defmodule Offgrid.Pages.TripPage do
           />
         </svg>
 
-        <div class="pin" style="left:41%;top:24%"><i></i><em>Haneda → Shinjuku</em></div>
-        <div class="pin" style="left:44%;top:20%"><i></i><em>Coffee at Fuglen</em></div>
-        <div class="pin mine" style="left:45%;top:40%"><i></i><em>Ryokan</em></div>
-        <div class="pin" style="left:57%;top:74%"><i></i><em>Fushimi Inari</em></div>
+        <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
         <div class="lpanel">
           <div class="lp-head">

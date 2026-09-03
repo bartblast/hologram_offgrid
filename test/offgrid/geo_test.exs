@@ -8,6 +8,25 @@ defmodule Offgrid.GeoTest do
   # The seeded Japan basemap, which is the one every other test draws on.
   @japan %Basemap{max_lat: 45.6, max_lng: 146.0, min_lat: 30.9, min_lng: 128.4}
 
+  describe "within?/3" do
+    test "admits a place inside the bounds" do
+      assert within?(35.0116, 135.7681, @japan)
+    end
+
+    test "admits a place exactly on a corner" do
+      assert within?(45.6, 128.4, @japan)
+    end
+
+    test "refuses a place north of the bounds" do
+      refute within?(50.0, 135.7681, @japan)
+    end
+
+    test "refuses a place west of the bounds" do
+      # Warsaw, which is on another of the app's maps entirely.
+      refute within?(52.23, 21.01, @japan)
+    end
+  end
+
   describe "to_percent/3" do
     test "puts the north-west corner at the top left" do
       assert to_percent(45.6, 128.4, @japan) == {0.0, 0.0}

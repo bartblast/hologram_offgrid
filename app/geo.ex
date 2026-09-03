@@ -15,6 +15,18 @@ defmodule Offgrid.Geo do
   alias Offgrid.Entities.Basemap
 
   @doc """
+  Returns true when the place falls inside the basemap's bounds, edges included.
+
+  A place outside them has nowhere to be drawn, which is what keeps a stop in Warsaw off a map
+  of Japan rather than off its edge.
+  """
+  @spec within?(float, float, Basemap.t()) :: boolean
+  def within?(lat, lng, basemap) do
+    lat >= basemap.min_lat and lat <= basemap.max_lat and
+      lng >= basemap.min_lng and lng <= basemap.max_lng
+  end
+
+  @doc """
   Returns where the place sits on the basemap, as percentages of its width and height from the
   top left.
 
