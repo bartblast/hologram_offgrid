@@ -9,6 +9,7 @@ defmodule Offgrid.FeatureHelpers do
   alias Hologram.DB.Mapper
   alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Comment
+  alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
@@ -120,15 +121,19 @@ defmodule Offgrid.FeatureHelpers do
 
   One statement because PostgreSQL refuses to truncate a table something references unless
   the referencing one goes with it, and these form a chain: a comment names its stop and its
-  author, a stop names its trip, a trip names its basemap, and a grant names both a user and
-  the entity it is held on.
+  author, a sketch names its trip and its author, a stop names its trip, a trip names its
+  basemap, and a grant names both a user and the entity it is held on.
   """
   @spec truncate_trip_data() :: :ok
   def truncate_trip_data do
     tables =
-      Enum.map_join([Comment, Stop, Trip, RoleGrant, User, Basemap], ", ", fn entity_type ->
-        ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
-      end)
+      Enum.map_join(
+        [Comment, Sketch, Stop, Trip, RoleGrant, User, Basemap],
+        ", ",
+        fn entity_type ->
+          ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
+        end
+      )
 
     {:ok, _result} = Connection.query("TRUNCATE #{tables}", [])
 
