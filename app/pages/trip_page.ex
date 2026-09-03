@@ -50,6 +50,7 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:members_open, false)
       |> put_state(:open_stop_id, nil)
       |> put_state(:ping, nil)
+      |> put_state(:present, [])
       |> put_state(:placing, false)
       |> put_state(:stroke, [])
       |> put_state(:stroke_box, nil)
@@ -57,8 +58,9 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:user_id, server.user_id)
       |> put_state(:you, initials(server.user_id))
       # Queued here and run on the client the moment the page is up, after its first render -
-      # the framework's answer to "on mount", and the only way a page learns how big it is.
-      |> put_action(:measure)
+      # the framework's answer to "on mount". A component may queue one action, so the two
+      # things that can only happen once the page is real share it.
+      |> put_action(:mounted)
 
     {initialized, put_subscription(server, {:trip, params.id})}
   end
@@ -144,8 +146,10 @@ defmodule Offgrid.Pages.TripPage do
             aria-label="Who is on this trip"
             $click="toggle_members"
           >
-            <div class="face a">AK</div>
-            <div class="face t">TR</div>
+            {%for face <- @present}
+              <div class={face_class(face, @present)}>{face.initials}</div>
+            {/for}
+
             {%if @you}
               <div class="face y">{@you}</div>
             {/if}
@@ -268,11 +272,58 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
-  # The one place the app asks the DOM anything. Runs once from init/3, right after the first
-  # render, and again on every change of the canvas's size, so the box in state is never the
-  # box of a window that has since been resized.
+  # The one place the app asks the DOM anything. Runs on every change of the canvas's size, so
+  # the box in state is never the box of a window that has since been resized.
   def action(:measure, _params, component) do
     put_state(component, :box, Box.size("canvas"))
+  end
+
+  # Everything that can only happen once the page is on screen. The box needs a rendered
+  # element to measure, and saying hello needs a session to say it for.
+  def action(:mounted, _params, component) do
+    measured = put_state(component, :box, Box.size("canvas"))
+
+    if component.state.you do
+      put_action(measured, name: :say_hello, delay: 500)
+    else
+      measured
+    end
+  end
+
+  # Saying hello waits, and the wait is the point rather than a stall.
+  #
+  # THE REAL BOUND: nobody may answer us until this browser's event stream is listening, and a
+  # broadcast sent before then is dropped rather than queued - pub/sub does not retry. The page
+  # subscribes while it renders and the stream attaches afterwards, so announcing in the same
+  # frame as the render races our own connection and the answers arrive at nobody.
+  #
+  # Hologram gives an app no way to be told the stream is up, so half a second is POLICY, not a
+  # measurement - long enough here and on the machines this has run on, and a guess everywhere
+  # else. The honest fix is a signal to wait on, which is written up in the findings log.
+  def action(:say_hello, _params, component) do
+    put_command(component, :announce,
+      id: component.state.user_id,
+      initials: component.state.you,
+      trip_id: component.state.trip_id
+    )
+  end
+
+  # Somebody arrived. Add them, and say back that we are here - one answer each, so a new
+  # arrival learns the room without anybody keeping a list of it anywhere.
+  def action(:member_arrived, params, component) do
+    answered =
+      put_command(component, :answer,
+        id: component.state.user_id,
+        initials: component.state.you,
+        trip_id: component.state.trip_id
+      )
+
+    put_state(answered, :present, seen(component.state.present, params))
+  end
+
+  # An answer to our own arrival. Only adds, so the round stops here.
+  def action(:member_here, params, component) do
+    put_state(component, :present, seen(component.state.present, params))
   end
 
   def action(:open_details, _params, component) do
@@ -340,6 +391,28 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:drawing, false)
     |> put_state(:ink_color, "#ff2d55")
     |> put_state(:placing, !component.state.placing)
+  end
+
+  def command(:announce, params, server) do
+    put_broadcast_except(
+      server,
+      {:session, server.session_id},
+      {:trip, params.trip_id},
+      :member_arrived,
+      id: params.id,
+      initials: params.initials
+    )
+  end
+
+  def command(:answer, params, server) do
+    put_broadcast_except(
+      server,
+      {:session, server.session_id},
+      {:trip, params.trip_id},
+      :member_here,
+      id: params.id,
+      initials: params.initials
+    )
   end
 
   # The broadcast leaves out the session that sent it, which has already drawn its own.
@@ -448,6 +521,25 @@ defmodule Offgrid.Pages.TripPage do
     stroke
     |> Enum.reverse()
     |> Enum.map_join(" ", fn {x, y} -> "#{x},#{y}" end)
+  end
+
+  # The theme names two colours for other people, and a neutral dot for anyone after them -
+  # by the order they turned up, which is the only order this screen knows.
+  defp face_class(face, present) do
+    case Enum.find_index(present, &(&1.id == face.id)) do
+      0 -> "face a"
+      1 -> "face t"
+      _later -> "face"
+    end
+  end
+
+  # Somebody already here is not here twice, however many times they say so.
+  defp seen(present, %{id: id, initials: initials}) do
+    if Enum.any?(present, &(&1.id == id)) do
+      present
+    else
+      present ++ [%{id: id, initials: initials}]
+    end
   end
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the

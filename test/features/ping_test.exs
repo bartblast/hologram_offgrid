@@ -43,6 +43,29 @@ defmodule Offgrid.Features.PingTest do
     two |> refute_has(css(".ping"))
   end
 
+  @sessions 2
+  feature "shows who else is on the trip, whoever arrived first",
+          %{sessions: [one, two], trip: trip} do
+    one = sign_in_as_member(one, trip)
+
+    # Alone, the pill carries only your own face.
+    one
+    |> assert_text(css(".faces"), "NV")
+    |> assert_has(css(".face", count: 1))
+
+    two = sign_in_as(two, trip, "Tom Reyes", "tom@offgrid.test")
+
+    # The arrival tells the room, and the room answers - so each sees the other without
+    # either of them asking, and neither is listed twice.
+    one
+    |> assert_text(css(".faces"), "TR")
+    |> assert_has(css(".face", count: 2))
+
+    two
+    |> assert_text(css(".faces"), "NV")
+    |> assert_has(css(".face", count: 2))
+  end
+
   defp sign_in_as(session, trip, name, email) do
     user =
       %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(@password)}
