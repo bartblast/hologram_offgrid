@@ -22,10 +22,17 @@ defmodule Offgrid.Features.StopCrudTest do
     |> sign_in_as_member(trip)
     |> assert_text(css(".lpanel"), "Haneda arrival")
     |> assert_has(css(".day", count: 1))
+    |> refute_has(css(".pin"))
+    # + arms the map rather than creating anything. Pointing at the map is what creates.
     |> click(css(".addb"))
-    # The new stop lands on the first day of the trip and opens its own editor.
+    |> assert_has(css(".addb.on"))
+    |> click(css("#canvas"))
+    # The new stop lands on the first day of the trip, opens its own editor, and is pinned
+    # where the click fell - all from one local write, before anything travels.
     |> assert_text(css(".ed-title"), "New stop")
     |> assert_text(css(".ed-sub"), "Sat 28 Mar")
+    |> assert_has(css(".pin.mine", count: 1))
+    |> refute_has(css(".addb.on"))
     |> fill_in(css(".editor .inp", at: 0), with: "Tsukiji breakfast")
     # The title reads the same row the list does, so renaming shows up in both at once.
     |> assert_text(css(".ed-title"), "Tsukiji breakfast")
@@ -44,5 +51,20 @@ defmodule Offgrid.Features.StopCrudTest do
     |> assert_has(css(".day", count: 1))
     |> refute_has(css(".lpanel", text: "Tsukiji breakfast"))
     |> assert_text(css(".lpanel"), "Haneda arrival")
+  end
+
+  feature "places nothing until armed, and Escape disarms", %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    # Unarmed, the map is just a map.
+    |> click(css("#canvas"))
+    |> refute_has(css(".editor"))
+    |> click(css(".addb"))
+    |> assert_has(css(".addb.on"))
+    |> send_keys([:escape])
+    |> refute_has(css(".addb.on"))
+    |> click(css("#canvas"))
+    |> refute_has(css(".editor"))
+    |> refute_has(css(".pin"))
   end
 end

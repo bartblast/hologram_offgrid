@@ -4,6 +4,7 @@ defmodule Offgrid.Pages.TripPage do
 
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
+  alias Offgrid.Box
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
   alias Offgrid.Components.MembersList
@@ -11,6 +12,8 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.Trip
+  alias Offgrid.Geo
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
 
@@ -36,13 +39,18 @@ defmodule Offgrid.Pages.TripPage do
   # the rows the trip's own rules allow - none, for a trip that is not theirs.
   def init(params, component, server) do
     component
+    |> put_state(:box, nil)
     |> put_state(:details_open, false)
     |> put_state(:maps_open, false)
     |> put_state(:members_open, false)
     |> put_state(:open_stop_id, nil)
+    |> put_state(:placing, false)
     |> put_state(:trip_id, params.id)
     |> put_state(:user_id, server.user_id)
     |> put_state(:you, initials(server.user_id))
+    # Queued here and run on the client the moment the page is up, after its first render -
+    # the framework's answer to "on mount", and the only way a page learns how big it is.
+    |> put_action(:measure)
   end
 
   def template do
@@ -50,6 +58,11 @@ defmodule Offgrid.Pages.TripPage do
     <div class="app">
       <div class="map">
         <Terrain trip_id={@trip_id} />
+
+        <!-- The surface a click lands on, laid over the terrain rather than wrapped around it: a
+             click whose target sits inside a child component does not reach a listener on the
+             element around it, so the surface is a plain element with nothing inside. -->
+        <div id="canvas" class={canvas_class(@placing)} $click="place_stop"></div>
 
         <svg class="lay" viewBox="0 0 1200 520" preserveAspectRatio="none" aria-hidden="true">
           <polyline
@@ -79,7 +92,14 @@ defmodule Offgrid.Pages.TripPage do
                   </g>
                 </svg>
               </button>
-              <button class="addb" type="button" aria-label="Add a stop" $click="add_stop">+</button>
+              <button
+                class={addb_class(@placing)}
+                type="button"
+                aria-label="Add a stop"
+                $click="toggle_placing"
+              >
+                +
+              </button>
             </div>
           </div>
 
@@ -118,6 +138,15 @@ defmodule Offgrid.Pages.TripPage do
 
         <button class="pen" type="button" aria-label="Draw">✎</button>
 
+        <!-- The canvas only ever resizes with the window, and a window binding is torn down with
+             the page, where an observer on the canvas fires once more as the element goes and
+             lands on whichever page comes next. -->
+        <window $resize="measure" />
+
+        {%if @placing}
+          <document $key_down.escape="toggle_placing" />
+        {/if}
+
         {%if @details_open}
           <document $key_down.escape="close_details" />
 
@@ -132,18 +161,6 @@ defmodule Offgrid.Pages.TripPage do
       </div>
     </div>
     """
-  end
-
-  # The whole local-first claim in one function: the row is written to the client's own
-  # database, the list's query sees it in the same frame, and only then does any of it
-  # travel. Nothing here waits for the server.
-  def action(:add_stop, _params, component) do
-    {:ok, stop} =
-      %{date: ~D[2026-03-28], name: "New stop", trip_id: component.state.trip_id}
-      |> Stop.new()
-      |> DB.create()
-
-    put_state(component, :open_stop_id, stop.id)
   end
 
   # Deleting closes in the SAME action, not through a follow-up: the editor renders the
@@ -171,12 +188,49 @@ defmodule Offgrid.Pages.TripPage do
     put_page(component, LogInPage)
   end
 
+  # The one place the app asks the DOM anything. Runs once from init/3, right after the first
+  # render, and again on every change of the canvas's size, so the box in state is never the
+  # box of a window that has since been resized.
+  def action(:measure, _params, component) do
+    put_state(component, :box, Box.size("canvas"))
+  end
+
   def action(:open_details, _params, component) do
     put_state(component, :details_open, true)
   end
 
   def action(:open_stop, params, component) do
     put_state(component, :open_stop_id, params.id)
+  end
+
+  # The whole local-first claim in one function: the click becomes a place, the place becomes
+  # a row in the client's own database, and the itinerary, the pin and the editor all read that
+  # row in the same frame. Only then does any of it travel. Nothing here waits for the server.
+  # A click on the map means nothing until the + has armed it.
+  def action(:place_stop, params, component) do
+    if component.state.placing, do: place(component, params.event), else: component
+  end
+
+  defp place(component, event) do
+    {width, height} = component.state.box
+
+    trip =
+      Trip
+      |> filter(id: component.state.trip_id)
+      |> include(:basemap)
+      |> one()
+      |> DB.read()
+
+    {lat, lng} = Geo.from_offset(event.offset_x, event.offset_y, width, height, trip.basemap)
+
+    {:ok, stop} =
+      %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
+      |> Stop.new()
+      |> DB.create()
+
+    component
+    |> put_state(:open_stop_id, stop.id)
+    |> put_state(:placing, false)
   end
 
   def action(:toggle_maps, _params, component) do
@@ -187,6 +241,12 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :members_open, !component.state.members_open)
   end
 
+  # + arms placing rather than creating anything, and a second press disarms. Adding a stop
+  # means pointing at a place, so the button has exactly one meaning and the map has the other.
+  def action(:toggle_placing, _params, component) do
+    put_state(component, :placing, !component.state.placing)
+  end
+
   # Only the server can forget an identity - the session cookie it is kept in is the
   # server's to write, which is why this is a command and not an action.
   def command(:log_out, _params, server) do
@@ -194,6 +254,15 @@ defmodule Offgrid.Pages.TripPage do
     |> delete_user_id()
     |> put_action(:logged_out)
   end
+
+  # Pressed while armed, so the button itself says the next click on the map will place.
+  defp addb_class(true), do: "addb on"
+
+  defp addb_class(false), do: "addb"
+
+  defp canvas_class(true), do: "canvas placing"
+
+  defp canvas_class(false), do: "canvas"
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the
   # control they are rather than as decoration that happened to be clicked.
