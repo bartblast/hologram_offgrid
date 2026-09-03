@@ -40,23 +40,27 @@ defmodule Offgrid.Pages.TripPage do
   # names a trip this person may see: the queries below it are the check, and they answer with
   # the rows the trip's own rules allow - none, for a trip that is not theirs.
   def init(params, component, server) do
-    component
-    |> put_state(:box, nil)
-    |> put_state(:details_open, false)
-    |> put_state(:drawing, false)
-    |> put_state(:ink_color, "#ff2d55")
-    |> put_state(:maps_open, false)
-    |> put_state(:members_open, false)
-    |> put_state(:open_stop_id, nil)
-    |> put_state(:placing, false)
-    |> put_state(:stroke, [])
-    |> put_state(:stroke_box, nil)
-    |> put_state(:trip_id, params.id)
-    |> put_state(:user_id, server.user_id)
-    |> put_state(:you, initials(server.user_id))
-    # Queued here and run on the client the moment the page is up, after its first render -
-    # the framework's answer to "on mount", and the only way a page learns how big it is.
-    |> put_action(:measure)
+    initialized =
+      component
+      |> put_state(:box, nil)
+      |> put_state(:details_open, false)
+      |> put_state(:drawing, false)
+      |> put_state(:ink_color, "#ff2d55")
+      |> put_state(:maps_open, false)
+      |> put_state(:members_open, false)
+      |> put_state(:open_stop_id, nil)
+      |> put_state(:ping, nil)
+      |> put_state(:placing, false)
+      |> put_state(:stroke, [])
+      |> put_state(:stroke_box, nil)
+      |> put_state(:trip_id, params.id)
+      |> put_state(:user_id, server.user_id)
+      |> put_state(:you, initials(server.user_id))
+      # Queued here and run on the client the moment the page is up, after its first render -
+      # the framework's answer to "on mount", and the only way a page learns how big it is.
+      |> put_action(:measure)
+
+    {initialized, put_subscription(server, {:trip, params.id})}
   end
 
   def template do
@@ -93,6 +97,10 @@ defmodule Offgrid.Pages.TripPage do
         </svg>
 
         <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
+
+        {%if @ping}
+          <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}></div>
+        {/if}
 
         <div class="lpanel">
           <div class="lp-head">
@@ -278,9 +286,28 @@ defmodule Offgrid.Pages.TripPage do
   # The whole local-first claim in one function: the click becomes a place, the place becomes
   # a row in the client's own database, and the itinerary, the pin and the editor all read that
   # row in the same frame. Only then does any of it travel. Nothing here waits for the server.
-  # A click on the map means nothing until the + has armed it.
+  # A click on the map places a stop when the + has armed it, and otherwise points at a place
+  # for everyone else on the trip - which is what a click on a map means when it means nothing
+  # else. The plan wanted a double click and Hologram has no such event, and this is better
+  # than the alternative anyway: no third mode, and the unarmed map stops being inert.
   def action(:place_stop, params, component) do
-    if component.state.placing, do: place(component, params.event), else: component
+    if component.state.placing,
+      do: place(component, params.event),
+      else: ping(component, params.event)
+  end
+
+  # Shown here at once and sent to the others in the same breath, so the person pinging sees
+  # what they did without waiting to hear back.
+  def action(:show_ping, params, component) do
+    component
+    |> put_state(:ping, %{x: params.x, y: params.y})
+    |> put_action(name: :clear_ping, delay: 2_000)
+  end
+
+  # A ping is a gesture, not a record: nothing stores it, and after two seconds it is gone
+  # from every screen it reached.
+  def action(:clear_ping, _params, component) do
+    put_state(component, :ping, nil)
   end
 
   def action(:toggle_maps, _params, component) do
@@ -300,6 +327,7 @@ defmodule Offgrid.Pages.TripPage do
   def action(:toggle_drawing, _params, component) do
     component
     |> put_state(:drawing, !component.state.drawing)
+    |> put_state(:ping, nil)
     |> put_state(:placing, false)
     |> put_state(:stroke, [])
     |> put_state(:stroke_box, nil)
@@ -312,6 +340,18 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:drawing, false)
     |> put_state(:ink_color, "#ff2d55")
     |> put_state(:placing, !component.state.placing)
+  end
+
+  # The broadcast leaves out the session that sent it, which has already drawn its own.
+  def command(:ping, params, server) do
+    put_broadcast_except(
+      server,
+      {:session, server.session_id},
+      {:trip, params.trip_id},
+      :show_ping,
+      x: params.x,
+      y: params.y
+    )
   end
 
   # Only the server can forget an identity - the session cookie it is kept in is the
@@ -377,6 +417,17 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:stroke, [])
     |> put_state(:stroke_box, nil)
+  end
+
+  defp ping(component, event) do
+    {width, height} = component.state.box
+    x = event.offset_x / width * 100
+    y = event.offset_y / height * 100
+
+    component
+    |> put_state(:ping, %{x: x, y: y})
+    |> put_action(name: :clear_ping, delay: 2_000)
+    |> put_command(:ping, trip_id: component.state.trip_id, x: x, y: y)
   end
 
   defp pen_class(true), do: "pen on"
