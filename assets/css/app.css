@@ -71,6 +71,10 @@ overflow: hidden;
 .map { position: absolute; inset: 0; background: var(--water); }
 .map .terrain { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Nothing on the map is prose. Dragging a pin would otherwise start a text selection, and the
+   only text under the pointer is the other pins' names - so they lit up as the hand moved past
+   them. The panels keep their own text selectable; this is furniture. */
+.pin, .ping, .cursor { -webkit-user-select: none; user-select: none; }
 .pin { position: absolute; transform: translate(-50%, -50%); z-index: 2; }
 /* The collar the rest of the map's markers wear - the faces, the ping, somebody else's
    pointer - so a stop sits ON the map rather than in it. 16px rather than 13 because the
