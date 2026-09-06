@@ -134,7 +134,9 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .times button.on { background: var(--ink); border-color: var(--ink); color: var(--panel); }
 .cmt { background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 10px; margin-bottom: 6px; }
 .cmt b { display: flex; align-items: center; gap: 5px; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
-.cmt b i { width: 7px; height: 7px; border-radius: 50%; }
+.cmt b i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.cmt b i.y { background: var(--you); }
+.cmt b i.off { background: transparent; border: 1.5px solid var(--line2); }
 .cmt b i.a { background: var(--anna); }
  .cmt b i.t { background: var(--tom); }
 .cmt p { margin: 3px 0 0; font-size: 13px; color: var(--ink2); }
@@ -173,14 +175,14 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .thumb.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink2); background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
-.chip i { width: 7px; height: 7px; border-radius: 50%; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .chip i.a { background: var(--anna); }
  .chip i.t { background: var(--tom); }
 .chip b { font-weight: 400; color: var(--muted); }
 .note { margin: 7px 0 0; font-family: var(--f-label); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .members { position: absolute; top: 56px; right: 336px; width: 240px; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--line); border-radius: var(--rl); box-shadow: var(--shadow); padding: 10px 13px; z-index: 4; }
 .mrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
-.mrow i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.mrow i { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
 .mrow i.a { background: var(--anna); }
  .mrow i.t { background: var(--tom); }
  .mrow i.y { background: var(--you); }

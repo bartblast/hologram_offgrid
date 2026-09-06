@@ -4,6 +4,7 @@ defmodule Offgrid.Components.MembersList do
 
   alias Hologram.Auth
   alias Hologram.Auth.RoleGrant
+  alias Offgrid.Cast
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
 
@@ -33,6 +34,7 @@ defmodule Offgrid.Components.MembersList do
   """
 
   prop :grants, [RoleGrant], from_query: &members_query/1
+  prop :present, :list, default: []
   prop :trip_id, :string
   prop :user_id, :string
   prop :users, [User], from_query: &users_query/0
@@ -46,7 +48,7 @@ defmodule Offgrid.Components.MembersList do
     ~HOLO"""
     {%for grant <- one_per_person(@grants)}
       <div class="mrow">
-        <i class="off"></i>{grant.user.name} <em>{role_label(grant.role)}</em>
+        <i class={dot_class(@grants, @present, @user_id, grant.user_id)}></i>{grant.user.name} <em>{role_label(grant.role)}</em>
 
         {%if removable?(grant, @user_id, @trip_id)}
           <u $click={:remove, user_id: grant.user_id}>×</u>
@@ -148,6 +150,16 @@ defmodule Offgrid.Components.MembersList do
   # in this panel.
   defp removable?(grant, user_id, trip_id) do
     grant.user_id != user_id and Auth.can?(user_id, :revoke_role, trip(trip_id))
+  end
+
+  # Somebody on the screen right now - you, or anyone the page has seen this session - carries
+  # their cast colour. Anyone else gets the hollow dot: on the trip, not here.
+  defp dot_class(grants, present, user_id, id) do
+    if id == user_id or Enum.any?(present, &(&1.id == id)) do
+      Cast.colour(Cast.members(grants), user_id, id)
+    else
+      "off"
+    end
   end
 
   defp role_label(:member), do: "Member"

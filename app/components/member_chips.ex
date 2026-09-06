@@ -2,6 +2,7 @@ defmodule Offgrid.Components.MemberChips do
   use Hologram.Component
   use Hologram.DB
 
+  alias Offgrid.Cast
   alias Offgrid.Entities.User
 
   @moduledoc """
@@ -31,7 +32,7 @@ defmodule Offgrid.Components.MemberChips do
     <div class="chips">
       {%for invite <- @invites}
         <span class="chip">
-          <i class="a"></i>{invite.email}
+          <i class={chip_class(@invites, invite)}></i>{invite.email}
           <b $click={action: :remove_invite, target: "page", params: %{id: invite.id}}>×</b>
         </span>
       {/for}
@@ -63,6 +64,12 @@ defmodule Offgrid.Components.MemberChips do
 
   # An address the app has never seen is the one failure worth naming - anything else and the
   # person is already on the list, which the chips show without a sentence.
+  # There is no trip yet, so no join order to colour by: the invites are coloured in the order
+  # they were added, which is the order they will join in.
+  defp chip_class(invites, invite) do
+    Cast.colour(Enum.map(invites, & &1.id), nil, invite.id)
+  end
+
   defp blank(component) do
     component
     |> put_state(:email, "")

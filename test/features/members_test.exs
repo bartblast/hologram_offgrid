@@ -59,6 +59,8 @@ defmodule Offgrid.Features.MembersTest do
     |> refute_has(css(".members"))
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Nora Vale")
+    # Your own row carries your own colour: you are here, looking at it.
+    |> assert_has(css(".mrow i.y", count: 1))
     |> click(css(".facepile"))
     |> refute_has(css(".members"))
   end

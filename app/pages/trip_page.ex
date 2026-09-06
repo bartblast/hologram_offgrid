@@ -4,7 +4,9 @@ defmodule Offgrid.Pages.TripPage do
 
   alias Hologram.Auth
   alias Offgrid.Box
+  alias Offgrid.Cast
   alias Offgrid.Clock
+  alias Offgrid.Components.Faces
   alias Offgrid.Components.Ink
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
@@ -159,13 +161,13 @@ defmodule Offgrid.Pages.TripPage do
             aria-label="Who is on this trip"
             $click="toggle_members"
           >
-            {%for face <- @present}
-              <div class={face_class(face, @present)}>{face.initials}</div>
-            {/for}
-
-            {%if @you}
-              <div class="face y">{@you}</div>
-            {/if}
+            <Faces
+              cid="faces"
+              present={@present}
+              trip_id={@trip_id}
+              user_id={@user_id}
+              you={@you}
+            />
           </button>
 
           {%if @you}
@@ -176,7 +178,12 @@ defmodule Offgrid.Pages.TripPage do
 
         {%if @members_open}
           <div class="members">
-            <MembersList cid="members_list" trip_id={@trip_id} user_id={@user_id} />
+            <MembersList
+              cid="members_list"
+              present={@present}
+              trip_id={@trip_id}
+              user_id={@user_id}
+            />
           </div>
         {/if}
 
@@ -622,16 +629,6 @@ defmodule Offgrid.Pages.TripPage do
     |> Enum.map_join(" ", fn {x, y} -> "#{x},#{y}" end)
   end
 
-  # The theme names two colours for other people, and a neutral dot for anyone after them -
-  # by the order they turned up, which is the only order this screen knows.
-  defp face_class(face, present) do
-    case Enum.find_index(present, &(&1.id == face.id)) do
-      0 -> "face a"
-      1 -> "face t"
-      _later -> "face"
-    end
-  end
-
   # Somebody already here is not here twice, however many times they say so.
   defp seen(present, %{id: id, initials: initials}) do
     if Enum.any?(present, &(&1.id == id)) do
@@ -657,16 +654,7 @@ defmodule Offgrid.Pages.TripPage do
       |> one()
       |> DB.read()
 
-    if user, do: initials_of(user.name)
-  end
-
-  # The first letter of each of the first two words, which is what the mockup's faces are.
-  defp initials_of(name) do
-    name
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
+    if user, do: Cast.initials(user.name)
   end
 
   defp place(component, event) do

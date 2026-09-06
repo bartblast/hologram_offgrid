@@ -2,6 +2,7 @@ defmodule Offgrid.Features.PingTest do
   use Offgrid.FeatureCase, async: false
   use Hologram.DB
 
+  alias Hologram.Auth
   alias Hologram.DB
 
   setup do
@@ -61,6 +62,39 @@ defmodule Offgrid.Features.PingTest do
     two
     |> assert_text(css(".faces"), "NV")
     |> assert_has(css(".face", count: 2))
+
+    # Coloured by the cast: you are always yours, and the first other member is violet - so
+    # each of them is violet on the other's screen, whoever arrived first.
+    one
+    |> assert_has(css(".face.y", text: "NV"))
+    |> assert_has(css(".face.a", text: "TR"))
+
+    two
+    |> assert_has(css(".face.y", text: "TR"))
+    |> assert_has(css(".face.a", text: "NV"))
+  end
+
+  @sessions 2
+  feature "marks who is here in the members list", %{sessions: [one, two], trip: trip} do
+    one = sign_in_as_member(one, trip)
+    two = sign_in_as(two, trip, "Tom Reyes", "tom@offgrid.test")
+
+    # On the trip, never opened it today.
+    anna = create_user("Anna Kim", "anna@offgrid.test")
+    :ok = Auth.grant_role(anna, trip, :member)
+
+    assert_text(one, css(".faces"), "TR")
+
+    # Nora and Tom carry their colours, Anna the hollow "not here" dot - three rows, and the
+    # dot says which of them is looking at the trip right now.
+    one
+    |> click(css(".facepile"))
+    |> assert_has(css(".mrow", count: 3))
+    |> assert_has(css(".mrow i.y", count: 1))
+    |> assert_has(css(".mrow i.a", count: 1))
+    |> assert_has(css(".mrow i.off", count: 1))
+
+    assert_text(two, css(".faces"), "NV")
   end
 
   # The trip's live channel is the one door the policy does not guard - a stranger's rows are

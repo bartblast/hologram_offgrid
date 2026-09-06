@@ -2,6 +2,7 @@ defmodule Offgrid.Features.CommentsTest do
   use Offgrid.FeatureCase, async: false
   use Hologram.DB
 
+  alias Hologram.Auth
   alias Hologram.DB
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
@@ -27,6 +28,10 @@ defmodule Offgrid.Features.CommentsTest do
     tom = create_user("Tom Reyes", "tom@offgrid.test")
     anna = create_user("Anna Kim", "anna@offgrid.test")
 
+    # Tom joined first, then Anna - which is what decides their colours, not who spoke first.
+    :ok = Auth.grant_role(tom, trip, :member)
+    :ok = Auth.grant_role(anna, trip, :member)
+
     # Tom spoke first, so his remark is first whatever the alphabet says.
     remark(tom, stop, "Onsen booked. Dinner is not, someone call them before Friday")
     remark(anna, stop, "I can call tomorrow morning")
@@ -43,7 +48,7 @@ defmodule Offgrid.Features.CommentsTest do
       |> assert_text(css(".cmt", at: 1), "ANNA KIM")
       |> assert_text(css(".cmt", at: 1), "I can call tomorrow morning")
 
-    # Coloured by the order they first spoke here: Tom first, Anna second.
+    # Coloured by the cast - Tom the first other member, Anna the second.
     session |> find(css(".cmt", at: 0)) |> assert_has(css("i.a"))
     session |> find(css(".cmt", at: 1)) |> assert_has(css("i.t"))
 

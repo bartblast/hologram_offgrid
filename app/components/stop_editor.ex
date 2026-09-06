@@ -2,11 +2,14 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
   use Hologram.DB
 
+  alias Hologram.Auth.RoleGrant
   alias Hologram.DB
+  alias Offgrid.Cast
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.Trip
 
   @moduledoc """
   The right-hand panel for one stop: what it is called, when it happens, and what
@@ -28,6 +31,7 @@ defmodule Offgrid.Components.StopEditor do
   """
 
   prop :comments, [Comment], from_query: &comments_query/1
+  prop :grants, [RoleGrant], from_query: &members_query/1
   prop :stop, Stop, from_query: &stop_query/1
   prop :stop_id, :string
   prop :trip_id, :string
@@ -76,7 +80,7 @@ defmodule Offgrid.Components.StopEditor do
       <label>Comments</label>
       {%for comment <- @comments}
         <div class="cmt">
-          <b><i class={dot_class(comment, @comments, @user_id)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
+          <b><i class={dot_class(@grants, @user_id, comment)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
           <p>{comment.body}</p>
         </div>
       {/for}
@@ -166,24 +170,20 @@ defmodule Offgrid.Components.StopEditor do
     |> order_by([:created_at, :id])
   end
 
-  # Your own remarks carry your colour. Everyone else's are coloured by the order they first
-  # spoke on this stop - the two the theme names, then the neutral dot for anyone after.
-  defp dot_class(comment, comments, user_id) do
-    if comment.author_id == user_id do
-      "y"
-    else
-      others =
-        comments
-        |> Enum.map(& &1.author_id)
-        |> Enum.reject(&(&1 == user_id))
-        |> Enum.uniq()
-
-      case Enum.find_index(others, &(&1 == comment.author_id)) do
-        0 -> "a"
-        1 -> "t"
-        _later -> "off"
-      end
+  # Each remark carries its author's colour - the one the cast gives them everywhere else on
+  # the screen. Somebody who is no longer on the trip, or never was, gets the neutral dot.
+  defp dot_class(grants, user_id, comment) do
+    case Cast.colour(Cast.members(grants), user_id, comment.author_id) do
+      "" -> "off"
+      colour -> colour
     end
+  end
+
+  # The trip's members in join order, for the cast - the same rows the members list reads.
+  defp members_query(trip_id) do
+    RoleGrant
+    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
+    |> order_by(:created_at)
   end
 
   # A draft typed under another stop is not this stop's.
