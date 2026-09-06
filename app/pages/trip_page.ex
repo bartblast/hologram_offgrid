@@ -64,7 +64,7 @@ defmodule Offgrid.Pages.TripPage do
       # things that can only happen once the page is real share it.
       |> put_action(:mounted)
 
-    {initialized, put_subscription(server, {:trip, params.id})}
+    {initialized, server}
   end
 
   def template do
@@ -207,7 +207,12 @@ defmodule Offgrid.Pages.TripPage do
         {%if @open_stop_id}
           <document $key_down.escape="close_stop" />
 
-          <StopEditor cid="stop_editor" stop_id={@open_stop_id} user_id={@user_id} />
+          <StopEditor
+            cid="stop_editor"
+            stop_id={@open_stop_id}
+            trip_id={@trip_id}
+            user_id={@user_id}
+          />
         {/if}
       </div>
     </div>
@@ -281,28 +286,27 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   # Everything that can only happen once the page is on screen. The box needs a rendered
-  # element to measure, and saying hello needs a session to say it for.
+  # element to measure, and joining the trip needs a page that is listening.
   def action(:mounted, _params, component) do
     measured = put_state(component, :box, Box.size("canvas"))
 
     if component.state.you do
-      put_action(measured, name: :say_hello, delay: 500)
+      put_command(measured, :join, trip_id: component.state.trip_id)
     else
       measured
     end
   end
 
-  # Saying hello waits, and the wait is the point rather than a stall.
+  # The subscription is ours. Only now do we say hello.
   #
-  # THE REAL BOUND: nobody may answer us until this browser's event stream is listening, and a
-  # broadcast sent before then is dropped rather than queued - pub/sub does not retry. The page
-  # subscribes while it renders and the stream attaches afterwards, so announcing in the same
-  # frame as the render races our own connection and the answers arrive at nobody.
-  #
-  # Hologram gives an app no way to be told the stream is up, so half a second is POLICY, not a
-  # measurement - long enough here and on the machines this has run on, and a guess everywhere
-  # else. The honest fix is a signal to wait on, which is written up in the findings log.
-  def action(:say_hello, _params, component) do
+  # Two steps rather than one, and the order is the whole point. Subscribing in `init/3` opened
+  # a window where this page's subscription existed while the PREVIOUS page was still on
+  # screen, so a broadcast arriving mid-navigation was dispatched into a page with no such
+  # action. Subscribing and announcing in ONE command lost the answers instead: a reply came
+  # back within milliseconds of the subscription being applied, before this browser's event
+  # stream was listening on the channel. This action runs only once the join has come back,
+  # a whole round trip after the subscription, so nobody can answer us before we can hear.
+  def action(:joined, _params, component) do
     put_command(component, :announce,
       id: component.state.user_id,
       initials: component.state.you,
@@ -393,6 +397,15 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:drawing, false)
     |> put_state(:ink_color, "#ff2d55")
     |> put_state(:placing, !component.state.placing)
+  end
+
+  # Subscribing happens here, from the client, after the page is mounted - never in `init/3`,
+  # for the reason `:joined` explains. The answer is an action, which is what lets the page
+  # know the subscription is in place before it announces itself.
+  def command(:join, params, server) do
+    server
+    |> put_subscription({:trip, params.trip_id})
+    |> put_action(:joined)
   end
 
   def command(:announce, params, server) do

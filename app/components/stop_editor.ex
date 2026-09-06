@@ -25,6 +25,7 @@ defmodule Offgrid.Components.StopEditor do
   prop :comments, [Comment], from_query: &comments_query/1
   prop :stop, Stop, from_query: &stop_query/1
   prop :stop_id, :string
+  prop :trip_id, :string
   prop :user_id, :string
 
   # The draft of a remark is the panel's own business, so it is state here - everything else
@@ -45,7 +46,7 @@ defmodule Offgrid.Components.StopEditor do
       <input class="inp" value={@stop.description} $change={:edit, field: :description} />
 
       <label>Day</label>
-      <TripCalendar cid="trip_calendar" date={@stop.date} stop_id={@stop_id} />
+      <TripCalendar cid="trip_calendar" date={@stop.date} stop_id={@stop_id} trip_id={@trip_id} />
 
       <label>Time</label>
       <div class="times">

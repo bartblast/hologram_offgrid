@@ -75,6 +75,42 @@ defmodule Offgrid.Features.TripPageTest do
     |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
   end
 
+  feature "offers the days of the trip you are on, and its stops", %{session: session, trip: trip} do
+    other_trip =
+      %{
+        basemap_id: trip.basemap_id,
+        ends_on: ~D[2026-05-17],
+        name: "Warsaw, long weekend",
+        starts_on: ~D[2026-05-15]
+      }
+      |> Trip.new()
+      |> DB.create!()
+
+    %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    %{date: ~D[2026-05-15], name: "Old Town at dusk", trip_id: other_trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session = sign_in_as_member(session, trip)
+    :ok = Auth.grant_role(signed_in_user(), other_trip, :member)
+
+    # Japan runs 28 Mar to 6 Apr: ten days, and a dot on the one that has a stop.
+    session
+    |> click(css(".stop", text: "Fushimi Inari"))
+    |> assert_has(css(".cal button", count: 10))
+    |> assert_has(css(".cal .dt i", count: 1))
+
+    # Warsaw runs three days, and its calendar knows nothing of Japan's stop.
+    session
+    |> visit(TripPage, id: other_trip.id)
+    |> click(css(".stop", text: "Old Town at dusk"))
+    |> assert_has(css(".cal button", count: 3))
+    |> assert_has(css(".cal .dt i", count: 1))
+  end
+
   feature "pins the stops that have a place, and only those",
           %{session: session, trip: trip} do
     # Kyoto, inside the Japan bounds.

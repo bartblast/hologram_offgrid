@@ -29,10 +29,15 @@ defmodule Offgrid.Features.NewTripTest do
     # up afterwards was written locally and read back locally.
     |> hold_mutation_requests()
     |> click(button("Create trip"))
-    |> assert_page(TripsPage)
-    |> assert_text(css(".card"), "Warsaw, long weekend")
+    # Straight onto the trip, which is a stronger claim than a row in a list: the screen was
+    # reached BY ITS ID and drawn from a row the server has never heard of.
+    |> assert_text(css(".lp-title"), "Warsaw, long weekend")
+    |> assert_text(css(".lp-dates"), "15 – 18 MAY")
     # And it survives the network coming back, rather than being replaced or dropped.
     |> release_mutations()
+    |> await_pending_writes(0)
+    |> assert_text(css(".lp-title"), "Warsaw, long weekend")
+    |> visit(TripsPage)
     |> assert_text(css(".card"), "Warsaw, long weekend")
     |> assert_text(css(".card"), "Japan, blossom run")
   end
@@ -57,13 +62,15 @@ defmodule Offgrid.Features.NewTripTest do
     |> send_keys([:enter])
     |> assert_text(css(".chips"), "anna@offgrid.test")
     |> click(button("Create trip"))
-    |> assert_page(TripsPage)
-    |> assert_text(css(".card"), "Alps, hut to hut")
+    |> assert_text(css(".lp-title"), "Alps, hut to hut")
+    # The people came with it: the panel names Anna before anything has travelled.
+    |> click(css(".facepile"))
+    |> assert_text(css(".members"), "Anna Kim")
     |> release_mutations()
     # Zero pending batches is what says the server has answered - the trip being on screen
     # before this only proves the browser wrote it.
     |> await_pending_writes(0)
-    |> assert_text(css(".card"), "Alps, hut to hut")
+    |> assert_text(css(".lp-title"), "Alps, hut to hut")
 
     # The trip and the grant it carried both landed, so Anna is on it.
     alps =

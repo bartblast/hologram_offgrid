@@ -39,7 +39,8 @@ defmodule Offgrid.Features.TripsTest do
     |> send_keys([:enter])
     |> assert_text(css(".chips"), "anna@offgrid.test")
     |> click(button("Create trip"))
-    |> assert_page(TripsPage)
+    # Making a trip opens it, so Bart is already standing where he needs to be.
+    |> assert_text(css(".lp-title"), "Japan, blossom run")
 
     # Anna never asked for it. The trip materialises on her list because the grant Bart wrote
     # reached her browser, and her list is a query that re-ran.
@@ -51,7 +52,6 @@ defmodule Offgrid.Features.TripsTest do
     |> assert_text(css(".lp-title"), "Japan, blossom run")
 
     bart
-    |> visit(TripPage, id: trip_id())
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     |> click(css(".mrow u"))

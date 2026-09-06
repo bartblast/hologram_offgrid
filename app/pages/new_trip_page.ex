@@ -8,7 +8,7 @@ defmodule Offgrid.Pages.NewTripPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Dates
   alias Offgrid.Entities.Trip
-  alias Offgrid.Pages.TripsPage
+  alias Offgrid.Pages.TripPage
 
   @moduledoc """
   Where a trip begins.
@@ -165,9 +165,10 @@ defmodule Offgrid.Pages.NewTripPage do
     # with nobody watching.
     Enum.each(state.invites, &(:ok = Auth.grant_role(&1, trip, :member)))
 
-    # Back to the list, where the new trip is already the top row. TODO: open the trip
-    # itself once a trip has an address to open - today every trip answers at "/", so
-    # "the trip you just made" is not a thing this page can navigate to.
-    put_page(component, TripsPage)
+    # Straight into the trip, which is what somebody who just made one wants to look at. The
+    # row was written locally, so this navigation carries an id the server has not necessarily
+    # heard of yet - and the screen it opens reads the same local rows, so there is nothing to
+    # wait for.
+    put_page(component, TripPage, id: trip.id)
   end
 end
