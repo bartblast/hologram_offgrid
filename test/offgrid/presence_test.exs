@@ -102,6 +102,29 @@ defmodule Offgrid.PresenceTest do
     end
   end
 
+  describe "depart/4" do
+    setup do
+      present = [@anna, @tom]
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 3})
+
+      [editing: editing, present: present]
+    end
+
+    test "lets somebody go when nothing newer has been heard", %{editing: e, present: p} do
+      assert depart(p, e, "anna", 3) == {[@tom], %{}}
+    end
+
+    test "keeps somebody who has spoken since the check was queued", %{editing: e, present: p} do
+      newer = edit(e, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 4})
+
+      assert depart(p, newer, "anna", 3) == {p, newer}
+    end
+
+    test "leaves somebody already gone alone", %{editing: e, present: p} do
+      assert depart(p, e, "mira", 1) == {p, e}
+    end
+  end
+
   describe "on_stop/2 and on_field/3" do
     setup do
       editing =

@@ -42,6 +42,11 @@ defmodule Offgrid.Pages.TripPage do
   a query prop, which is why the header, the itinerary and the layers are components.
   """
 
+  # How often a browser says it is still here, and how long the others wait before letting it
+  # go. Three turns of tolerance, so one message lost in the post costs nobody their face.
+  @heartbeat_ms 3_000
+  @forget_after_ms 10_000
+
   route "/trips/:id"
 
   param :id, :string
@@ -388,7 +393,10 @@ defmodule Offgrid.Pages.TripPage do
 
   # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
   def action(:editing_changed, params, component) do
-    put_state(component, :editing, Presence.edit(component.state.editing, params))
+    component
+    |> put_state(:present, Presence.arrive(component.state.present, params))
+    |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> watch(params)
   end
 
   # This browser's pointer landed in a field of the open stop. Remembered here, on the page,
@@ -516,6 +524,32 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
+  # Still here. Nothing tells anybody that a browser has gone - the framework notices and says
+  # nothing an app can hear - so the arrangement is inverted: everyone keeps saying they are
+  # here, and silence is what means gone.
+  def action(:heartbeat, _params, component) do
+    said = said_something(component)
+
+    said
+    |> tell(:editing, whereabouts(said))
+    |> put_action(name: :heartbeat, delay: @heartbeat_ms)
+  end
+
+  # Nothing newer from them in three turns of the heartbeat, so their face and their marks go.
+  def action(:expire_person, params, component) do
+    {present, editing} =
+      Presence.depart(
+        component.state.present,
+        component.state.editing,
+        params.id,
+        params.seq
+      )
+
+    component
+    |> put_state(:present, present)
+    |> put_state(:editing, editing)
+  end
+
   # The door said no. Once more, a little later, and then no more: the server refuses a trip it
   # cannot see, and a trip this browser made offline is exactly that until its batch lands -
   # which it will have, three seconds on, if it is ever going to.
@@ -543,7 +577,9 @@ defmodule Offgrid.Pages.TripPage do
   def action(:joined, _params, component) do
     said = said_something(component)
 
-    put_command(said, :announce, whereabouts(said))
+    said
+    |> put_command(:announce, whereabouts(said))
+    |> put_action(name: :heartbeat, delay: @heartbeat_ms)
   end
 
   # Somebody arrived. Add them, and say back that we are here - one answer each, so a new
@@ -556,6 +592,7 @@ defmodule Offgrid.Pages.TripPage do
     |> put_command(:answer, whereabouts(said))
     |> put_state(:present, Presence.arrive(component.state.present, params))
     |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> watch(params)
   end
 
   # An answer to our own arrival. Only adds, so the round stops here.
@@ -563,6 +600,7 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:present, Presence.arrive(component.state.present, params))
     |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> watch(params)
   end
 
   def action(:open_details, _params, component) do
@@ -873,6 +911,16 @@ defmodule Offgrid.Pages.TripPage do
     said = said_something(component)
 
     tell(said, :editing, whereabouts(said))
+  end
+
+  # Every message from somebody restarts the clock on them: a check queued now carrying the
+  # number they just sent, which lets them go unless they have said something newer by then.
+  defp watch(component, %{id: id, seq: seq}) do
+    put_action(component,
+      name: :expire_person,
+      params: %{id: id, seq: seq},
+      delay: @forget_after_ms
+    )
   end
 
   # Counts this browser's presence messages, so the one that lost a race can be told from the

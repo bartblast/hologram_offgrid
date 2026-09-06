@@ -112,6 +112,39 @@ defmodule Offgrid.Features.PresenceTest do
     |> assert_text(css(".stop .sel"), "NV")
   end
 
+  # Nothing tells this browser that the other one has gone: the framework notices the stream
+  # die and says nothing an app can hear. So the arrangement is inverted - everyone keeps
+  # saying they are here, and going quiet is what means gone.
+  @sessions 2
+  feature "lets somebody go when their browser stops answering",
+          %{sessions: [nora, tom], trip: trip} do
+    %{date: ~D[2026-03-29], name: "Ryokan", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    nora = sign_in_as_member(nora, trip)
+    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+
+    # Tom is here, and on a stop, so Nora carries both his face and his ring.
+    tom
+    |> click(css(".stop", text: "Ryokan"))
+    |> click(css("#stop_name"))
+
+    nora
+    |> assert_text(css(".faces"), "TR")
+    |> assert_has(css(".stop .sel"))
+
+    # His browser goes. Nothing is sent, nothing is announced - it simply stops answering.
+    Wallaby.end_session(tom)
+
+    # And after three turns of silence Nora lets him go, face and mark together. Her own face
+    # stays, which is what says this is a departure rather than the pill emptying.
+    nora
+    |> refute_has(css(".stop .sel"))
+    |> refute_has(css(".face", text: "TR"))
+    |> assert_text(css(".faces"), "NV")
+  end
+
   # Pointer moves over the map's click surface, at offsets from its top left, fifty
   # milliseconds apart - slower than the throttle, so each one is sent.
   defp move_pointer(session, points) do

@@ -7,6 +7,13 @@ defmodule Offgrid.Presence do
   or the page goes. These are the pure functions that change that state, kept apart from the
   page so they can be read and tested without a browser.
 
+  Nobody is ever told that somebody left. The framework notices a browser's stream dying and
+  quietly drops it, but says nothing an app could hear, so departure cannot be waited for - it
+  can only be inferred. Everyone therefore says they are still here on a timer, and anyone not
+  heard from for a few of those turns is let go. A closed tab, a slept laptop and a lost
+  network all look the same from here, which is honest: what this knows is who is still
+  answering.
+
   Nothing here knows the time. A cursor expires by a sequence number: every position a
   person sends bumps theirs, the page queues a delayed check carrying the number it saw, and
   the check drops the cursor only if no newer position has arrived since. No clock, no
@@ -86,6 +93,24 @@ defmodule Offgrid.Presence do
     case cursors do
       %{^id => %{seq: ^seq}} -> Map.delete(cursors, id)
       _newer_or_gone -> cursors
+    end
+  end
+
+  @doc """
+  Drops the person from both what is drawn about them - their face and whatever they had open -
+  but only if nothing newer has been heard from them since the check was queued.
+
+  The same guard the cursors use, for the same reason: the check is queued when a message
+  arrives and fires long after, by which time the person may well have spoken again.
+  """
+  @spec depart(list(person), map, String.t(), integer) :: {list(person), map}
+  def depart(present, editing, id, seq) do
+    case editing do
+      %{^id => %{seq: ^seq}} ->
+        {Enum.reject(present, &(&1.id == id)), Map.delete(editing, id)}
+
+      _newer_or_gone ->
+        {present, editing}
     end
   end
 
