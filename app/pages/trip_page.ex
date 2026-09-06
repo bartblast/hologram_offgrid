@@ -120,9 +120,14 @@ defmodule Offgrid.Pages.TripPage do
 
         <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {%if @stroke != []}
+            <!-- In the ink it is being drawn with, not the accent: the colour was fixed here
+                 while the mockup had one colour for your own ink, and the picker that arrived
+                 later never reached it - so a violet line was drawn red and turned violet the
+                 moment the pointer lifted. -->
             <path
               class="ink-mine"
               d={stroke_path(@stroke)}
+              stroke={@ink_color}
               fill="none"
               vector-effect="non-scaling-stroke"
             />

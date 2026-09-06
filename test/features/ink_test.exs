@@ -116,7 +116,11 @@ defmodule Offgrid.Features.InkTest do
       |> click(css(".addb"))
       |> click(css(".pen"))
       |> assert_has(css(".cdot.on", count: 1))
-      |> drag([{200, 150}, {240, 190}, {280, 230}])
+      # Violet while it is being drawn, not only once it is let go: the live line used to take
+      # the accent colour whatever was picked, and changed under the hand on release.
+      |> press([{200, 150}, {240, 190}, {280, 230}])
+      |> assert_has(css(".ink-paper path[stroke=\"#af52de\"]", visible: :any))
+      |> release({280, 230})
 
     assert await_pending_writes(session, 0)
 

@@ -89,7 +89,6 @@ overflow: hidden;
    halo underneath would only fight the shadow every pin now carries. */
 .pin.mine i { background: var(--you); }
 .pin.mine em { color: var(--you); }
-.ink-mine { stroke: var(--you); }
  .ink-anna { stroke: var(--anna); opacity: .85; }
 .lay path { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
 .lay .rt { stroke: var(--route); stroke-width: 2.2; stroke-dasharray: 6 7; opacity: .9; }
