@@ -150,6 +150,17 @@ defmodule Offgrid.Pages.NewTripPage do
   end
 
   defp create(component, state, starts_on, ends_on) do
+    if Date.compare(ends_on, starts_on) == :lt do
+      put_state(component, :error, "It cannot end before it starts.")
+    else
+      start(component, state, starts_on, ends_on)
+    end
+  end
+
+  # A `Date.compare/2` cannot sit in a guard, so the last check is a clause of its own body
+  # rather than a fifth head - after the two dates are known to be dates, before anything is
+  # written.
+  defp start(component, state, starts_on, ends_on) do
     {:ok, trip} =
       %{
         basemap_id: state.basemap_id,

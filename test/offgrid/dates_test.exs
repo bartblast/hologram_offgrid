@@ -15,6 +15,18 @@ defmodule Offgrid.DatesTest do
     test "answers nil for an empty field" do
       assert parse("") == nil
     end
+
+    test "answers nil for a day that does not exist" do
+      assert parse("2026-13-45") == nil
+    end
+
+    test "answers nil for parts that are not numbers" do
+      assert parse("abcd-ef-gh") == nil
+    end
+
+    test "reads parts that are not padded" do
+      assert parse("2026-5-9") == ~D[2026-05-09]
+    end
   end
 
   describe "span/2" do

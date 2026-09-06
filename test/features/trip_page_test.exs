@@ -68,13 +68,34 @@ defmodule Offgrid.Features.TripPageTest do
     |> assert_text(css(".lp-title"), "Japan, cherry run")
     |> fill_date("details_starts_on", "2026-03-30")
     |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
+    # A start moved past the end takes the end with it: a trip is never backwards, and nobody
+    # is told to edit the other field first.
+    |> fill_date("details_starts_on", "2026-04-10")
+    |> assert_text(css(".lp-dates"), "10 – 10 APR")
     |> send_keys([:escape])
     |> refute_has(css(".card"))
     |> await_pending_writes(0)
     # Read back from the server, so the card wrote a row rather than a screen.
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".lp-title"), "Japan, cherry run")
-    |> assert_text(css(".lp-dates"), "30 MAR – 6 APR")
+    |> assert_text(css(".lp-dates"), "10 – 10 APR")
+  end
+
+  feature "offers no days for a trip whose dates crossed", %{session: session, trip: trip} do
+    # Two offline browsers can still cross them - one moves the start, the other the end, and
+    # the last write wins per column - so a crossed pair is a state the calendar has to survive.
+    :ok = DB.update(Trip, trip.id, %{ends_on: ~D[2026-03-28], starts_on: ~D[2026-04-06]})
+
+    %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".stop", text: "Fushimi Inari"))
+    |> assert_text(css(".ed-title"), "Fushimi Inari")
+    |> refute_has(css(".cal button"))
+    |> refute_has(css("#hologram-uncaught-error-overlay"))
   end
 
   feature "offers the days of the trip you are on, and its stops", %{session: session, trip: trip} do

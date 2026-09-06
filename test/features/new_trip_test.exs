@@ -91,6 +91,19 @@ defmodule Offgrid.Features.NewTripTest do
     |> assert_text(css(".card"), "Nobody here uses that address.")
   end
 
+  feature "refuses a trip that ends before it starts", %{session: session, trip: trip} do
+    session
+    |> sign_in_as_member(trip)
+    |> visit(NewTripPage)
+    |> fill_in(css(".card .inp", at: 0), with: "Warsaw, long weekend")
+    |> fill_date("starts_on", "2026-05-18")
+    |> fill_date("ends_on", "2026-05-15")
+    |> click(css(".thumbs .thumb", at: 0))
+    |> click(button("Create trip"))
+    |> assert_text(css(".card"), "It cannot end before it starts.")
+    |> assert_page(NewTripPage)
+  end
+
   feature "refuses a trip with no name", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)

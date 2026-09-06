@@ -7,18 +7,23 @@ defmodule Offgrid.Dates do
   """
 
   @doc """
-  Returns the date a `type="date"` input spells as `value`, or nil when it spells nothing yet.
+  Returns the date a `type="date"` input spells as `value`, or nil when it spells nothing yet
+  or something that is not a date at all.
 
   Written out rather than handed to `Date.from_iso8601/1`, which the client does not have.
+  Nothing here raises: a part that is not a whole number, or a day that does not exist, is
+  nil the same as an empty field, so a caller has one thing to check.
   """
   @spec parse(String.t()) :: Date.t() | nil
   def parse(value) do
-    case String.split(value, "-") do
-      [year, month, day] ->
-        Date.new!(String.to_integer(year), String.to_integer(month), String.to_integer(day))
-
-      _other ->
-        nil
+    with [year, month, day] <- String.split(value, "-"),
+         {year, ""} <- Integer.parse(year),
+         {month, ""} <- Integer.parse(month),
+         {day, ""} <- Integer.parse(day),
+         {:ok, date} <- Date.new(year, month, day) do
+      date
+    else
+      _other -> nil
     end
   end
 

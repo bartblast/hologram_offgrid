@@ -142,9 +142,25 @@ defmodule Offgrid.Components.TripDetails do
 
   defp write_date(component, _field, nil), do: component
 
+  # A date moved past the other takes the other with it, so a trip is never backwards and
+  # nobody is told to edit the other field first. One write either way - two fields when the
+  # dates would have crossed, one when they would not.
   defp write_date(component, field, date) do
-    :ok = DB.update(Trip, component.props.trip_id, %{field => date})
+    :ok =
+      DB.update(Trip, component.props.trip_id, date_changes(component.props.trip, field, date))
 
     component
+  end
+
+  defp date_changes(trip, :starts_on, date) do
+    if Date.compare(date, trip.ends_on) == :gt,
+      do: %{ends_on: date, starts_on: date},
+      else: %{starts_on: date}
+  end
+
+  defp date_changes(trip, :ends_on, date) do
+    if Date.compare(date, trip.starts_on) == :lt,
+      do: %{ends_on: date, starts_on: date},
+      else: %{ends_on: date}
   end
 end
