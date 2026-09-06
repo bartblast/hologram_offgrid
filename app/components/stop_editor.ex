@@ -56,6 +56,16 @@ defmodule Offgrid.Components.StopEditor do
     ~HOLO"""
     {%if @stop}
     <div class="editor">
+      <!-- Escape closes the panel too, and did before this - but a keyboard shortcut nobody
+           is told about is not a way out, and a panel that covers a fifth of the screen needs
+           a visible one. The page owns which stop is open, so the button asks the page. -->
+      <button
+        class="ed-close"
+        type="button"
+        aria-label="Close"
+        $click={action: :close_stop, target: "page"}
+      >×</button>
+
       <div class="ed-title">{@stop.name}</div>
       <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
 

@@ -80,6 +80,21 @@ defmodule Offgrid.Features.StopCrudTest do
     |> refute_has(css(".stop", text: "Ryokan"))
   end
 
+  feature "closes the editor from its own button", %{session: session, trip: trip} do
+    %{date: ~D[2026-03-28], name: "Haneda arrival", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".stop", text: "Haneda arrival"))
+    |> assert_text(css(".ed-title"), "Haneda arrival")
+    |> click(css(".ed-close"))
+    # Gone, and the stop it was open on is still on the itinerary - closing is not deleting.
+    |> refute_has(css(".editor"))
+    |> assert_text(css(".lpanel"), "Haneda arrival")
+  end
+
   feature "places nothing until armed, and Escape disarms", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)

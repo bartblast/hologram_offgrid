@@ -34,10 +34,12 @@
        21vw rather than 18: Japan's first vertical road runs at 18.2% of the map's width, so a
        panel 18% of the window wide tracked it at every size and its edge read as drawn along
        the road. The map scales to cover, so no width clears every line on every screen - what
-       this avoids is the one that followed us. */
-    --lpanel: clamp(278px, 21vw, 400px);
-    --editor: clamp(320px, 21vw, 420px);
-    --clear-editor: calc(var(--editor) + 16px);
+       this avoids is the one that followed us.
+       ONE width for both, because the two hold the map between equal margins and nothing
+       earns a difference: at 400px and at 420 the editor's time chips still fit six to a row,
+       so a wider right panel bought nothing and only read as off-balance. */
+    --panel-w: clamp(320px, 21vw, 400px);
+    --clear-editor: calc(var(--panel-w) + 16px);
     --shadow: 0 1px 3px rgba(0,0,0,.06), 0 12px 34px rgba(0,0,0,.13);
     --f-disp: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; --f-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif; --f-label: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
 }
@@ -112,7 +114,7 @@ overflow: hidden;
  .face.t { background: var(--tom); }
  .face.y { background: var(--you); }
 /* left panel */
-.lpanel { position: absolute; top: 16px; left: 16px; width: var(--lpanel); max-height: calc(100% - 32px); overflow: auto; background: color-mix(in srgb, var(--panel) 91%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: var(--rl); padding: 14px; z-index: 4; }
+.lpanel { position: absolute; top: 16px; left: 16px; width: var(--panel-w); max-height: calc(100% - 32px); overflow: auto; background: color-mix(in srgb, var(--panel) 91%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: var(--rl); padding: 14px; z-index: 4; }
 .lp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
 .lp-title { font-family: var(--f-disp); font-size: 16.5px; font-weight: 600; }
 .lp-dates { font-family: var(--f-label); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-top: 1px; }
@@ -148,8 +150,10 @@ label .tag.a { background: var(--anna); }
 label .tag.t { background: var(--tom); }
 .inp.busy { border-color: var(--line2); box-shadow: inset 0 0 0 1px var(--line2); }
 /* editor */
-.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--editor); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; }
-.ed-title { font-family: var(--f-disp); font-size: 16px; font-weight: 600; }
+.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; }
+.ed-close { position: absolute; top: 13px; right: 13px; width: 26px; height: 26px; display: grid; place-items: center; font-size: 17px; line-height: 1; color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; }
+.ed-close:hover { color: var(--ink); background: var(--panel2); }
+.ed-title { font-family: var(--f-disp); font-size: 16px; font-weight: 600; padding-right: 30px; }
 .ed-sub { font-family: var(--f-label); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; }
 label { display: block; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); margin: 13px 0 5px; }
 .inp, textarea.inp { display: block; width: 100%; font-family: var(--f-body); font-size: 14px; color: var(--ink); background: var(--panel2); border: 1px solid var(--line2); border-radius: var(--r); padding: 7px 10px; }
