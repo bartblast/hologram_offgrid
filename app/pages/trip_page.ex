@@ -162,7 +162,12 @@ defmodule Offgrid.Pages.TripPage do
                 aria-label="Add a stop"
                 $click="toggle_placing"
               >
-                +
+                <!-- Drawn rather than typed. A font's "+" sits on its own maths axis, which is
+                     not the middle of the circle around it, so the glyph reads a hair high
+                     however the text box is centred - two strokes cannot. -->
+                <svg viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M6 2 V10 M2 6 H10" />
+                </svg>
               </button>
             </div>
           </div>

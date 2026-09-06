@@ -72,7 +72,13 @@ defmodule Offgrid.Components.StopEditor do
           type="button"
           aria-label="Close"
           $click={action: :close_stop, target: "page"}
-        >×</button>
+        >
+          <!-- Two strokes, for the reason the + beside it is two: a glyph is centred on its
+               own axis rather than on the circle it sits in. -->
+          <svg viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M3.2 3.2 L8.8 8.8 M8.8 3.2 L3.2 8.8" />
+          </svg>
+        </button>
       </div>
 
       <label>Name {%for person <- others_in(@editing, @stop_id, "name", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
