@@ -46,11 +46,16 @@ defmodule Offgrid.Pages.TripPage do
   # go. Chosen for the demo: cutting the network makes somebody disappear in one to two
   # seconds, and restoring it brings them back within a beat.
   #
-  # The ratio is the whole safety margin, and at two beats inside the window it is thin - a
-  # single beat arriving late, which in dev a slow first request after a recompile can cause,
-  # is enough to let somebody go who never left. Shortening only the heartbeat widens the
-  # margin without changing what the camera sees.
-  @heartbeat_ms 1_000
+  # THE RATIO IS THE SAFETY MARGIN, not the window. At one beat a second inside a two second
+  # window there were only two beats to lose, and any beat arriving late let somebody go and
+  # the next one brought them straight back - a blink, once a minute or so. Four beats inside
+  # the same window costs nothing the camera can see and takes three late beats in a row to
+  # produce that.
+  #
+  # Each beat received is a render on every other screen, so the beat cannot be made arbitrarily
+  # short: at half a second and two other people that is four renders a second spent learning
+  # that nobody has moved.
+  @heartbeat_ms 500
   @forget_after_ms 2_000
 
   route "/trips/:id"
