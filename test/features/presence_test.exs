@@ -55,7 +55,9 @@ defmodule Offgrid.Features.PresenceTest do
     # Nora opens the stop and lands in its name.
     nora
     |> click(css(".stop", text: "Ryokan"))
-    |> click(css(".editor .inp", at: 0))
+    # By name rather than by position: three inputs and an index is a fragile way to say which
+    # field, and Wallaby picking the wrong one made this feature fail about two runs in five.
+    |> click(css("#stop_name"))
     # Her own screen carries no mark of her own.
     |> refute_has(css(".sel"))
     |> refute_has(css(".tag"))
@@ -67,15 +69,17 @@ defmodule Offgrid.Features.PresenceTest do
     |> assert_has(css(".stop .sel.a"))
     # Opening the same stop, he sees which field she is in.
     |> click(css(".stop", text: "Ryokan"))
+    # One query rather than find-then-read-text: the label is re-rendered the moment the tag
+    # lands on it, so an element found first and read second goes stale about one run in three.
+    |> assert_has(css("label", text: "Name NV"))
     |> assert_has(css("label .tag", count: 1))
-    |> assert_text(css("label", text: "Name"), "NV")
     |> assert_has(css(".inp.busy", count: 1))
 
     # She moves to the description; the tag moves with her.
-    click(nora, css(".editor .inp", at: 1))
+    click(nora, css("#stop_description"))
 
     tom
-    |> assert_text(css("label", text: "Description"), "NV")
+    |> assert_has(css("label", text: "Description NV"))
     |> assert_has(css("label .tag", count: 1))
 
     # She closes the stop; both marks go.
@@ -96,7 +100,7 @@ defmodule Offgrid.Features.PresenceTest do
 
     nora
     |> click(css(".stop", text: "Ryokan"))
-    |> click(css(".editor .inp", at: 0))
+    |> click(css("#stop_name"))
 
     # Tom arrives afterwards. Nora's answer to his arrival carries what she has open, so the
     # ring is on his screen at once - nobody had to move.

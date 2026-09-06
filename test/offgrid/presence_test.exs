@@ -55,21 +55,50 @@ defmodule Offgrid.PresenceTest do
 
   describe "edit/2" do
     test "records the stop and the field somebody has open" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name"})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
 
-      assert editing == %{"anna" => %{field: "name", initials: "AK", stop_id: "ryokan"}}
+      assert editing == %{
+               "anna" => %{field: "name", initials: "AK", seq: 1, stop_id: "ryokan"}
+             }
     end
 
     test "a field of nil means the stop is open with nothing focused" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: nil})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: nil, seq: 1})
 
       assert editing["anna"].field == nil
     end
 
-    test "a stop of nil means nothing open, and drops the person" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name"})
+    test "a stop of nil means nothing open" do
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
+      closed = edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 2})
 
-      assert edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil}) == %{}
+      assert closed["anna"].stop_id == nil
+      assert on_stop(closed, "ryokan") == []
+    end
+
+    # Two messages sent a moment apart can arrive in the other order, so the one that lost the
+    # race must not undo the one that won it.
+    test "ignores a message older than one already heard from that person" do
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 2})
+      stale = edit(editing, %{id: "anna", initials: "AK", stop_id: "ryokan", field: nil, seq: 1})
+
+      assert stale["anna"].field == "name"
+    end
+
+    test "ignores a repeat of a message already heard" do
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 2})
+      again = edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 2})
+
+      assert again["anna"].stop_id == "ryokan"
+    end
+
+    test "counts each person separately" do
+      editing =
+        %{}
+        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 5})
+        |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
+
+      assert editing["tom"].stop_id == "ryokan"
     end
   end
 
@@ -77,9 +106,9 @@ defmodule Offgrid.PresenceTest do
     setup do
       editing =
         %{}
-        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: "name"})
-        |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil})
-        |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: "name"})
+        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
+        |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
+        |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: "name", seq: 1})
 
       [editing: editing]
     end

@@ -87,7 +87,7 @@ overflow: hidden;
 @keyframes rip { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .ping::before { animation: none; }
-  .editor { animation: none; }
+  .editor { animation: none; transition: none; }
   .pen, .faces, .members { transition: none; }
 }
 /* An arrow, because that is what a pointer is, with its tip at the place it names - so no
@@ -161,7 +161,10 @@ label .tag.a { background: var(--anna); }
 label .tag.t { background: var(--tom); }
 .inp.busy { border-color: var(--line2); box-shadow: inset 0 0 0 1px var(--line2); }
 /* editor */
-.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; animation: editor-in .22s ease; }
+.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; transform: translateX(0); transition: transform .22s ease; animation: editor-in .22s ease; }
+/* In on the animation, out on the class - the panel has to still be on the page to slide off
+   it, so the page holds the stop for a moment after the panel is told to go. */
+.editor.away { transform: translateX(100%); }
 @keyframes editor-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 /* The mirror of .lp-head and .addb in the itinerary panel: the same row, the same circle,
    the same size, the same inversion on hover - so the two panels read as a pair. */

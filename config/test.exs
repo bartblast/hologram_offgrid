@@ -49,6 +49,11 @@ config :wallaby,
       chromeOptions: %{
         args: [
           "--disable-background-timer-throttling",
+          # The browser asks for less motion, which the stylesheet honours by dropping the
+          # panel's slide and the transitions that go with it. A test clicking inside a panel
+          # that is still moving is a test racing an animation, and it loses about one run in
+          # three. The movement is a matter for the eye, not for an assertion.
+          "--force-prefers-reduced-motion",
           "--disable-dev-shm-usage",
           "--disable-gpu",
           "--headless",

@@ -12,6 +12,13 @@ defmodule Offgrid.Presence do
   the check drops the cursor only if no newer position has arrived since. No clock, no
   "leave" event - Hologram has neither a pointer-leave binding nor a disconnect signal - and
   no timer to cancel.
+
+  What somebody has open is stamped the same way, and for a sharper reason: commands are
+  asynchronous, so opening a stop and landing in one of its fields - two messages, sent a
+  moment apart - can arrive in the other order, and the older one would then wipe the newer
+  truth. Each sender counts its own messages and a lower count is ignored. Somebody who has
+  closed everything stays in the map with no stop rather than leaving it, because their count
+  has to outlive them for the next stale message to be refused.
   """
 
   @typedoc "Somebody on the screen: their id and the two letters they are drawn as."
@@ -47,19 +54,27 @@ defmodule Offgrid.Presence do
   end
 
   @doc """
-  Records what the person has open: the stop, and the field in it, or nil for none. A person
-  with no stop open is not editing anything and is dropped.
+  Records what the person has open: the stop, and the field in it, or nil for either when they
+  have closed it.
+
+  Ignored when the sender has already been heard saying something newer - `seq` is their own
+  count of the messages they have sent, and a message that lost a race carries a lower one.
   """
   @spec edit(map, %{
           id: String.t(),
           initials: String.t(),
           stop_id: String.t() | nil,
-          field: String.t() | nil
+          field: String.t() | nil,
+          seq: integer
         }) :: map
-  def edit(editing, %{id: id, stop_id: nil}), do: Map.delete(editing, id)
+  def edit(editing, %{id: id, initials: initials, stop_id: stop_id, field: field, seq: seq}) do
+    case editing do
+      %{^id => %{seq: heard}} when heard >= seq ->
+        editing
 
-  def edit(editing, %{id: id, initials: initials, stop_id: stop_id, field: field}) do
-    Map.put(editing, id, %{field: field, initials: initials, stop_id: stop_id})
+      _older_or_unheard ->
+        Map.put(editing, id, %{field: field, initials: initials, seq: seq, stop_id: stop_id})
+    end
   end
 
   @doc """
@@ -88,7 +103,8 @@ defmodule Offgrid.Presence do
   Returns who has the given stop open, with the field each of them is in, in no particular
   order.
   """
-  @spec on_stop(map, String.t()) :: list(%{id: String.t(), initials: String.t(), field: String.t() | nil})
+  @spec on_stop(map, String.t()) ::
+          list(%{id: String.t(), initials: String.t(), field: String.t() | nil})
   def on_stop(editing, stop_id) do
     for {id, %{field: field, initials: initials, stop_id: ^stop_id}} <- editing do
       %{field: field, id: id, initials: initials}

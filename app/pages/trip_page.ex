@@ -65,12 +65,14 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:details_open, false)
       |> put_state(:drawing, false)
       |> put_state(:editing, %{})
+      |> put_state(:editing_seq, 0)
       |> put_state(:focused_field, nil)
       |> put_state(:ink_color, "#ff2d55")
       |> put_state(:join_tries, 0)
       |> put_state(:maps_open, false)
       |> put_state(:members_open, false)
       |> put_state(:open_stop_id, nil)
+      |> put_state(:panel_open, false)
       |> put_state(:ping, nil)
       |> put_state(:present, [])
       |> put_state(:placing, false)
@@ -185,7 +187,7 @@ defmodule Offgrid.Pages.TripPage do
           />
         </div>
 
-        <div class={faces_class(@members_open, @open_stop_id)}>
+        <div class={faces_class(@members_open, @panel_open)}>
           <button
             class="facepile"
             type="button"
@@ -208,7 +210,7 @@ defmodule Offgrid.Pages.TripPage do
         </div>
 
         {%if @members_open}
-          <div class={members_class(@open_stop_id)}>
+          <div class={members_class(@panel_open)}>
             <MembersList
               cid="members_list"
               present={@present}
@@ -219,7 +221,7 @@ defmodule Offgrid.Pages.TripPage do
         {/if}
 
         <button
-          class={pen_class(@drawing, @open_stop_id)}
+          class={pen_class(@drawing, @panel_open)}
           type="button"
           aria-label="Draw"
           $click="toggle_drawing"
@@ -271,6 +273,7 @@ defmodule Offgrid.Pages.TripPage do
 
           <StopEditor
             cid="stop_editor"
+            away={!@panel_open}
             editing={@editing}
             stop_id={@open_stop_id}
             trip_id={@trip_id}
@@ -299,21 +302,34 @@ defmodule Offgrid.Pages.TripPage do
 
     :ok = DB.delete(Stop, params.id)
 
+    # Out the same way it came in. The row is gone this instant, so the panel slides away
+    # empty - which is honest, since the thing it was about no longer exists - rather than
+    # holding a copy of something deleted or blinking out where closing glides.
     component
     |> put_state(:focused_field, nil)
-    |> put_state(:open_stop_id, nil)
+    |> put_state(:panel_open, false)
     |> announce_editing()
+    |> put_action(name: :clear_stop, delay: 250)
   end
 
   def action(:close_details, _params, component) do
     put_state(component, :details_open, false)
   end
 
+  # The panel is told to leave, and the stop it was open on is let go a moment later - so it
+  # still has something to draw while it slides out. Everything else about closing happens
+  # now: the field is no longer focused and the others are told so at once.
   def action(:close_stop, _params, component) do
     component
     |> put_state(:focused_field, nil)
-    |> put_state(:open_stop_id, nil)
+    |> put_state(:panel_open, false)
     |> announce_editing()
+    |> put_action(name: :clear_stop, delay: 250)
+  end
+
+  # What the slide was waiting for. Nothing renders the panel after this.
+  def action(:clear_stop, _params, component) do
+    put_state(component, :open_stop_id, nil)
   end
 
   # A pin was pressed. The map's place in the window is read once, here, and held for the
@@ -499,15 +515,19 @@ defmodule Offgrid.Pages.TripPage do
   # stream was listening on the channel. This action runs only once the join has come back,
   # a whole round trip after the subscription, so nobody can answer us before we can hear.
   def action(:joined, _params, component) do
-    put_command(component, :announce, whereabouts(component))
+    said = said_something(component)
+
+    put_command(said, :announce, whereabouts(said))
   end
 
   # Somebody arrived. Add them, and say back that we are here - one answer each, so a new
   # arrival learns the room without anybody keeping a list of it anywhere. Both the arrival
   # and the answer carry what the person has open, so a newcomer sees the marks at once.
   def action(:member_arrived, params, component) do
-    component
-    |> put_command(:answer, whereabouts(component))
+    said = said_something(component)
+
+    said
+    |> put_command(:answer, whereabouts(said))
     |> put_state(:present, Presence.arrive(component.state.present, params))
     |> put_state(:editing, Presence.edit(component.state.editing, params))
   end
@@ -527,6 +547,7 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:focused_field, nil)
     |> put_state(:open_stop_id, params.id)
+    |> put_state(:panel_open, true)
     |> announce_editing()
   end
 
@@ -617,7 +638,8 @@ defmodule Offgrid.Pages.TripPage do
         id: params.id,
         initials: params.initials,
         stop_id: params.stop_id,
-        field: params.field
+        field: params.field,
+        seq: params.seq
       )
     else
       server
@@ -634,7 +656,8 @@ defmodule Offgrid.Pages.TripPage do
         id: params.id,
         initials: params.initials,
         stop_id: params.stop_id,
-        field: params.field
+        field: params.field,
+        seq: params.seq
       )
     else
       server
@@ -651,7 +674,8 @@ defmodule Offgrid.Pages.TripPage do
         id: params.id,
         initials: params.initials,
         stop_id: params.stop_id,
-        field: params.field
+        field: params.field,
+        seq: params.seq
       )
     else
       server
@@ -787,7 +811,15 @@ defmodule Offgrid.Pages.TripPage do
   # Called at the end of every action that changes either, so the message always carries the
   # state the action left behind.
   defp announce_editing(component) do
-    tell(component, :editing, whereabouts(component))
+    said = said_something(component)
+
+    tell(said, :editing, whereabouts(said))
+  end
+
+  # Counts this browser's presence messages, so the one that lost a race can be told from the
+  # one that won it. Every message goes out through here.
+  defp said_something(component) do
+    put_state(component, :editing_seq, component.state.editing_seq + 1)
   end
 
   # Who this browser is and what it has open, as every presence message carries it.
@@ -798,10 +830,19 @@ defmodule Offgrid.Pages.TripPage do
       id: state.user_id,
       initials: state.you,
       trip_id: state.trip_id,
-      stop_id: state.open_stop_id,
-      field: state.focused_field
+      stop_id: open_stop(state),
+      field: state.focused_field,
+      seq: state.editing_seq
     ]
   end
+
+  # What the PANEL shows, not what the page still holds. Closing keeps the stop for a moment so
+  # the panel has something to draw on its way out, and for that moment nothing is open as far
+  # as anybody else is concerned - the ring on their itinerary goes when the hand leaves, not a
+  # quarter second later.
+  defp open_stop(%{panel_open: false}), do: nil
+
+  defp open_stop(state), do: state.open_stop_id
 
   # A gesture is sent only while the browser has a network. A command that cannot reach the
   # server raises, and a ping or a pointer position is not worth an error - so with no network
@@ -816,7 +857,7 @@ defmodule Offgrid.Pages.TripPage do
     Auth.can?(server.user_id, :read, %Trip{id: trip_id})
   end
 
-  defp pen_class(drawing, open_stop_id), do: "pen" <> armed(drawing) <> mid(open_stop_id)
+  defp pen_class(drawing, panel_open), do: "pen" <> armed(drawing) <> mid(panel_open)
 
   defp armed(true), do: " on"
 
@@ -840,19 +881,19 @@ defmodule Offgrid.Pages.TripPage do
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the
   # control they are rather than as decoration that happened to be clicked.
-  defp faces_class(members_open, open_stop_id) do
-    "faces" <> ring(members_open) <> mid(open_stop_id)
+  defp faces_class(members_open, panel_open) do
+    "faces" <> ring(members_open) <> mid(panel_open)
   end
 
-  defp members_class(open_stop_id), do: "members" <> mid(open_stop_id)
+  defp members_class(panel_open), do: "members" <> mid(panel_open)
 
-  # With no stop open there is no panel to clear, so the three controls on the right sit at the
+  # With no panel out there is nothing to clear, so the three controls on the right sit at the
   # window's edge - the mockup's own `mid`, drawn for exactly this and unused until now. They
-  # slide aside as the panel comes in rather than jumping, which is the same movement the panel
-  # makes and reads as one thing happening.
-  defp mid(nil), do: " mid"
+  # follow the PANEL rather than the open stop, so they leave with it and come back with it,
+  # which is what makes the two read as one movement.
+  defp mid(false), do: " mid"
 
-  defp mid(_open_stop_id), do: ""
+  defp mid(true), do: ""
 
   defp ring(true), do: " open"
 
@@ -932,6 +973,7 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:focused_field, nil)
     |> put_state(:open_stop_id, stop.id)
+    |> put_state(:panel_open, true)
     |> put_state(:placing, false)
     |> announce_editing()
   end

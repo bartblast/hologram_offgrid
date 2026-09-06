@@ -25,12 +25,18 @@ defmodule Offgrid.Components.StopEditor do
   The remarks under it are their own rows, read by the stop and written by whoever is on the
   trip, and shown in the order they were left.
 
-  The whole panel sits behind `{%if @stop}`, because the stop can go while the panel is open:
+  What is drawn sits behind `{%if @stop}`, because the stop can go while the panel is open:
   another browser deletes it, the row leaves this browser's database, and the query answers
-  nil. The panel renders nothing then rather than dying on a name that is not there. The page
+  nil. The panel draws nothing then rather than dying on a name that is not there. The page
   still holds the id of a stop that is gone, and the next click on the list replaces it.
+
+  The BOX outlives the stop by one condition, `@stop || @away`, and that is what lets deleting
+  slide out the way closing does: the row goes this instant, so without it the panel would be
+  gone before the slide began. A stop deleted by somebody else leaves `@away` false, so the
+  panel is not left standing empty on this screen either.
   """
 
+  prop :away, :boolean, default: false
   prop :comments, [Comment], from_query: &comments_query/1
   prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -54,8 +60,9 @@ defmodule Offgrid.Components.StopEditor do
 
   def template do
     ~HOLO"""
-    {%if @stop}
-    <div class="editor">
+    {%if @stop || @away}
+    <div class={editor_class(@away)}>
+      {%if @stop}
       <!-- The header is the itinerary panel's, mirrored: what the panel is about on the left,
            the one control it has on the right, in the same circle at the same size. Escape
            closes this too and did before the button - but a keyboard shortcut nobody is told
@@ -83,6 +90,7 @@ defmodule Offgrid.Components.StopEditor do
 
       <label>Name {%for person <- others_in(@editing, @stop_id, "name", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       <input
+        id="stop_name"
         class={field_class(@editing, @stop_id, "name", @user_id)}
         value={@stop.name}
         $change={:edit, field: :name}
@@ -92,6 +100,7 @@ defmodule Offgrid.Components.StopEditor do
 
       <label>Description {%for person <- others_in(@editing, @stop_id, "description", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       <input
+        id="stop_description"
         class={field_class(@editing, @stop_id, "description", @user_id)}
         value={@stop.description}
         $change={:edit, field: :description}
@@ -121,6 +130,7 @@ defmodule Offgrid.Components.StopEditor do
         </div>
       {/for}
       <input
+        id="stop_comment"
         class={field_class(@editing, @stop_id, "comment", @user_id)}
         placeholder="Add a comment…"
         value={draft_for(@draft, @draft_stop_id, @stop_id)}
@@ -137,6 +147,7 @@ defmodule Offgrid.Components.StopEditor do
           $click={action: :delete_stop, target: "page", params: %{id: @stop_id}}
         >Delete stop</button>
       </div>
+      {/if}
     </div>
     {/if}
     """
@@ -241,6 +252,12 @@ defmodule Offgrid.Components.StopEditor do
   defp tag_class(grants, user_id, id) do
     "tag " <> Cast.colour(Cast.members(grants), user_id, id)
   end
+
+  # Off to the right while it is leaving, which is where it came from. The page keeps the stop
+  # for a moment after saying go, so there is something to look at on the way out.
+  defp editor_class(true), do: "editor away"
+
+  defp editor_class(false), do: "editor"
 
   # A draft typed under another stop is not this stop's.
   defp draft_for(draft, stop_id, stop_id), do: draft
