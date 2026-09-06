@@ -34,6 +34,19 @@ defmodule Offgrid.Entities.StopTest do
     end
   end
 
+  describe "__policies__/0" do
+    # The rules the entity ends up with are the policy's four, exactly as they were when they
+    # were written here - taking a policy on changes where a rule is said, not what it says.
+    test "carries the trip members' rules, taken from the policy" do
+      assert Stop.__policies__() == [
+               {:create, {:trip, :member}, nil, []},
+               {:delete, {:trip, :member}, nil, []},
+               {:read, {:trip, :member}, nil, []},
+               {:update, {:trip, :member}, nil, []}
+             ]
+    end
+  end
+
   describe "new/1" do
     test "applies defaults to absent optional attributes" do
       stop = new(date: ~D[2026-03-30], name: "Ryokan")
