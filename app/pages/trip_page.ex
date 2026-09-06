@@ -226,6 +226,7 @@ defmodule Offgrid.Pages.TripPage do
 
         <button
           class={pen_class(@drawing, @panel_open)}
+          style={pen_style(@drawing, @ink_color)}
           type="button"
           aria-label="Draw"
           $click="toggle_drawing"
@@ -863,6 +864,14 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   defp pen_class(drawing, panel_open), do: "pen" <> armed(drawing) <> mid(panel_open)
+
+  # The pen carries the ink it is loaded with, so a glance at the button says what the next
+  # stroke will be - the picker is only on screen while the pen is out, and after that this is
+  # the only thing that could say. Whether it is ARMED is the ring's job rather than the
+  # colour's, because black is one of the five and the resting button is already black.
+  defp pen_style(false, _ink_color), do: nil
+
+  defp pen_style(true, ink_color), do: "background:#{ink_color}"
 
   defp armed(true), do: " on"
 

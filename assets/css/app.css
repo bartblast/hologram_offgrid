@@ -164,7 +164,10 @@ overflow: hidden;
 .ink-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
 .ink-hit:hover + .ink-line { opacity: .5; }
 .ink-paper polyline { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
-.pen.on { background: var(--you); }
+/* Armed is the ring, not the colour: the button wears whichever ink is loaded, and black is
+   one of the five, so without this a black-loaded pen would look exactly like a pen at rest.
+   The halo is the one a chosen pin used to wear - the app's own word for "this one is on". */
+.pen.on { box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--panel) 55%, transparent), 0 0 0 5px color-mix(in srgb, var(--ink) 22%, transparent); }
 .day { font-family: var(--f-label); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 11px 3px 6px; }
 .stop { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 9px 12px; margin-bottom: 6px; }
 .stop h4 { font-family: var(--f-disp); font-size: 14.5px; font-weight: 600; margin: 0 0 2px; }
