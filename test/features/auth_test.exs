@@ -1,8 +1,6 @@
 defmodule Offgrid.Features.AuthTest do
   use Offgrid.FeatureCase, async: false
 
-  alias Hologram.DB
-  alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripPage
@@ -54,7 +52,7 @@ defmodule Offgrid.Features.AuthTest do
   end
 
   feature "logs in on Enter", %{session: session} do
-    register("nora@offgrid.test")
+    create_user("Nora Vale", "nora@offgrid.test")
 
     session
     |> visit(LogInPage)
@@ -103,7 +101,7 @@ defmodule Offgrid.Features.AuthTest do
   end
 
   feature "sends a signed-in visitor at the root to their trips", %{session: session} do
-    register("nora@offgrid.test")
+    create_user("Nora Vale", "nora@offgrid.test")
 
     session
     |> visit(LogInPage)
@@ -134,7 +132,7 @@ defmodule Offgrid.Features.AuthTest do
   end
 
   feature "keeps somebody already signed in off the cards for signing in", %{session: session} do
-    register("nora@offgrid.test")
+    create_user("Nora Vale", "nora@offgrid.test")
 
     session
     |> visit(LogInPage)
@@ -149,7 +147,7 @@ defmodule Offgrid.Features.AuthTest do
   end
 
   feature "refuses a password that does not match", %{session: session, trip: trip} do
-    register("nora@offgrid.test")
+    create_user("Nora Vale", "nora@offgrid.test")
 
     session
     |> visit(LogInPage)
@@ -166,7 +164,7 @@ defmodule Offgrid.Features.AuthTest do
   end
 
   feature "refuses an address nobody registered, in the same words", %{session: session} do
-    register("nora@offgrid.test")
+    create_user("Nora Vale", "nora@offgrid.test")
 
     session
     |> visit(LogInPage)
@@ -177,11 +175,5 @@ defmodule Offgrid.Features.AuthTest do
     # tell whoever is guessing which addresses are worth guessing at.
     |> assert_text(css(".card"), "Wrong email or password.")
     |> assert_page(LogInPage)
-  end
-
-  defp register(email) do
-    %{email: email, name: "Nora Vale", password_hash: Bcrypt.hash_pwd_salt(@password)}
-    |> User.new()
-    |> DB.create!()
   end
 end

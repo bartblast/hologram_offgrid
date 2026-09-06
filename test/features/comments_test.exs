@@ -5,7 +5,6 @@ defmodule Offgrid.Features.CommentsTest do
   alias Hologram.DB
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.User
 
   setup do
     truncate_trip_data()
@@ -25,8 +24,8 @@ defmodule Offgrid.Features.CommentsTest do
     stop: stop,
     trip: trip
   } do
-    tom = person("Tom Reyes", "tom@offgrid.test")
-    anna = person("Anna Kim", "anna@offgrid.test")
+    tom = create_user("Tom Reyes", "tom@offgrid.test")
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     # Tom spoke first, so his remark is first whatever the alphabet says.
     remark(tom, stop, "Onsen booked. Dinner is not, someone call them before Friday")
@@ -85,7 +84,7 @@ defmodule Offgrid.Features.CommentsTest do
     stop: stop,
     trip: trip
   } do
-    remark(person("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
+    remark(create_user("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
 
     session =
       session
@@ -138,7 +137,7 @@ defmodule Offgrid.Features.CommentsTest do
   end
 
   feature "deleting a stop removes its remarks too", %{session: session, stop: stop, trip: trip} do
-    remark(person("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
+    remark(create_user("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
 
     session
     |> sign_in_as_member(trip)
@@ -153,12 +152,6 @@ defmodule Offgrid.Features.CommentsTest do
     # Both rows have to leave, and the server is the only witness that they did.
     assert DB.read(Stop) == []
     assert DB.read(Comment) == []
-  end
-
-  defp person(name, email) do
-    %{email: email, name: name, password_hash: "x"}
-    |> User.new()
-    |> DB.create!()
   end
 
   defp remark(author, stop, body) do

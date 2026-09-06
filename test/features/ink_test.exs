@@ -4,7 +4,6 @@ defmodule Offgrid.Features.InkTest do
 
   alias Hologram.DB
   alias Offgrid.Entities.Sketch
-  alias Offgrid.Entities.User
   alias Offgrid.Pages.TripPage
   alias Wallaby.Element
 
@@ -57,10 +56,7 @@ defmodule Offgrid.Features.InkTest do
   end
 
   feature "rubs out a line with the pen out, and only one it may", %{session: session, trip: trip} do
-    other =
-      %{email: "tom@offgrid.test", name: "Tom Reyes", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    other = create_user("Tom Reyes", "tom@offgrid.test")
 
     theirs =
       %{
@@ -146,43 +142,6 @@ defmodule Offgrid.Features.InkTest do
     |> click(css(".pen"))
     |> assert_has(css(".pen.on"))
     |> refute_has(css(".addb.on"))
-  end
-
-  # A press and a run of moves over the ink layer, at offsets from its top left, with the
-  # pointer still down at the end.
-  defp press(session, [{first_x, first_y} | rest]) do
-    moves =
-      Enum.map_join(rest, "\n", fn {x, y} ->
-        "layer.dispatchEvent(new PointerEvent('pointermove', at(#{x}, #{y})));"
-      end)
-
-    ink_script(session, """
-    layer.dispatchEvent(new PointerEvent('pointerdown', at(#{first_x}, #{first_y})));
-    #{moves}
-    """)
-  end
-
-  defp release(session, {x, y}) do
-    ink_script(session, "layer.dispatchEvent(new PointerEvent('pointerup', at(#{x}, #{y})));")
-  end
-
-  # A whole stroke, pressed and released.
-  defp drag(session, points) do
-    session
-    |> press(points)
-    |> release(List.last(points))
-  end
-
-  defp ink_script(session, body) do
-    execute_script(session, """
-    const layer = document.querySelector('.ink');
-    const box = layer.getBoundingClientRect();
-    const at = (x, y) => ({bubbles: true, clientX: box.left + x, clientY: box.top + y});
-
-    #{body}
-    """)
-
-    session
   end
 
   defp stroke_points(session) do

@@ -5,7 +5,6 @@ defmodule Offgrid.Features.NewTripTest do
   alias Hologram.Auth
   alias Hologram.DB
   alias Offgrid.Entities.Trip
-  alias Offgrid.Entities.User
   alias Offgrid.Pages.NewTripPage
   alias Offgrid.Pages.TripsPage
 
@@ -43,10 +42,7 @@ defmodule Offgrid.Features.NewTripTest do
   end
 
   feature "starts a trip offline with people already on it", %{session: session, trip: trip} do
-    anna =
-      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     session
     |> sign_in_as_member(trip)

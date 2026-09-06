@@ -2,10 +2,6 @@ defmodule Offgrid.Features.MembersTest do
   use Offgrid.FeatureCase, async: false
 
   alias Hologram.Auth
-  alias Hologram.DB
-  alias Offgrid.Entities.User
-  alias Offgrid.Pages.TripPage
-  alias Offgrid.Pages.TripsPage
 
   setup do
     truncate_trip_data()
@@ -14,9 +10,7 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "an organizer adds somebody by email", %{session: session, trip: trip} do
-    %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-    |> User.new()
-    |> DB.create!()
+    create_user("Anna Kim", "anna@offgrid.test")
 
     session
     |> sign_in_as_organizer(trip)
@@ -31,10 +25,7 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "an organizer removes somebody from the trip", %{session: session, trip: trip} do
-    anna =
-      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     :ok = Auth.grant_role(anna, trip, :member)
 
@@ -73,10 +64,7 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "shows a person holding two roles once", %{session: session, trip: trip} do
-    anna =
-      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     :ok = Auth.grant_role(anna, trip, :member)
     :ok = Auth.grant_role(anna, trip, :organizer)
@@ -93,10 +81,7 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "shows a member the list without the remove controls", %{session: session, trip: trip} do
-    anna =
-      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     :ok = Auth.grant_role(anna, trip, :member)
 
@@ -111,10 +96,7 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "shows everyone on the trip", %{session: session, trip: trip} do
-    anna =
-      %{email: "anna@offgrid.test", name: "Anna Kim", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    anna = create_user("Anna Kim", "anna@offgrid.test")
 
     :ok = Auth.grant_role(anna, trip, :organizer)
 
@@ -131,24 +113,8 @@ defmodule Offgrid.Features.MembersTest do
   end
 
   feature "shows nothing to somebody with no role on the trip", %{session: session, trip: trip} do
-    password = "hakone-2026"
-
-    stranger =
-      %{
-        email: "stranger@offgrid.test",
-        name: "Mira Vale",
-        password_hash: Bcrypt.hash_pwd_salt(password)
-      }
-      |> User.new()
-      |> DB.create!()
-
     session
-    |> visit(Offgrid.Pages.LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: stranger.email)
-    |> fill_in(css(".card .inp", at: 1), with: password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
-    |> visit(TripPage, id: trip.id)
+    |> sign_in_as_stranger(trip, "Mira Vale", "stranger@offgrid.test")
     # The trip's own rules answer the header too, so a stranger is not even told its name.
     |> refute_has(css(".lp-title"))
     # Opened, so that finding nothing is the policy answering and not the panel being shut.

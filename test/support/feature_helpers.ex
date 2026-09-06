@@ -70,6 +70,43 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
+  Creates a user with a real password hash and returns it.
+
+  One place for the account every feature needs beside the browser's own: the person who
+  left a remark, drew a line, or is about to be invited. The password is the suite's one
+  password unless a test says otherwise, so any of them can sign in through the card.
+  """
+  @spec create_user(String.t(), String.t(), String.t()) :: struct
+  def create_user(name, email, password \\ "hakone-2026") do
+    %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(password)}
+    |> User.new()
+    |> DB.create!()
+  end
+
+  @doc """
+  Signs the browser in as a new member of the given trip, by name and address, and returns the
+  session landing on the trip screen.
+
+  The second browser of every two-browser feature: somebody other than the suite's default
+  member, so the two can be told apart on screen.
+  """
+  @spec sign_in_as(struct, struct, String.t(), String.t()) :: struct
+  def sign_in_as(session, trip, name, email) do
+    sign_in(session, trip, :member, name, email)
+  end
+
+  @doc """
+  Signs the browser in as somebody with no role on the given trip at all, and lands them on
+  its screen - which is where the trip's rules can be watched answering nothing.
+  """
+  @spec sign_in_as_stranger(struct, struct, String.t(), String.t()) :: struct
+  def sign_in_as_stranger(session, trip, name, email) do
+    user = create_user(name, email)
+
+    log_in(session, trip, user.email)
+  end
+
+  @doc """
   Signs the browser in as a member of the given trip and returns the session, landing on the
   trip screen.
 
@@ -81,7 +118,7 @@ defmodule Offgrid.FeatureHelpers do
   """
   @spec sign_in_as_member(struct, struct) :: struct
   def sign_in_as_member(session, trip) do
-    sign_in(session, trip, :member, "Nora Vale")
+    sign_in(session, trip, :member, "Nora Vale", "member@offgrid.test")
   end
 
   @doc """
@@ -93,7 +130,47 @@ defmodule Offgrid.FeatureHelpers do
   """
   @spec sign_in_as_organizer(struct, struct) :: struct
   def sign_in_as_organizer(session, trip) do
-    sign_in(session, trip, :organizer, "Iris Kalm")
+    sign_in(session, trip, :organizer, "Iris Kalm", "organizer@offgrid.test")
+  end
+
+  @doc """
+  Presses the pointer on the ink layer at the first offset and moves it through the rest,
+  leaving it down - so a test can look at a stroke while it is still being drawn.
+
+  Offsets are from the layer's top left. Dispatched as pointer events through a script,
+  because a real drag is not something a driver can hold half-way.
+  """
+  @spec press(struct, [{number, number}]) :: struct
+  def press(session, [{first_x, first_y} | rest]) do
+    moves =
+      Enum.map_join(rest, "\n", fn {x, y} ->
+        "layer.dispatchEvent(new PointerEvent('pointermove', at(#{x}, #{y})));"
+      end)
+
+    ink_script(session, """
+    layer.dispatchEvent(new PointerEvent('pointerdown', at(#{first_x}, #{first_y})));
+    #{moves}
+    """)
+  end
+
+  @doc """
+  Lifts the pointer from the ink layer at the given offset, which is what turns a stroke
+  into a row.
+  """
+  @spec release(struct, {number, number}) :: struct
+  def release(session, {x, y}) do
+    ink_script(session, "layer.dispatchEvent(new PointerEvent('pointerup', at(#{x}, #{y})));")
+  end
+
+  @doc """
+  A whole stroke over the ink layer: pressed at the first offset, moved through the rest,
+  released at the last.
+  """
+  @spec drag(struct, [{number, number}]) :: struct
+  def drag(session, points) do
+    session
+    |> press(points)
+    |> release(List.last(points))
   end
 
   @doc """
@@ -180,29 +257,37 @@ defmodule Offgrid.FeatureHelpers do
     end
   end
 
-  defp sign_in(session, trip, role, name) do
-    password = "hakone-2026"
+  defp ink_script(session, body) do
+    Browser.execute_script(session, """
+    const layer = document.querySelector('.ink');
+    const box = layer.getBoundingClientRect();
+    const at = (x, y) => ({bubbles: true, clientX: box.left + x, clientY: box.top + y});
 
-    user =
-      %{
-        email: "#{role}@offgrid.test",
-        name: name,
-        password_hash: Bcrypt.hash_pwd_salt(password)
-      }
-      |> User.new()
-      |> DB.create!()
+    #{body}
+    """)
+
+    session
+  end
+
+  # Through the log-in card, because a session cookie is the server's to mint and there is no
+  # other door to it. Signing in lands on the trips list; the helper goes on to the trip
+  # screen, which is what every caller is actually after.
+  defp log_in(session, trip, email) do
+    session
+    |> visit(LogInPage, [])
+    |> Browser.fill_in(css(".card .inp", at: 0), with: email)
+    |> Browser.fill_in(css(".card .inp", at: 1), with: "hakone-2026")
+    |> Browser.click(button("Log in"))
+    |> assert_page(TripsPage)
+    |> visit(TripPage, id: trip.id)
+  end
+
+  defp sign_in(session, trip, role, name, email) do
+    user = create_user(name, email)
 
     :ok = Auth.grant_role(user, trip, role)
 
-    session
-    |> visit(LogInPage, [])
-    |> Browser.fill_in(css(".card .inp", at: 0), with: user.email)
-    |> Browser.fill_in(css(".card .inp", at: 1), with: password)
-    |> Browser.click(button("Log in"))
-    # Signing in lands on the trips list. The helper goes on to the trip screen, which is what
-    # every caller of it is actually after.
-    |> assert_page(TripsPage)
-    |> visit(TripPage, id: trip.id)
+    log_in(session, trip, user.email)
   end
 
   defp apply_at(query, elements) do

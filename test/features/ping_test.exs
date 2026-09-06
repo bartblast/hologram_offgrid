@@ -2,14 +2,7 @@ defmodule Offgrid.Features.PingTest do
   use Offgrid.FeatureCase, async: false
   use Hologram.DB
 
-  alias Hologram.Auth
   alias Hologram.DB
-  alias Offgrid.Entities.User
-  alias Offgrid.Pages.LogInPage
-  alias Offgrid.Pages.TripPage
-  alias Offgrid.Pages.TripsPage
-
-  @password "hakone-2026"
 
   setup do
     truncate_trip_data()
@@ -26,6 +19,10 @@ defmodule Offgrid.Features.PingTest do
   } do
     one = sign_in_as_member(one, trip)
     two = sign_in_as(two, trip, "Tom Reyes", "tom@offgrid.test")
+
+    # Tom's arrival has been answered, so his page is on the channel before anybody pings it -
+    # a ping sent while he is still joining reaches nobody, by design.
+    assert_text(one, css(".faces"), "TR")
 
     # Unarmed, so a click on the map is a ping rather than a stop.
     one
@@ -82,39 +79,8 @@ defmodule Offgrid.Features.PingTest do
 
     # Herself and Tom. Not the stranger, who was never let onto the channel to answer her.
     assert_has(nora, css(".face", count: 2))
+    assert_has(tom, css(".face", count: 2))
     # And the stranger learns nothing of either arrival - only their own face.
     assert_has(stranger, css(".face", count: 1))
-  end
-
-  # Signed in with no grant on the trip at all, and standing on its page.
-  defp sign_in_as_stranger(session, trip, name, email) do
-    %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(@password)}
-    |> User.new()
-    |> DB.create!()
-
-    session
-    |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: email)
-    |> fill_in(css(".card .inp", at: 1), with: @password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
-    |> visit(TripPage, id: trip.id)
-  end
-
-  defp sign_in_as(session, trip, name, email) do
-    user =
-      %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(@password)}
-      |> User.new()
-      |> DB.create!()
-
-    :ok = Auth.grant_role(user, trip, :member)
-
-    session
-    |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: email)
-    |> fill_in(css(".card .inp", at: 1), with: @password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
-    |> visit(TripPage, id: trip.id)
   end
 end

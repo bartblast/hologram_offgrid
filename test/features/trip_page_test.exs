@@ -208,10 +208,7 @@ defmodule Offgrid.Features.TripPageTest do
       |> Stop.new()
       |> DB.create!()
 
-    tom =
-      %{email: "tom@offgrid.test", name: "Tom Reyes", password_hash: "x"}
-      |> User.new()
-      |> DB.create!()
+    tom = create_user("Tom Reyes", "tom@offgrid.test")
 
     %{author_id: tom.id, body: "Before eight.", stop_id: stop.id}
     |> Comment.new()

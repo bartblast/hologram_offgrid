@@ -1,13 +1,8 @@
 defmodule Offgrid.Features.StopCrudTest do
   use Offgrid.FeatureCase, async: false
 
-  alias Hologram.Auth
   alias Hologram.DB
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.User
-  alias Offgrid.Pages.LogInPage
-  alias Offgrid.Pages.TripPage
-  alias Offgrid.Pages.TripsPage
 
   setup do
     truncate_trip_data()
@@ -98,22 +93,5 @@ defmodule Offgrid.Features.StopCrudTest do
     |> click(css("#canvas"))
     |> refute_has(css(".editor"))
     |> refute_has(css(".pin"))
-  end
-
-  defp sign_in_as(session, trip, name, email) do
-    user =
-      %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt("hakone-2026")}
-      |> User.new()
-      |> DB.create!()
-
-    :ok = Auth.grant_role(user, trip, :member)
-
-    session
-    |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: email)
-    |> fill_in(css(".card .inp", at: 1), with: "hakone-2026")
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
-    |> visit(TripPage, id: trip.id)
   end
 end
