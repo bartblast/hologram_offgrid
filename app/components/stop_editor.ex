@@ -31,6 +31,7 @@ defmodule Offgrid.Components.StopEditor do
   prop :stop, Stop, from_query: &stop_query/1
   prop :stop_id, :string
   prop :trip_id, :string
+  prop :tz_offset, :integer, default: 0
   prop :user_id, :string
 
   # The draft of a remark is the panel's own business, so it is state here - everything else
@@ -75,7 +76,7 @@ defmodule Offgrid.Components.StopEditor do
       <label>Comments</label>
       {%for comment <- @comments}
         <div class="cmt">
-          <b><i class={dot_class(comment, @comments, @user_id)}></i>{comment.author.name} · {clock(comment.created_at)}</b>
+          <b><i class={dot_class(comment, @comments, @user_id)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
           <p>{comment.body}</p>
         </div>
       {/for}
@@ -146,7 +147,15 @@ defmodule Offgrid.Components.StopEditor do
   # The time the remark was left, as a clock reading rather than "2h ago". A relative time
   # needs a "now", and this browser's now against a stamp another device wrote is not a
   # number worth showing - offline for a day, it would say a comment is from the future.
-  defp clock(at), do: "#{pad(at.hour)}:#{pad(at.minute)}"
+  #
+  # Read as the browser reads it: the row holds UTC, and the page hands down the minutes the
+  # browser is behind it. Plain integer arithmetic, wrapped at midnight, rather than a
+  # `DateTime` shift whose client port nothing here has checked.
+  defp clock(at, offset) do
+    minutes = Integer.mod(at.hour * 60 + at.minute - offset, 1_440)
+
+    "#{pad(div(minutes, 60))}:#{pad(rem(minutes, 60))}"
+  end
 
   # The id breaks a tie in the stamp: ids are time-ordered too, and two remarks written in
   # the same millisecond must still come out in the order they were left.

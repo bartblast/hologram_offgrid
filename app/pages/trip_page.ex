@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
   alias Offgrid.Box
+  alias Offgrid.Clock
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
   alias Offgrid.Components.Ink
@@ -60,6 +61,7 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:stroke, [])
       |> put_state(:stroke_box, nil)
       |> put_state(:trip_id, params.id)
+      |> put_state(:tz_offset, 0)
       |> put_state(:user_id, server.user_id)
       |> put_state(:you, initials(server.user_id))
       # Queued here and run on the client the moment the page is up, after its first render -
@@ -214,6 +216,7 @@ defmodule Offgrid.Pages.TripPage do
             cid="stop_editor"
             stop_id={@open_stop_id}
             trip_id={@trip_id}
+            tz_offset={@tz_offset}
             user_id={@user_id}
           />
         {/if}
@@ -299,9 +302,13 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   # Everything that can only happen once the page is on screen. The box needs a rendered
-  # element to measure, and joining the trip needs a page that is listening.
+  # element to measure, the clock's offset needs a browser to ask, and joining the trip needs
+  # a page that is listening.
   def action(:mounted, _params, component) do
-    measured = put_state(component, :box, Box.size("canvas"))
+    measured =
+      component
+      |> put_state(:box, Box.size("canvas"))
+      |> put_state(:tz_offset, Clock.offset_minutes())
 
     if component.state.you do
       join(measured)

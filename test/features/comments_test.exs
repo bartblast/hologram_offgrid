@@ -47,7 +47,38 @@ defmodule Offgrid.Features.CommentsTest do
     # Coloured by the order they first spoke here: Tom first, Anna second.
     session |> find(css(".cmt", at: 0)) |> assert_has(css("i.a"))
     session |> find(css(".cmt", at: 1)) |> assert_has(css("i.t"))
+
+    # The clock reads as this browser reads it, not as the server wrote it: the row holds
+    # UTC, and the screen shows it shifted by the offset the browser itself reports.
+    [first] =
+      Comment
+      |> filter(body: "Onsen booked. Dinner is not, someone call them before Friday")
+      |> DB.read()
+
+    assert_text(session, css(".cmt", at: 0), local_clock(session, first.created_at))
   end
+
+  # "HH:MM" of the given UTC moment in the browser's own time zone, computed the way the
+  # panel does - so the assertion holds wherever the machine running it is.
+  defp local_clock(session, at) do
+    execute_script(session, "return new Date().getTimezoneOffset()", fn offset ->
+      send(self(), {:offset, offset})
+    end)
+
+    offset =
+      receive do
+        {:offset, offset} -> trunc(offset)
+      after
+        5_000 -> flunk("the browser never answered its offset")
+      end
+
+    minutes = Integer.mod(at.hour * 60 + at.minute - offset, 1_440)
+    "#{pad(div(minutes, 60))}:#{pad(rem(minutes, 60))}"
+  end
+
+  defp pad(number) when number < 10, do: "0#{number}"
+
+  defp pad(number), do: "#{number}"
 
   feature "leaves a remark from the editor, which shows before it travels", %{
     session: session,
