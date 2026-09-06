@@ -116,7 +116,10 @@ overflow: hidden;
 .cursor.a b i { background: var(--anna); }
 .cursor.t .cur { fill: var(--tom); }
 .cursor.t b i { background: var(--tom); }
-.pen { position: absolute; right: var(--clear-editor); bottom: 16px; width: 34px; height: 34px; display: grid; place-items: center; font-size: 15px; background: var(--ink); color: var(--panel); border: 0; border-radius: 50%; box-shadow: var(--shadow); cursor: pointer; z-index: 5; }
+.pen { position: absolute; right: var(--clear-editor); bottom: 16px; width: 34px; height: 34px; display: grid; place-items: center; background: var(--ink); color: var(--panel); border: 0; border-radius: 50%; box-shadow: var(--shadow); cursor: pointer; z-index: 5; }
+.pen svg { display: block; width: 17px; height: 17px; }
+.pen path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.pen path.solid { fill: currentColor; stroke: none; }
 .pen.mid, .faces.mid, .members.mid, .cpop.mid { right: 16px; }
 /* The three follow the panel rather than being placed by it: one duration for all four, so
    the panel arriving and the controls making room are a single movement. */

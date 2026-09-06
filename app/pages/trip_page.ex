@@ -239,7 +239,15 @@ defmodule Offgrid.Pages.TripPage do
           type="button"
           aria-label="Draw"
           $click="toggle_drawing"
-        >✎</button>
+        >
+          <!-- The same nib the pointer carries while the pen is out, so the control and the
+               cursor are one object. Drawn rather than typed: the character it used to be is a
+               font's, thin wherever the font is thin, and it read as barely there. -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 19.5 L7.5 12 L15.5 4 L20 8.5 L12 16.5 Z" />
+            <path class="solid" d="M4.5 19.5 L8.6 18 L6 15.4 Z" />
+          </svg>
+        </button>
 
         {%if @drawing}
           <div class={cpop_class(@panel_open)}>
