@@ -43,9 +43,15 @@ defmodule Offgrid.Pages.TripPage do
   """
 
   # How often a browser says it is still here, and how long the others wait before letting it
-  # go. Three turns of tolerance, so one message lost in the post costs nobody their face.
-  @heartbeat_ms 3_000
-  @forget_after_ms 10_000
+  # go. Chosen for the demo: cutting the network makes somebody disappear in one to two
+  # seconds, and restoring it brings them back within a beat.
+  #
+  # The ratio is the whole safety margin, and at two beats inside the window it is thin - a
+  # single beat arriving late, which in dev a slow first request after a recompile can cause,
+  # is enough to let somebody go who never left. Shortening only the heartbeat widens the
+  # margin without changing what the camera sees.
+  @heartbeat_ms 1_000
+  @forget_after_ms 2_000
 
   route "/trips/:id"
 
