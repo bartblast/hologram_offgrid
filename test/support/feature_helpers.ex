@@ -33,8 +33,9 @@ defmodule Offgrid.FeatureHelpers do
   @doc """
   Creates a basemap with the given name and slug and returns it.
 
-  The bounds are Japan's whatever the map is called. Nothing reads them yet - the projection
-  arrives with the pins - and a test that needs honest ones will say so by needing them.
+  The bounds are Japan's whatever the map is called: the pins and the route project through
+  them, so a stop in Kyoto lands on the map and one in Warsaw is off its edge, whichever
+  basemap the row is named after. A test that needs other bounds will say so by needing them.
   """
   @spec create_basemap(String.t(), String.t()) :: struct
   def create_basemap(name, slug) do

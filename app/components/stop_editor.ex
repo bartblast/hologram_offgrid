@@ -4,6 +4,7 @@ defmodule Offgrid.Components.StopEditor do
 
   alias Hologram.DB
   alias Offgrid.Components.TripCalendar
+  alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
 
@@ -24,7 +25,6 @@ defmodule Offgrid.Components.StopEditor do
   another browser deletes it, the row leaves this browser's database, and the query answers
   nil. The panel renders nothing then rather than dying on a name that is not there. The page
   still holds the id of a stop that is gone, and the next click on the list replaces it.
-  Time chips arrive in C9, delete in C10, and real comments in phase G.
   """
 
   prop :comments, [Comment], from_query: &comments_query/1
@@ -51,7 +51,7 @@ defmodule Offgrid.Components.StopEditor do
     {%if @stop}
     <div class="editor">
       <div class="ed-title">{@stop.name}</div>
-      <div class="ed-sub">{day_label(@stop.date)}</div>
+      <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
 
       <label>Name</label>
       <input class="inp" value={@stop.name} $change={:edit, field: :name} />
@@ -68,7 +68,7 @@ defmodule Offgrid.Components.StopEditor do
 
         {%for time <- times()}
           <button type="button" class={time_class(time, @stop.time)} $click={:set_time, time: time}>
-            {time_label(time)}
+            {Dates.time_label(time)}
           </button>
         {/for}
       </div>
@@ -154,7 +154,7 @@ defmodule Offgrid.Components.StopEditor do
   defp clock(at, offset) do
     minutes = Integer.mod(at.hour * 60 + at.minute - offset, 1_440)
 
-    "#{pad(div(minutes, 60))}:#{pad(rem(minutes, 60))}"
+    "#{Dates.pad(div(minutes, 60))}:#{Dates.pad(rem(minutes, 60))}"
   end
 
   # The id breaks a tie in the stamp: ids are time-ordered too, and two remarks written in
@@ -191,27 +191,6 @@ defmodule Offgrid.Components.StopEditor do
 
   defp draft_for(_draft, _draft_stop_id, _stop_id), do: ""
 
-  defp day_label(date) do
-    "#{weekday(Date.day_of_week(date))} #{date.day} #{month(date.month)}"
-  end
-
-  defp month(1), do: "Jan"
-  defp month(2), do: "Feb"
-  defp month(3), do: "Mar"
-  defp month(4), do: "Apr"
-  defp month(5), do: "May"
-  defp month(6), do: "Jun"
-  defp month(7), do: "Jul"
-  defp month(8), do: "Aug"
-  defp month(9), do: "Sep"
-  defp month(10), do: "Oct"
-  defp month(11), do: "Nov"
-  defp month(12), do: "Dec"
-
-  defp pad(number) when number < 10, do: "0#{number}"
-
-  defp pad(number), do: "#{number}"
-
   defp stop_query(stop_id) do
     Stop
     |> filter(id: stop_id)
@@ -231,20 +210,10 @@ defmodule Offgrid.Components.StopEditor do
     if Time.compare(time, selected) == :eq, do: "on"
   end
 
-  defp time_label(time), do: "#{pad(time.hour)}:#{pad(time.minute)}"
-
   # Half-hourly through the part of the day an itinerary actually uses.
   defp times do
     Enum.map(16..40, fn half_hours ->
       Time.new!(div(half_hours, 2), rem(half_hours, 2) * 30, 0)
     end)
   end
-
-  defp weekday(1), do: "Mon"
-  defp weekday(2), do: "Tue"
-  defp weekday(3), do: "Wed"
-  defp weekday(4), do: "Thu"
-  defp weekday(5), do: "Fri"
-  defp weekday(6), do: "Sat"
-  defp weekday(7), do: "Sun"
 end

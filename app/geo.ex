@@ -27,6 +27,18 @@ defmodule Offgrid.Geo do
   end
 
   @doc """
+  Returns true when the stop has a place, and that place is on the basemap.
+
+  The one rule the pins and the route both follow, written once: a stop with no coordinates
+  yet is not drawn, and neither is one whose place is off the edge of the map the trip is on.
+  Neither is an error.
+  """
+  @spec placed?(map, Basemap.t()) :: boolean
+  def placed?(stop, basemap) do
+    stop.lat != nil and stop.lng != nil and within?(stop.lat, stop.lng, basemap)
+  end
+
+  @doc """
   Returns where the place sits on the basemap, as percentages of its width and height from the
   top left.
 

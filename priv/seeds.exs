@@ -157,18 +157,3 @@ Enum.each(stops, fn attrs ->
     IO.puts("+ #{attrs.name}")
   end
 end)
-
-# Whatever else is in the database gets the trip too - a stop written through the interface
-# before the column existed has none, and the next commit makes the reference required, which
-# no row may be missing by then. This is the backfill step, and it is a sweep rather than a
-# list because the rows it has to reach were never named here.
-orphans =
-  Stop
-  |> filter(trip_id: nil)
-  |> DB.read()
-
-Enum.each(orphans, fn stop ->
-  :ok = DB.update(Stop, stop.id, %{trip_id: trip.id})
-
-  IO.puts("~ #{stop.name} joined #{trip_name}")
-end)

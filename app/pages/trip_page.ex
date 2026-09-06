@@ -3,15 +3,15 @@ defmodule Offgrid.Pages.TripPage do
   use Hologram.DB
 
   alias Hologram.Auth
-  alias Offgrid.Components.StopEditor
-  alias Offgrid.Components.StopsList
   alias Offgrid.Box
   alias Offgrid.Clock
+  alias Offgrid.Components.Ink
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapPins
-  alias Offgrid.Components.Ink
   alias Offgrid.Components.MapRoute
   alias Offgrid.Components.MembersList
+  alias Offgrid.Components.StopEditor
+  alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
@@ -19,15 +19,21 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
-  alias Offgrid.Geo
   alias Offgrid.Entities.User
+  alias Offgrid.Geo
   alias Offgrid.Pages.LogInPage
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
-  The stops, their pins and the route between them come from the database. The faces are
-  still hardcoded - phase G replaces them, without changing the shape of the screen.
+  Everything drawn here is a row read from the browser's own database - the stops, their
+  pins, the route through them, everyone's ink - except three things that are gestures
+  rather than records: the stroke being drawn right now, the ping, and who is here. Those
+  live in this page's state and travel as broadcasts on the trip's channel.
+
+  The page holds the screen's modes (placing a stop, drawing) and the ids the panels are open
+  on; every component under it reads its own rows through its own query. The page cannot hold
+  a query prop, which is why the header, the itinerary and the layers are components.
   """
 
   route "/trips/:id"

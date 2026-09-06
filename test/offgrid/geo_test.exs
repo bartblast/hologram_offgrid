@@ -27,6 +27,20 @@ defmodule Offgrid.GeoTest do
     end
   end
 
+  describe "placed?/2" do
+    test "admits a stop with a place on the map" do
+      assert placed?(%{lat: 35.0116, lng: 135.7681}, @japan)
+    end
+
+    test "refuses a stop with no place yet" do
+      refute placed?(%{lat: nil, lng: nil}, @japan)
+    end
+
+    test "refuses a stop whose place is off this map" do
+      refute placed?(%{lat: 52.23, lng: 21.01}, @japan)
+    end
+  end
+
   describe "to_percent/3" do
     test "puts the north-west corner at the top left" do
       assert to_percent(45.6, 128.4, @japan) == {0.0, 0.0}

@@ -3,6 +3,31 @@ defmodule Offgrid.DatesTest do
 
   import Offgrid.Dates
 
+  describe "day_label/1" do
+    test "spells the weekday, the day and the month" do
+      assert day_label(~D[2026-03-28]) == "Sat 28 Mar"
+    end
+
+    test "does not pad a single-digit day" do
+      assert day_label(~D[2026-04-06]) == "Mon 6 Apr"
+    end
+  end
+
+  describe "month/1" do
+    test "names the first and the last month" do
+      assert month(1) == "Jan"
+      assert month(12) == "Dec"
+    end
+  end
+
+  describe "pad/1" do
+    test "pads below ten and leaves the rest alone" do
+      assert pad(5) == "05"
+      assert pad(10) == "10"
+      assert pad(0) == "00"
+    end
+  end
+
   describe "parse/1" do
     test "reads what a date input spells" do
       assert parse("2026-05-15") == ~D[2026-05-15]
@@ -44,6 +69,23 @@ defmodule Offgrid.DatesTest do
 
     test "reads the same for a trip that starts and ends on one day" do
       assert span(~D[2026-05-15], ~D[2026-05-15]) == "15 – 15 May"
+    end
+  end
+
+  describe "time_label/1" do
+    test "pads the hour and the minute" do
+      assert time_label(~T[09:05:00]) == "09:05"
+    end
+
+    test "reads a time that came back from the database with microseconds" do
+      assert time_label(~T[14:20:00.000000]) == "14:20"
+    end
+  end
+
+  describe "weekday/1" do
+    test "names the days at both ends of the week" do
+      assert weekday(~D[2026-03-30]) == "Mon"
+      assert weekday(~D[2026-04-05]) == "Sun"
     end
   end
 

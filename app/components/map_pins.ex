@@ -50,9 +50,7 @@ defmodule Offgrid.Components.MapPins do
 
   defp placed?(_stop, nil), do: false
 
-  defp placed?(stop, trip) do
-    stop.lat != nil and stop.lng != nil and Geo.within?(stop.lat, stop.lng, trip.basemap)
-  end
+  defp placed?(stop, trip), do: Geo.placed?(stop, trip.basemap)
 
   defp position(stop, trip) do
     {x, y} = Geo.to_percent(stop.lat, stop.lng, trip.basemap)

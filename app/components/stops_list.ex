@@ -2,6 +2,7 @@ defmodule Offgrid.Components.StopsList do
   use Hologram.Component
   use Hologram.DB
 
+  alias Offgrid.Dates
   alias Offgrid.Entities.Stop
 
   @moduledoc """
@@ -41,24 +42,7 @@ defmodule Offgrid.Components.StopsList do
     Enum.chunk_by(stops, & &1.date)
   end
 
-  defp day_label([stop | _rest]) do
-    date = stop.date
-
-    "#{weekday(Date.day_of_week(date))} #{date.day} #{month(date.month)}"
-  end
-
-  defp month(1), do: "Jan"
-  defp month(2), do: "Feb"
-  defp month(3), do: "Mar"
-  defp month(4), do: "Apr"
-  defp month(5), do: "May"
-  defp month(6), do: "Jun"
-  defp month(7), do: "Jul"
-  defp month(8), do: "Aug"
-  defp month(9), do: "Sep"
-  defp month(10), do: "Oct"
-  defp month(11), do: "Nov"
-  defp month(12), do: "Dec"
+  defp day_label([stop | _rest]), do: Dates.day_label(stop.date)
 
   defp row_class(%Stop{id: id}, id), do: "stop open"
 
@@ -79,25 +63,9 @@ defmodule Offgrid.Components.StopsList do
 
   defp summary(%Stop{description: description, time: nil}), do: description
 
-  defp summary(%Stop{description: nil, time: time}), do: time_label(time)
+  defp summary(%Stop{description: nil, time: time}), do: Dates.time_label(time)
 
   defp summary(%Stop{description: description, time: time}) do
-    "#{time_label(time)} · #{description}"
+    "#{Dates.time_label(time)} · #{description}"
   end
-
-  defp time_label(time) do
-    "#{pad(time.hour)}:#{pad(time.minute)}"
-  end
-
-  defp pad(number) when number < 10, do: "0#{number}"
-
-  defp pad(number), do: "#{number}"
-
-  defp weekday(1), do: "Mon"
-  defp weekday(2), do: "Tue"
-  defp weekday(3), do: "Wed"
-  defp weekday(4), do: "Thu"
-  defp weekday(5), do: "Fri"
-  defp weekday(6), do: "Sat"
-  defp weekday(7), do: "Sun"
 end

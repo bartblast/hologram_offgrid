@@ -2,6 +2,7 @@ defmodule Offgrid.Components.TripCalendar do
   use Hologram.Component
   use Hologram.DB
 
+  alias Offgrid.Dates
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
 
@@ -33,7 +34,7 @@ defmodule Offgrid.Components.TripCalendar do
     <div class="cal">
       {%for day <- trip_days(@trip)}
         <button type="button" class={day_class(day, @date)} $click={:pick, date: day}>
-          <span class="dw">{weekday(Date.day_of_week(day))}</span>
+          <span class="dw">{Dates.weekday(day)}</span>
           <span class="nm">{day.day}</span>
           <span class="dt">
             {%for _stop <- stops_on(@stops, day)}
@@ -75,12 +76,4 @@ defmodule Offgrid.Components.TripCalendar do
   defp trip_days(nil), do: []
 
   defp trip_days(trip), do: Date.range(trip.starts_on, trip.ends_on)
-
-  defp weekday(1), do: "Mon"
-  defp weekday(2), do: "Tue"
-  defp weekday(3), do: "Wed"
-  defp weekday(4), do: "Thu"
-  defp weekday(5), do: "Fri"
-  defp weekday(6), do: "Sat"
-  defp weekday(7), do: "Sun"
 end
