@@ -117,8 +117,17 @@ overflow: hidden;
 .stop h4 { font-family: var(--f-disp); font-size: 14.5px; font-weight: 600; margin: 0 0 2px; }
 .stop p { margin: 0; font-size: 12.5px; color: var(--ink2); }
 .stop.open { border-color: color-mix(in srgb, var(--you) 55%, var(--line)); background: color-mix(in srgb, var(--you) 5%, var(--panel)); }
-.sel { position: absolute; inset: -3px; border: 2px solid var(--anna); border-radius: calc(var(--r) + 2px); pointer-events: none; }
-.sel b { position: absolute; top: -10px; left: 9px; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #fff; background: var(--anna); border-radius: 4px; padding: 1px 7px; }
+.sel { position: absolute; inset: -3px; border: 2px solid var(--muted); border-radius: calc(var(--r) + 2px); pointer-events: none; }
+.sel b { position: absolute; top: -10px; left: 9px; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #fff; background: var(--muted); border-radius: 4px; padding: 1px 7px; }
+.sel.a { border-color: var(--anna); }
+.sel.a b { background: var(--anna); }
+.sel.t { border-color: var(--tom); }
+.sel.t b { background: var(--tom); }
+.sel:nth-of-type(2) b { left: auto; right: 9px; }
+label .tag { display: inline-block; margin-left: 6px; font-size: 9px; font-weight: 700; letter-spacing: .06em; line-height: 1.5; color: #fff; background: var(--muted); border-radius: 4px; padding: 0 5px; text-transform: uppercase; }
+label .tag.a { background: var(--anna); }
+label .tag.t { background: var(--tom); }
+.inp.busy { border-color: var(--line2); box-shadow: inset 0 0 0 1px var(--line2); }
 /* editor */
 .editor { position: absolute; top: 0; right: 0; bottom: 0; width: 320px; background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; }
 .ed-title { font-family: var(--f-disp); font-size: 16px; font-weight: 600; }

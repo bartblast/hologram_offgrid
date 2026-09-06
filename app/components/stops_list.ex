@@ -2,8 +2,12 @@ defmodule Offgrid.Components.StopsList do
   use Hologram.Component
   use Hologram.DB
 
+  alias Hologram.Auth.RoleGrant
+  alias Offgrid.Cast
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.Trip
+  alias Offgrid.Presence
 
   @moduledoc """
   The itinerary: every stop of the trip, under the day it happens on.
@@ -17,9 +21,12 @@ defmodule Offgrid.Components.StopsList do
   nulls last ascending, and so does the client's query kernel.
   """
 
+  prop :editing, :map, default: %{}
+  prop :grants, [RoleGrant], from_query: &members_query/1
   prop :open_stop_id, :string, default: nil
   prop :stops, [Stop], from_query: &stops_query/1
   prop :trip_id, :string
+  prop :user_id, :string, default: nil
 
   def template do
     ~HOLO"""
@@ -30,6 +37,9 @@ defmodule Offgrid.Components.StopsList do
         <div class={row_class(stop, @open_stop_id)} $click={action: :open_stop, target: "page", params: %{id: stop.id}}>
           <h4>{stop.name}</h4>
           <p>{summary(stop)}</p>
+          {%for person <- others_on(@editing, stop.id, @user_id)}
+            <div class={sel_class(@grants, @user_id, person.id)}><b>{person.initials}</b></div>
+          {/for}
         </div>
       {/for}
     {/for}
@@ -47,6 +57,25 @@ defmodule Offgrid.Components.StopsList do
   defp row_class(%Stop{id: id}, id), do: "stop open"
 
   defp row_class(_stop, _open_stop_id), do: "stop"
+
+  # The trip's members in join order, for the cast.
+  defp members_query(trip_id) do
+    RoleGrant
+    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
+    |> order_by(:created_at)
+  end
+
+  # Everyone but you who has this stop open. A ring around the row, in their colour, with
+  # their letters on it - the mockup's own mark for "somebody is here".
+  defp others_on(editing, stop_id, user_id) do
+    editing
+    |> Presence.on_stop(stop_id)
+    |> Enum.reject(&(&1.id == user_id))
+  end
+
+  defp sel_class(grants, user_id, id) do
+    "sel " <> Cast.colour(Cast.members(grants), user_id, id)
+  end
 
   # Scoped by trip, now that a screen is one trip's. The policy would already keep another
   # person's stops out, but it would not keep out the ones on YOUR other trips - membership is

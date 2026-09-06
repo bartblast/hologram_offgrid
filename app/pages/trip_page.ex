@@ -62,6 +62,8 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:cursors, %{})
       |> put_state(:details_open, false)
       |> put_state(:drawing, false)
+      |> put_state(:editing, %{})
+      |> put_state(:focused_field, nil)
       |> put_state(:ink_color, "#ff2d55")
       |> put_state(:join_tries, 0)
       |> put_state(:maps_open, false)
@@ -162,7 +164,13 @@ defmodule Offgrid.Pages.TripPage do
             <MapPicker cid="map_picker" trip_id={@trip_id} />
           {/if}
 
-          <StopsList cid="stops_list" open_stop_id={@open_stop_id} trip_id={@trip_id} />
+          <StopsList
+            cid="stops_list"
+            editing={@editing}
+            open_stop_id={@open_stop_id}
+            trip_id={@trip_id}
+            user_id={@user_id}
+          />
         </div>
 
         <div class={faces_class(@members_open)}>
@@ -238,6 +246,7 @@ defmodule Offgrid.Pages.TripPage do
 
           <StopEditor
             cid="stop_editor"
+            editing={@editing}
             stop_id={@open_stop_id}
             trip_id={@trip_id}
             tz_offset={@tz_offset}
@@ -265,7 +274,10 @@ defmodule Offgrid.Pages.TripPage do
 
     :ok = DB.delete(Stop, params.id)
 
-    put_state(component, :open_stop_id, nil)
+    component
+    |> put_state(:focused_field, nil)
+    |> put_state(:open_stop_id, nil)
+    |> announce_editing()
   end
 
   def action(:close_details, _params, component) do
@@ -273,7 +285,30 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   def action(:close_stop, _params, component) do
-    put_state(component, :open_stop_id, nil)
+    component
+    |> put_state(:focused_field, nil)
+    |> put_state(:open_stop_id, nil)
+    |> announce_editing()
+  end
+
+  # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
+  def action(:editing_changed, params, component) do
+    put_state(component, :editing, Presence.edit(component.state.editing, params))
+  end
+
+  # This browser's pointer landed in a field of the open stop. Remembered here, on the page,
+  # because the mark on the other screens is about the stop AND the field, and the stop is the
+  # page's to know.
+  def action(:field_focused, params, component) do
+    component
+    |> put_state(:focused_field, params.field)
+    |> announce_editing()
+  end
+
+  def action(:field_blurred, _params, component) do
+    component
+    |> put_state(:focused_field, nil)
+    |> announce_editing()
   end
 
   def action(:log_out, _params, component) do
@@ -407,29 +442,24 @@ defmodule Offgrid.Pages.TripPage do
   # stream was listening on the channel. This action runs only once the join has come back,
   # a whole round trip after the subscription, so nobody can answer us before we can hear.
   def action(:joined, _params, component) do
-    put_command(component, :announce,
-      id: component.state.user_id,
-      initials: component.state.you,
-      trip_id: component.state.trip_id
-    )
+    put_command(component, :announce, whereabouts(component))
   end
 
   # Somebody arrived. Add them, and say back that we are here - one answer each, so a new
-  # arrival learns the room without anybody keeping a list of it anywhere.
+  # arrival learns the room without anybody keeping a list of it anywhere. Both the arrival
+  # and the answer carry what the person has open, so a newcomer sees the marks at once.
   def action(:member_arrived, params, component) do
-    answered =
-      put_command(component, :answer,
-        id: component.state.user_id,
-        initials: component.state.you,
-        trip_id: component.state.trip_id
-      )
-
-    put_state(answered, :present, Presence.arrive(component.state.present, params))
+    component
+    |> put_command(:answer, whereabouts(component))
+    |> put_state(:present, Presence.arrive(component.state.present, params))
+    |> put_state(:editing, Presence.edit(component.state.editing, params))
   end
 
   # An answer to our own arrival. Only adds, so the round stops here.
   def action(:member_here, params, component) do
-    put_state(component, :present, Presence.arrive(component.state.present, params))
+    component
+    |> put_state(:present, Presence.arrive(component.state.present, params))
+    |> put_state(:editing, Presence.edit(component.state.editing, params))
   end
 
   def action(:open_details, _params, component) do
@@ -437,7 +467,10 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   def action(:open_stop, params, component) do
-    put_state(component, :open_stop_id, params.id)
+    component
+    |> put_state(:focused_field, nil)
+    |> put_state(:open_stop_id, params.id)
+    |> announce_editing()
   end
 
   # The whole local-first claim in one function: the click becomes a place, the place becomes
@@ -525,7 +558,9 @@ defmodule Offgrid.Pages.TripPage do
         {:trip, params.trip_id},
         :member_arrived,
         id: params.id,
-        initials: params.initials
+        initials: params.initials,
+        stop_id: params.stop_id,
+        field: params.field
       )
     else
       server
@@ -540,7 +575,26 @@ defmodule Offgrid.Pages.TripPage do
         {:trip, params.trip_id},
         :member_here,
         id: params.id,
-        initials: params.initials
+        initials: params.initials,
+        stop_id: params.stop_id,
+        field: params.field
+      )
+    else
+      server
+    end
+  end
+
+  def command(:editing, params, server) do
+    if on_trip?(server, params.trip_id) do
+      put_broadcast_except(
+        server,
+        {:session, server.session_id},
+        {:trip, params.trip_id},
+        :editing_changed,
+        id: params.id,
+        initials: params.initials,
+        stop_id: params.stop_id,
+        field: params.field
       )
     else
       server
@@ -672,6 +726,26 @@ defmodule Offgrid.Pages.TripPage do
     |> tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
   end
 
+  # Tells the others what this browser has open now - the stop and the field, or nothing.
+  # Called at the end of every action that changes either, so the message always carries the
+  # state the action left behind.
+  defp announce_editing(component) do
+    tell(component, :editing, whereabouts(component))
+  end
+
+  # Who this browser is and what it has open, as every presence message carries it.
+  defp whereabouts(component) do
+    state = component.state
+
+    [
+      id: state.user_id,
+      initials: state.you,
+      trip_id: state.trip_id,
+      stop_id: state.open_stop_id,
+      field: state.focused_field
+    ]
+  end
+
   # A gesture is sent only while the browser has a network. A command that cannot reach the
   # server raises, and a ping or a pointer position is not worth an error - so with no network
   # it is shown here and told to nobody, which is the truth of the moment.
@@ -750,7 +824,9 @@ defmodule Offgrid.Pages.TripPage do
       |> DB.create()
 
     component
+    |> put_state(:focused_field, nil)
     |> put_state(:open_stop_id, stop.id)
     |> put_state(:placing, false)
+    |> announce_editing()
   end
 end

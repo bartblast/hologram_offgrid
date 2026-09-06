@@ -10,6 +10,7 @@ defmodule Offgrid.Components.StopEditor do
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
+  alias Offgrid.Presence
 
   @moduledoc """
   The right-hand panel for one stop: what it is called, when it happens, and what
@@ -31,6 +32,7 @@ defmodule Offgrid.Components.StopEditor do
   """
 
   prop :comments, [Comment], from_query: &comments_query/1
+  prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
   prop :stop, Stop, from_query: &stop_query/1
   prop :stop_id, :string
@@ -57,11 +59,23 @@ defmodule Offgrid.Components.StopEditor do
       <div class="ed-title">{@stop.name}</div>
       <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
 
-      <label>Name</label>
-      <input class="inp" value={@stop.name} $change={:edit, field: :name} />
+      <label>Name {%for person <- others_in(@editing, @stop_id, "name", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
+      <input
+        class={field_class(@editing, @stop_id, "name", @user_id)}
+        value={@stop.name}
+        $change={:edit, field: :name}
+        $focus={action: :field_focused, target: "page", params: %{field: "name"}}
+        $blur={action: :field_blurred, target: "page"}
+      />
 
-      <label>Description</label>
-      <input class="inp" value={@stop.description} $change={:edit, field: :description} />
+      <label>Description {%for person <- others_in(@editing, @stop_id, "description", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
+      <input
+        class={field_class(@editing, @stop_id, "description", @user_id)}
+        value={@stop.description}
+        $change={:edit, field: :description}
+        $focus={action: :field_focused, target: "page", params: %{field: "description"}}
+        $blur={action: :field_blurred, target: "page"}
+      />
 
       <label>Day</label>
       <TripCalendar cid="trip_calendar" date={@stop.date} stop_id={@stop_id} trip_id={@trip_id} />
@@ -77,7 +91,7 @@ defmodule Offgrid.Components.StopEditor do
         {/for}
       </div>
 
-      <label>Comments</label>
+      <label>Comments {%for person <- others_in(@editing, @stop_id, "comment", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       {%for comment <- @comments}
         <div class="cmt">
           <b><i class={dot_class(@grants, @user_id, comment)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
@@ -85,11 +99,13 @@ defmodule Offgrid.Components.StopEditor do
         </div>
       {/for}
       <input
-        class="inp"
+        class={field_class(@editing, @stop_id, "comment", @user_id)}
         placeholder="Add a comment…"
         value={draft_for(@draft, @draft_stop_id, @stop_id)}
         $change={:edit_draft}
         $key_down.enter="add_comment"
+        $focus={action: :field_focused, target: "page", params: %{field: "comment"}}
+        $blur={action: :field_blurred, target: "page"}
       />
 
       <div class="ed-foot">
@@ -184,6 +200,24 @@ defmodule Offgrid.Components.StopEditor do
     RoleGrant
     |> filter(entity_id: [trip_id, nil], entity_type: Trip)
     |> order_by(:created_at)
+  end
+
+  # The input takes a quieter border while somebody else is in it - the tag beside the label
+  # says who.
+  defp field_class(editing, stop_id, field, user_id) do
+    if others_in(editing, stop_id, field, user_id) == [], do: "inp", else: "inp busy"
+  end
+
+  # Everyone but you with this field of this stop focused. Your own focus is under your own
+  # hand and needs no mark.
+  defp others_in(editing, stop_id, field, user_id) do
+    editing
+    |> Presence.on_field(stop_id, field)
+    |> Enum.reject(&(&1.id == user_id))
+  end
+
+  defp tag_class(grants, user_id, id) do
+    "tag " <> Cast.colour(Cast.members(grants), user_id, id)
   end
 
   # A draft typed under another stop is not this stop's.

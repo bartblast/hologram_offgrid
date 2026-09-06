@@ -1,6 +1,9 @@
 defmodule Offgrid.Features.PresenceTest do
   use Offgrid.FeatureCase, async: false
 
+  alias Hologram.DB
+  alias Offgrid.Entities.Stop
+
   setup do
     truncate_trip_data()
 
@@ -32,6 +35,77 @@ defmodule Offgrid.Features.PresenceTest do
     # And once she stops, the cursor fades on its own. This waits while it is still there, so
     # it is the fade being asserted rather than an absence that was never a presence.
     |> refute_has(css(".cursor"))
+  end
+
+  # What somebody else has open travels the same way as their pointer, and shows twice: a
+  # ring on the stop in the itinerary, and a tag beside the field they are in.
+  @sessions 2
+  feature "marks the stop and the field somebody else is editing",
+          %{sessions: [nora, tom], trip: trip} do
+    %{date: ~D[2026-03-29], name: "Ryokan", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    nora = sign_in_as_member(nora, trip)
+    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+
+    assert_text(nora, css(".faces"), "TR")
+    assert_text(tom, css(".faces"), "NV")
+
+    # Nora opens the stop and lands in its name.
+    nora
+    |> click(css(".stop", text: "Ryokan"))
+    |> click(css(".editor .inp", at: 0))
+    # Her own screen carries no mark of her own.
+    |> refute_has(css(".sel"))
+    |> refute_has(css(".tag"))
+
+    # Tom sees the ring on the row, in her colour, before he has opened anything.
+    tom
+    |> assert_has(css(".stop .sel"))
+    |> assert_text(css(".stop .sel"), "NV")
+    |> assert_has(css(".stop .sel.a"))
+    # Opening the same stop, he sees which field she is in.
+    |> click(css(".stop", text: "Ryokan"))
+    |> assert_has(css("label .tag", count: 1))
+    |> assert_text(css("label", text: "Name"), "NV")
+    |> assert_has(css(".inp.busy", count: 1))
+
+    # She moves to the description; the tag moves with her.
+    click(nora, css(".editor .inp", at: 1))
+
+    tom
+    |> assert_text(css("label", text: "Description"), "NV")
+    |> assert_has(css("label .tag", count: 1))
+
+    # She closes the stop; both marks go.
+    send_keys(nora, [:escape])
+
+    tom
+    |> refute_has(css(".sel"))
+    |> refute_has(css(".tag"))
+  end
+
+  @sessions 2
+  feature "tells a newcomer what is already open", %{sessions: [nora, tom], trip: trip} do
+    %{date: ~D[2026-03-29], name: "Ryokan", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    nora = sign_in_as_member(nora, trip)
+
+    nora
+    |> click(css(".stop", text: "Ryokan"))
+    |> click(css(".editor .inp", at: 0))
+
+    # Tom arrives afterwards. Nora's answer to his arrival carries what she has open, so the
+    # ring is on his screen at once - nobody had to move.
+    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+
+    tom
+    |> assert_text(css(".faces"), "NV")
+    |> assert_has(css(".stop .sel"))
+    |> assert_text(css(".stop .sel"), "NV")
   end
 
   # Pointer moves over the map's click surface, at offsets from its top left, fifty
