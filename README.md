@@ -4,8 +4,9 @@ A collaborative trip planner, and the demo application for [Hologram](https://ho
 an Elixir framework that compiles your application to JavaScript and runs it in the browser.
 
 Plan a trip with other people: stops with a day and a time, pins and a route on a map, remarks
-on a stop, freehand ink, and who else is looking at it right now. Everything but signing in
-works with the network off and syncs when it comes back.
+on a stop, freehand ink, and who else is looking at it right now - their pointer on the map,
+and a mark on the stop and the field they are editing. Everything but signing in works with
+the network off and syncs when it comes back.
 
 It runs alongside a stock Phoenix application rather than replacing one - the endpoint, the
 router and the layouts are Phoenix's, and every page is Hologram's.
