@@ -6,6 +6,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Box
   alias Offgrid.Cast
   alias Offgrid.Clock
+  alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
   alias Offgrid.Components.Ink
   alias Offgrid.Components.MapPicker
@@ -23,7 +24,9 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
   alias Offgrid.Geo
+  alias Offgrid.Link
   alias Offgrid.Pages.LogInPage
+  alias Offgrid.Presence
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
@@ -56,6 +59,7 @@ defmodule Offgrid.Pages.TripPage do
     initialized =
       component
       |> put_state(:box, nil)
+      |> put_state(:cursors, %{})
       |> put_state(:details_open, false)
       |> put_state(:drawing, false)
       |> put_state(:ink_color, "#ff2d55")
@@ -89,7 +93,12 @@ defmodule Offgrid.Pages.TripPage do
         <!-- The surface a click lands on, laid over the terrain rather than wrapped around it: a
              click whose target sits inside a child component does not reach a listener on the
              element around it, so the surface is a plain element with nothing inside. -->
-        <div id="canvas" class={canvas_class(@placing)} $click="place_stop"></div>
+        <div
+          id="canvas"
+          class={canvas_class(@placing)}
+          $click="place_stop"
+          $pointer_move.throttle(100)="point"
+        ></div>
 
         <MapRoute cid="map_route" trip_id={@trip_id} />
 
@@ -114,6 +123,8 @@ defmodule Offgrid.Pages.TripPage do
         </svg>
 
         <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
+
+        <Cursors cid="cursors" cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
 
         {%if @ping}
           <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}></div>
@@ -314,6 +325,47 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :box, Box.size("canvas"))
   end
 
+  # Somebody's pointer moved over their map. Keep the newest place, and queue a check that
+  # will drop it unless a newer one arrives first - see `Offgrid.Presence` for why a sequence
+  # number rather than a clock or a leave event.
+  def action(:cursor_moved, params, component) do
+    {cursors, seq} = Presence.cursor(component.state.cursors, params)
+
+    component
+    |> put_state(:cursors, cursors)
+    |> put_action(name: :expire_cursor, params: %{id: params.id, seq: seq}, delay: 2_500)
+  end
+
+  def action(:expire_cursor, params, component) do
+    put_state(
+      component,
+      :cursors,
+      Presence.expire(component.state.cursors, params.id, params.seq)
+    )
+  end
+
+  # This browser's pointer moved over the map: say where, as a share of the map, at most ten
+  # times a second. Nothing is drawn here - your own pointer is the real one.
+  #
+  # Only the empty canvas hears the pointer, so a pointer over a pin, the panel or the ink
+  # layer with the pen armed sends nothing and the last position fades on the other screens.
+  # A pointer that leaves the map fades the same way, since there is no leave event to tell.
+  def action(:point, params, component) do
+    case component.state.box do
+      nil ->
+        component
+
+      {width, height} ->
+        tell(component, :cursor,
+          id: component.state.user_id,
+          initials: component.state.you,
+          trip_id: component.state.trip_id,
+          x: params.event.offset_x / width * 100,
+          y: params.event.offset_y / height * 100
+        )
+    end
+  end
+
   # Everything that can only happen once the page is on screen. The box needs a rendered
   # element to measure, the clock's offset needs a browser to ask, and joining the trip needs
   # a page that is listening.
@@ -372,12 +424,12 @@ defmodule Offgrid.Pages.TripPage do
         trip_id: component.state.trip_id
       )
 
-    put_state(answered, :present, seen(component.state.present, params))
+    put_state(answered, :present, Presence.arrive(component.state.present, params))
   end
 
   # An answer to our own arrival. Only adds, so the round stops here.
   def action(:member_here, params, component) do
-    put_state(component, :present, seen(component.state.present, params))
+    put_state(component, :present, Presence.arrive(component.state.present, params))
   end
 
   def action(:open_details, _params, component) do
@@ -495,6 +547,23 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
+  def command(:cursor, params, server) do
+    if on_trip?(server, params.trip_id) do
+      put_broadcast_except(
+        server,
+        {:session, server.session_id},
+        {:trip, params.trip_id},
+        :cursor_moved,
+        id: params.id,
+        initials: params.initials,
+        x: params.x,
+        y: params.y
+      )
+    else
+      server
+    end
+  end
+
   # The broadcast leaves out the session that sent it, which has already drawn its own.
   def command(:ping, params, server) do
     if on_trip?(server, params.trip_id) do
@@ -600,7 +669,14 @@ defmodule Offgrid.Pages.TripPage do
     component
     |> put_state(:ping, %{x: x, y: y})
     |> put_action(name: :clear_ping, delay: 2_000)
-    |> put_command(:ping, trip_id: component.state.trip_id, x: x, y: y)
+    |> tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
+  end
+
+  # A gesture is sent only while the browser has a network. A command that cannot reach the
+  # server raises, and a ping or a pointer position is not worth an error - so with no network
+  # it is shown here and told to nobody, which is the truth of the moment.
+  defp tell(component, command, params) do
+    if Link.online?(), do: put_command(component, command, params), else: component
   end
 
   # The trip's own read rule, asked on the server from the grants it holds. A trip the server
@@ -627,15 +703,6 @@ defmodule Offgrid.Pages.TripPage do
     stroke
     |> Enum.reverse()
     |> Enum.map_join(" ", fn {x, y} -> "#{x},#{y}" end)
-  end
-
-  # Somebody already here is not here twice, however many times they say so.
-  defp seen(present, %{id: id, initials: initials}) do
-    if Enum.any?(present, &(&1.id == id)) do
-      present
-    else
-      present ++ [%{id: id, initials: initials}]
-    end
   end
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the

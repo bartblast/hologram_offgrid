@@ -71,6 +71,12 @@ overflow: hidden;
 .ping::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--you); animation: rip 2.4s ease-out infinite; }
 @keyframes rip { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ping::before { animation: none; } }
+.cursor { position: absolute; transform: translate(-3px, -3px); pointer-events: none; z-index: 3; transition: left .1s linear, top .1s linear; }
+.cursor i { display: block; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; background: var(--muted); border: 2px solid var(--panel); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.cursor b { position: absolute; left: 12px; top: 10px; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #fff; background: var(--muted); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.cursor.a i, .cursor.a b { background: var(--anna); }
+.cursor.t i, .cursor.t b { background: var(--tom); }
+@media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
 .pen { position: absolute; right: 336px; bottom: 16px; width: 34px; height: 34px; display: grid; place-items: center; font-size: 15px; background: var(--ink); color: var(--panel); border: 0; border-radius: 50%; box-shadow: var(--shadow); cursor: pointer; z-index: 5; }
 .pen.mid { right: 16px; }
 .faces { position: absolute; top: 16px; right: 336px; display: flex; background: color-mix(in srgb, var(--panel) 90%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; z-index: 4; }
