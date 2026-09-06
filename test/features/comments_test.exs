@@ -88,6 +88,24 @@ defmodule Offgrid.Features.CommentsTest do
     assert comment.author.email == "member@offgrid.test"
   end
 
+  feature "starts a new stop with an empty remark box", %{session: session, trip: trip} do
+    %{date: ~D[2026-03-30], name: "Fushimi Inari", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    session =
+      session
+      |> sign_in_as_member(trip)
+      |> click(css(".stop", text: "Ryokan"))
+      |> fill_in(css(".editor .inp", at: 2), with: "Onsen booked, dinner is not")
+      |> click(css(".stop", text: "Fushimi Inari"))
+      |> assert_text(css(".ed-title"), "Fushimi Inari")
+
+    # The half-written remark was Ryokan's. The panel keeps its state from one stop to the
+    # next, so the draft has to know which stop it was for.
+    assert session |> find(css(".editor .inp", at: 2)) |> Wallaby.Element.value() == ""
+  end
+
   feature "deleting a stop removes its remarks too", %{session: session, stop: stop, trip: trip} do
     remark(person("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
 

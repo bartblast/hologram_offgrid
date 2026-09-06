@@ -102,6 +102,13 @@ defmodule Offgrid.Features.InkTest do
       |> assert_has(css(".cdot", count: 5))
       |> assert_has(css(".cdot.on", count: 1))
       |> click(css(".cdot", at: 1))
+      # Arming + and putting it away again is no reason to forget the colour: the pen comes
+      # back out in the colour it was put away with.
+      |> click(css(".addb"))
+      |> assert_has(css(".addb.on"))
+      |> click(css(".addb"))
+      |> click(css(".pen"))
+      |> assert_has(css(".cdot.on", count: 1))
       |> drag([{200, 150}, {240, 190}, {280, 230}])
 
     assert await_pending_writes(session, 0)

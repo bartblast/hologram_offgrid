@@ -423,7 +423,6 @@ defmodule Offgrid.Pages.TripPage do
   def action(:toggle_placing, _params, component) do
     component
     |> put_state(:drawing, false)
-    |> put_state(:ink_color, "#ff2d55")
     |> put_state(:placing, !component.state.placing)
   end
 
@@ -538,6 +537,15 @@ defmodule Offgrid.Pages.TripPage do
       |> one()
       |> DB.read()
 
+    save_stroke(component, points, trip)
+  end
+
+  # No trip readable, no ink to keep. A stranger reaches this screen and its rules answer
+  # nothing, so the tools have nothing to work on and say so by doing nothing - the stroke
+  # is dropped the way a tap is.
+  defp save_stroke(component, _points, nil), do: idle_stroke(component)
+
+  defp save_stroke(component, points, trip) do
     {:ok, _sketch} =
       %{
         author_id: component.state.user_id,
@@ -649,14 +657,22 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   defp place(component, event) do
-    {width, height} = component.state.box
-
     trip =
       Trip
       |> filter(id: component.state.trip_id)
       |> include(:basemap)
       |> one()
       |> DB.read()
+
+    place(component, event, trip)
+  end
+
+  # No trip readable, nowhere to put a stop: the click disarms the + and does nothing else,
+  # for the same reason `save_stroke/3` drops a stranger's ink.
+  defp place(component, _event, nil), do: put_state(component, :placing, false)
+
+  defp place(component, event, trip) do
+    {width, height} = component.state.box
 
     {lat, lng} = Geo.from_offset(event.offset_x, event.offset_y, width, height, trip.basemap)
 

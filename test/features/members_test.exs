@@ -156,5 +156,13 @@ defmodule Offgrid.Features.MembersTest do
     # The list is read through the trip's own rules, so a stranger is told nothing about who
     # is on it - not even that anybody is.
     |> refute_has(css(".mrow"))
+    # The tools have nothing to work on either, and say so by doing nothing: no stop is placed,
+    # nothing crashes, and the pen still arms.
+    |> click(css(".addb"))
+    |> click(css("#canvas"))
+    |> refute_has(css(".editor"))
+    |> refute_has(css("#hologram-uncaught-error-overlay"))
+    |> click(css(".pen"))
+    |> assert_has(css(".pen.on"))
   end
 end

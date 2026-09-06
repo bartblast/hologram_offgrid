@@ -36,7 +36,14 @@ defmodule Offgrid.Components.StopEditor do
   # The draft of a remark is the panel's own business, so it is state here - everything else
   # the panel shows is a row. init/2 because the panel appears in a page that is already
   # loaded, the way it does when a stop is clicked.
-  def init(_props, component), do: put_state(component, :draft, "")
+  #
+  # The panel keeps its cid, and so its state, from one stop to the next, so the draft
+  # remembers which stop it was typed under and reads as empty under any other.
+  def init(_props, component) do
+    component
+    |> put_state(:draft, "")
+    |> put_state(:draft_stop_id, nil)
+  end
 
   def template do
     ~HOLO"""
@@ -75,7 +82,7 @@ defmodule Offgrid.Components.StopEditor do
       <input
         class="inp"
         placeholder="Add a comment…"
-        value={@draft}
+        value={draft_for(@draft, @draft_stop_id, @stop_id)}
         $change={:edit_draft}
         $key_down.enter="add_comment"
       />
@@ -97,13 +104,16 @@ defmodule Offgrid.Components.StopEditor do
   # Enter with nothing typed is not a remark. Anything else becomes a row at once - the list
   # above reads the same rows, so it grows in the same frame - and travels afterwards.
   def action(:add_comment, _params, component) do
-    if String.trim(component.state.draft) == "" do
+    state = component.state
+    draft = draft_for(state.draft, state.draft_stop_id, component.props.stop_id)
+
+    if String.trim(draft) == "" do
       component
     else
       {:ok, _comment} =
         %{
           author_id: component.props.user_id,
-          body: component.state.draft,
+          body: draft,
           stop_id: component.props.stop_id
         }
         |> Comment.new()
@@ -114,7 +124,9 @@ defmodule Offgrid.Components.StopEditor do
   end
 
   def action(:edit_draft, params, component) do
-    put_state(component, :draft, params.event.value)
+    component
+    |> put_state(:draft, params.event.value)
+    |> put_state(:draft_stop_id, component.props.stop_id)
   end
 
   def action(:set_time, params, component) do
@@ -164,6 +176,11 @@ defmodule Offgrid.Components.StopEditor do
       end
     end
   end
+
+  # A draft typed under another stop is not this stop's.
+  defp draft_for(draft, stop_id, stop_id), do: draft
+
+  defp draft_for(_draft, _draft_stop_id, _stop_id), do: ""
 
   defp day_label(date) do
     "#{weekday(Date.day_of_week(date))} #{date.day} #{month(date.month)}"
