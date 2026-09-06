@@ -58,6 +58,16 @@ defmodule Offgrid.Pages.TripPage do
   @heartbeat_ms 500
   @forget_after_ms 2_000
 
+  # How often this browser posts where its pointer is, while it is moving. Sent on a steady
+  # timer rather than straight off the pointer event, because a throttled event fires on the
+  # leading AND trailing edge of its window - so positions left in clusters, arrived in
+  # clusters, and the receiving screen animated each one over a fixed span that no longer
+  # matched the gaps between them. Even sending is what makes even movement.
+  #
+  # The timer runs only while the pointer is moving: a tick that finds nothing new to say
+  # stops, and the next movement starts it again, so an idle screen pays nothing.
+  @cursor_ms 100
+
   route "/trips/:id"
 
   param :id, :string
@@ -93,6 +103,9 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:ping, nil)
       |> put_state(:present, [])
       |> put_state(:placing, false)
+      |> put_state(:pointer, nil)
+      |> put_state(:pointer_sent, nil)
+      |> put_state(:pointer_ticking, false)
       |> put_state(:stroke, [])
       |> put_state(:stroke_box, nil)
       |> put_state(:trip_id, params.id)
@@ -120,7 +133,7 @@ defmodule Offgrid.Pages.TripPage do
           id="canvas"
           class={canvas_class(@placing)}
           $click="place_stop"
-          $pointer_move.throttle(100)="point"
+          $pointer_move.throttle(50)="point"
         ></div>
 
         <MapRoute cid="map_route" drag={@drag} trip_id={@trip_id} />
@@ -497,11 +510,12 @@ defmodule Offgrid.Pages.TripPage do
     )
   end
 
-  # This browser's pointer moved over the map: say where, as a share of the map, at most ten
-  # times a second. Nothing is drawn here - your own pointer is the real one.
+  # This browser's pointer moved over the map. Only remembered here, never sent - the sending
+  # is on its own timer, so the other screens receive at one rate however this hand moves.
+  # Nothing is drawn here either; your own pointer is the real one.
   #
   # Only the empty canvas hears the pointer, so a pointer over a pin, the panel or the ink
-  # layer with the pen armed sends nothing and the last position fades on the other screens.
+  # layer with the pen armed says nothing and the last position fades on the other screens.
   # A pointer that leaves the map fades the same way, since there is no leave event to tell.
   def action(:point, params, component) do
     case component.state.box do
@@ -509,13 +523,34 @@ defmodule Offgrid.Pages.TripPage do
         component
 
       {width, height} ->
-        tell(component, :cursor,
-          id: component.state.user_id,
-          initials: component.state.you,
-          trip_id: component.state.trip_id,
-          x: params.event.offset_x / width * 100,
-          y: params.event.offset_y / height * 100
-        )
+        moved =
+          put_state(component, :pointer, %{
+            x: params.event.offset_x / width * 100,
+            y: params.event.offset_y / height * 100
+          })
+
+        if moved.state.pointer_ticking, do: moved, else: start_pointing(moved)
+    end
+  end
+
+  # One position every tick while the hand is moving, and nothing at all once it stops - a tick
+  # with nothing new to say is the last one until the pointer moves again.
+  def action(:send_pointer, _params, component) do
+    state = component.state
+
+    if state.pointer && state.pointer != state.pointer_sent do
+      component
+      |> put_state(:pointer_sent, state.pointer)
+      |> tell(:cursor,
+        id: state.user_id,
+        initials: state.you,
+        trip_id: state.trip_id,
+        x: state.pointer.x,
+        y: state.pointer.y
+      )
+      |> put_action(name: :send_pointer, delay: @cursor_ms)
+    else
+      put_state(component, :pointer_ticking, false)
     end
   end
 
@@ -922,6 +957,12 @@ defmodule Offgrid.Pages.TripPage do
     said = said_something(component)
 
     tell(said, :editing, whereabouts(said))
+  end
+
+  defp start_pointing(component) do
+    component
+    |> put_state(:pointer_ticking, true)
+    |> put_action(name: :send_pointer, delay: @cursor_ms)
   end
 
   # Every message from somebody restarts the clock on them: a check queued now carrying the
