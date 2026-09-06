@@ -31,6 +31,8 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(TripsPage)
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
+    # Logging out from the list, which is where somebody with no trip open would look for it.
+    |> visit(TripsPage)
     |> click(button("Log out"))
     |> assert_page(LogInPage)
     |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
@@ -39,6 +41,65 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(TripsPage)
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
+  end
+
+  feature "signs up on Enter", %{session: session} do
+    session
+    |> visit(SignUpPage)
+    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
+    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> send_keys([:enter])
+    |> assert_page(TripsPage)
+  end
+
+  feature "logs in on Enter", %{session: session} do
+    register("nora@offgrid.test")
+
+    session
+    |> visit(LogInPage)
+    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 1), with: @password)
+    |> send_keys([:enter])
+    |> assert_page(TripsPage)
+  end
+
+  feature "asks for a name on the sign-up card", %{session: session} do
+    session
+    |> visit(SignUpPage)
+    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> click(button("Create account"))
+    |> assert_text(css(".card"), "Tell us your name.")
+    |> assert_page(SignUpPage)
+  end
+
+  # Its own feature on its own browser rather than a second try on the card above: opening
+  # the same address again let the browser put the typed address back into the field, and
+  # the card went through.
+  feature "asks for an email on the sign-up card", %{session: session} do
+    session
+    |> visit(SignUpPage)
+    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
+    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> click(button("Create account"))
+    |> assert_text(css(".card"), "Enter your email.")
+    |> assert_page(SignUpPage)
+  end
+
+  feature "wants a real password", %{session: session} do
+    session
+    |> visit(SignUpPage)
+    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
+    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
+    |> fill_in(css(".card .inp", at: 2), with: "short")
+    |> click(button("Create account"))
+    |> assert_text(css(".card"), "Choose a password of at least 8 characters.")
+    |> assert_page(SignUpPage)
+    # Nothing was written for the short one: the same address goes through afterwards.
+    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> click(button("Create account"))
+    |> assert_page(TripsPage)
   end
 
   feature "sends a signed-in visitor at the root to their trips", %{session: session} do

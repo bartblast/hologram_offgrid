@@ -45,10 +45,22 @@ defmodule Offgrid.Pages.LogInPage do
           <p class="sub">Your trips are where you left them.</p>
 
           <label>Email</label>
-          <input class="inp" type="email" value={@email} $change={:edit, field: :email} />
+          <input
+            class="inp"
+            type="email"
+            value={@email}
+            $change={:edit, field: :email}
+            $key_down.enter="log_in"
+          />
 
           <label>Password</label>
-          <input class="inp" type="password" value={@password} $change={:edit, field: :password} />
+          <input
+            class="inp"
+            type="password"
+            value={@password}
+            $change={:edit, field: :password}
+            $key_down.enter="log_in"
+          />
 
           {%if @error}
             <p class="err">{@error}</p>

@@ -26,7 +26,11 @@ defmodule Offgrid.Pages.SignUpPage do
 
   What comes back is an action either way. On success the server has already put the user
   id on the session, so the page just navigates. On failure the message renders under the
-  email field, which is where the one failure worth naming belongs.
+  email field and names the field to look at.
+
+  The password's floor is checked in the command rather than declared on the entity, because
+  the password is not an attribute - only its hash is, and a hash of nothing is as long as
+  any other.
   """
 
   route "/sign-up"
@@ -34,6 +38,8 @@ defmodule Offgrid.Pages.SignUpPage do
   layout Offgrid.DefaultLayout
 
   middleware Offgrid.Middleware.GuestOnly
+
+  @password_min_length 8
 
   def init(_params, component, _server) do
     component
@@ -54,17 +60,29 @@ defmodule Offgrid.Pages.SignUpPage do
           <p class="sub">Offgrid works wherever you do.</p>
 
           <label>Name</label>
-          <input class="inp" value={@name} $change={:edit, field: :name} />
+          <input class="inp" value={@name} $change={:edit, field: :name} $key_down.enter="sign_up" />
 
           <label>Email</label>
-          <input class="inp" type="email" value={@email} $change={:edit, field: :email} />
+          <input
+            class="inp"
+            type="email"
+            value={@email}
+            $change={:edit, field: :email}
+            $key_down.enter="sign_up"
+          />
 
           {%if @error}
             <p class="err">{@error}</p>
           {/if}
 
           <label>Password</label>
-          <input class="inp" type="password" value={@password} $change={:edit, field: :password} />
+          <input
+            class="inp"
+            type="password"
+            value={@password}
+            $change={:edit, field: :password}
+            $key_down.enter="sign_up"
+          />
 
           <button class="btn" type="button" $click="sign_up">Create account</button>
 
@@ -102,7 +120,17 @@ defmodule Offgrid.Pages.SignUpPage do
     put_page(component, TripsPage)
   end
 
+  # The password is checked before it is hashed - a hash costs real time, and one of nothing
+  # is not worth it.
   def command(:sign_up, params, server) do
+    if String.length(params.password) < @password_min_length do
+      put_action(server, :sign_up_failed, %{message: password_message()})
+    else
+      register(params, server)
+    end
+  end
+
+  defp register(params, server) do
     password_hash = Bcrypt.hash_pwd_salt(params.password)
 
     result =
@@ -122,10 +150,17 @@ defmodule Offgrid.Pages.SignUpPage do
     end
   end
 
-  # The taken email is the only refusal worth naming: it is the one a person can act on,
-  # and it is the one that happens. Everything else the entity refuses is a field they can
-  # see is empty.
+  # One sentence, naming the field to look at, in the order the card asks for them. The map
+  # may hold several keys at once, so each clause matches on one and the first wins.
+  defp message(%{name: _violations}), do: "Tell us your name."
+
   defp message(%{email: [:unique]}), do: "That email is already taken."
 
+  defp message(%{email: _violations}), do: "Enter your email."
+
   defp message(_violations), do: "Check the form and try again."
+
+  defp password_message do
+    "Choose a password of at least #{@password_min_length} characters."
+  end
 end

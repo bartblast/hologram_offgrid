@@ -4,6 +4,7 @@ defmodule Offgrid.Pages.TripsPage do
   alias Hologram.UI.Link
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripsList
+  alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.NewTripPage
 
   @moduledoc """
@@ -34,9 +35,28 @@ defmodule Offgrid.Pages.TripsPage do
           <TripsList cid="trips_list" />
 
           <Link class="btn" to={NewTripPage}>New trip</Link>
+
+          <p class="alt"><button class="signout" type="button" $click="log_out">Log out</button></p>
         </div>
       </div>
     </div>
     """
+  end
+
+  def action(:log_out, _params, component) do
+    put_command(component, :log_out)
+  end
+
+  def action(:logged_out, _params, component) do
+    put_page(component, LogInPage)
+  end
+
+  # Only the server can forget an identity - the session cookie it is kept in is the
+  # server's to write, which is why this is a command and not an action. The same pair the
+  # trip screen has: this is the other screen a signed-in person stands on.
+  def command(:log_out, _params, server) do
+    server
+    |> delete_user_id()
+    |> put_action(:logged_out)
   end
 end

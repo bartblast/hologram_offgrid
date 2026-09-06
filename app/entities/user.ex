@@ -1,8 +1,10 @@
 defmodule Offgrid.Entities.User do
   use Hologram.Entity, user: true
 
-  attribute :email, :string, unique: true
-  attribute :name, :string
+  # min_length, because an empty string satisfies required: without the floor an account with
+  # no name and no address is a valid row, and the unique index then refuses the second one.
+  attribute :email, :string, min_length: 1, unique: true
+  attribute :name, :string, min_length: 1
   attribute :password_hash, :string, server_only: true
 
   # Reading is open because a trip has to show who is on it. Nothing else is, and the

@@ -25,6 +25,18 @@ defmodule Offgrid.Entities.UserTest do
       assert Entity.validate(user) == {:error, %{email: [:required]}}
     end
 
+    test "refuses an empty email" do
+      user = new(email: "", name: "Anna", password_hash: "$2b$12$hash")
+
+      assert Entity.validate(user) == {:error, %{email: [{:min_length, 1}]}}
+    end
+
+    test "refuses an empty name" do
+      user = new(email: "anna@example.com", name: "", password_hash: "$2b$12$hash")
+
+      assert Entity.validate(user) == {:error, %{name: [{:min_length, 1}]}}
+    end
+
     test "refuses a name that is not a string" do
       user = new(email: "anna@example.com", name: :anna, password_hash: "$2b$12$hash")
 
