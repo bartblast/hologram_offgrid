@@ -109,8 +109,11 @@ defmodule Offgrid.Pages.TripPage do
 
         <MapRoute cid="map_route" drag={@drag} trip_id={@trip_id} />
 
+        <!-- The pointer carries the nib, in the ink it is loaded with, so what the hand is
+             about to do is under the hand rather than described somewhere else. -->
         <div
           class={ink_class(@drawing)}
+          style={nib_cursor(@drawing, @ink_color)}
           $pointer_down="ink_start"
           $pointer_move="ink_extend"
           $pointer_up="ink_finish"
@@ -755,6 +758,25 @@ defmodule Offgrid.Pages.TripPage do
   defp ink_class(true), do: "ink on"
 
   defp ink_class(false), do: "ink"
+
+  # A pen nib drawn at the pointer, tip first, in whichever ink is loaded - so the cursor is
+  # also the swatch. CSS has no pen keyword, so it is an SVG carried inline; the two numbers
+  # after the url are the hotspot, which sits on the nib's point rather than the image's
+  # corner, or the line would start a nib's width away from where it was aimed.
+  #
+  # The colour is spelled without its hash, which is put back percent-encoded: a `#` inside a
+  # data URI starts a fragment and would cut the drawing in half.
+  defp nib_cursor(false, _ink_color), do: nil
+
+  defp nib_cursor(true, "#" <> rgb) do
+    svg =
+      "<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26'>" <>
+        "<path d='M3 23 L6.5 14.5 L17.5 3.5 L22.5 8.5 L11.5 19.5 Z' fill='%23#{rgb}'" <>
+        " stroke='white' stroke-width='1.6' stroke-linejoin='round'/>" <>
+        "<path d='M3 23 L7.5 21 L5 18.5 Z' fill='white'/></svg>"
+
+    "cursor: url(\"data:image/svg+xml;utf8,#{svg}\") 3 23, cell"
+  end
 
   # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
   defp ink_colors, do: ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
