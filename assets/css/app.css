@@ -158,11 +158,17 @@ label .tag.t { background: var(--tom); }
 .editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; }
 /* The mirror of .lp-head and .addb in the itinerary panel: the same row, the same circle,
    the same size, the same inversion on hover - so the two panels read as a pair. */
-.ed-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* The control sits on the TITLE's line, not in the middle of the title and the day under it -
+   which is where a way out belongs, at the top corner of what it closes. flex-start with a
+   hair of lift, because the button is taller than the line it stands beside. */
+.ed-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ed-head .ed-close { margin-top: -2px; }
 .ed-close { width: 27px; height: 27px; flex: none; display: grid; place-items: center; color: var(--ink2); background: var(--panel); border: 1px solid var(--line2); border-radius: 50%; cursor: pointer; }
 .ed-close:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
 .ed-title { font-family: var(--f-disp); font-size: 16px; font-weight: 600; }
-.ed-sub { font-family: var(--f-label); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; }
+/* The gap under the day line belongs to the header row, not to the line: inside the flex item
+   it made the row taller than its text, and the control centred against it sat low. */
+.ed-sub { font-family: var(--f-label); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 0; }
 label { display: block; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); margin: 13px 0 5px; }
 .inp, textarea.inp { display: block; width: 100%; font-family: var(--f-body); font-size: 14px; color: var(--ink); background: var(--panel2); border: 1px solid var(--line2); border-radius: var(--r); padding: 7px 10px; }
 .inp:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
