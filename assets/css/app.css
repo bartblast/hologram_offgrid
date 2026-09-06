@@ -271,7 +271,9 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
  .mrow i.y { background: var(--you); }
 .mrow i.off { background: transparent; border: 1.5px solid var(--line2); }
 .mrow em { font-style: normal; margin-left: auto; font-family: var(--f-label); font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.mrow u { text-decoration: none; color: var(--muted); cursor: pointer; padding-left: 4px; }
+.mrow u { display: grid; place-items: center; width: 16px; height: 16px; flex: none; margin-left: 5px; text-decoration: none; color: var(--muted); cursor: pointer; }
+.mrow u svg { display: block; width: 9px; height: 9px; }
+.mrow u path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
 .mrow u:hover { color: #b3564a; }
 .members .inp { margin-top: 9px; }
 /* ink color pop */

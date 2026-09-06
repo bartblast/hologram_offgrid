@@ -51,7 +51,13 @@ defmodule Offgrid.Components.MembersList do
         <i class={dot_class(@grants, @present, @user_id, grant.user_id)}></i>{grant.user.name} <em>{role_label(grant.role)}</em>
 
         {%if removable?(grant, @user_id, @trip_id)}
-          <u $click={:remove, user_id: grant.user_id}>×</u>
+          <u aria-label="Remove" $click={:remove, user_id: grant.user_id}>
+            <!-- Two strokes, like the round buttons: a font's multiplication sign is centred on
+                 its own axis, not on the box around it, so beside a 9.5px label it reads high. -->
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3.2 3.2 L8.8 8.8 M8.8 3.2 L3.2 8.8" />
+            </svg>
+          </u>
         {/if}
       </div>
     {/for}
