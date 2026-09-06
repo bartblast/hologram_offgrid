@@ -2,6 +2,7 @@ defmodule Offgrid.Pages.TripPage do
   use Hologram.Page
   use Hologram.DB
 
+  alias Hologram.Auth
   alias Offgrid.Components.StopEditor
   alias Offgrid.Components.StopsList
   alias Offgrid.Box
@@ -48,6 +49,7 @@ defmodule Offgrid.Pages.TripPage do
       |> put_state(:details_open, false)
       |> put_state(:drawing, false)
       |> put_state(:ink_color, "#ff2d55")
+      |> put_state(:join_tries, 0)
       |> put_state(:maps_open, false)
       |> put_state(:members_open, false)
       |> put_state(:open_stop_id, nil)
@@ -291,10 +293,25 @@ defmodule Offgrid.Pages.TripPage do
     measured = put_state(component, :box, Box.size("canvas"))
 
     if component.state.you do
-      put_command(measured, :join, trip_id: component.state.trip_id)
+      join(measured)
     else
       measured
     end
+  end
+
+  # The door said no. Once more, a little later, and then no more: the server refuses a trip it
+  # cannot see, and a trip this browser made offline is exactly that until its batch lands -
+  # which it will have, three seconds on, if it is ever going to.
+  def action(:join_refused, _params, component) do
+    if component.state.join_tries < 2 do
+      put_action(component, name: :rejoin, delay: 3_000)
+    else
+      component
+    end
+  end
+
+  def action(:rejoin, _params, component) do
+    join(component)
   end
 
   # The subscription is ours. Only now do we say hello.
@@ -402,44 +419,66 @@ defmodule Offgrid.Pages.TripPage do
   # Subscribing happens here, from the client, after the page is mounted - never in `init/3`,
   # for the reason `:joined` explains. The answer is an action, which is what lets the page
   # know the subscription is in place before it announces itself.
+  #
+  # THE DOOR. Realtime does no authorization of its own: a channel is a name, and anybody who
+  # asks is subscribed. The trip's rules keep a stranger's ROWS empty, but a broadcast is not a
+  # row, so without this check somebody with no role on the trip would hear every arrival and
+  # every ping - and could answer. Every command that names the channel asks the same question
+  # the trip's `allow :read` answers, on the server, where the grants are.
   def command(:join, params, server) do
-    server
-    |> put_subscription({:trip, params.trip_id})
-    |> put_action(:joined)
+    if on_trip?(server, params.trip_id) do
+      server
+      |> put_subscription({:trip, params.trip_id})
+      |> put_action(:joined)
+    else
+      put_action(server, :join_refused)
+    end
   end
 
   def command(:announce, params, server) do
-    put_broadcast_except(
-      server,
-      {:session, server.session_id},
-      {:trip, params.trip_id},
-      :member_arrived,
-      id: params.id,
-      initials: params.initials
-    )
+    if on_trip?(server, params.trip_id) do
+      put_broadcast_except(
+        server,
+        {:session, server.session_id},
+        {:trip, params.trip_id},
+        :member_arrived,
+        id: params.id,
+        initials: params.initials
+      )
+    else
+      server
+    end
   end
 
   def command(:answer, params, server) do
-    put_broadcast_except(
-      server,
-      {:session, server.session_id},
-      {:trip, params.trip_id},
-      :member_here,
-      id: params.id,
-      initials: params.initials
-    )
+    if on_trip?(server, params.trip_id) do
+      put_broadcast_except(
+        server,
+        {:session, server.session_id},
+        {:trip, params.trip_id},
+        :member_here,
+        id: params.id,
+        initials: params.initials
+      )
+    else
+      server
+    end
   end
 
   # The broadcast leaves out the session that sent it, which has already drawn its own.
   def command(:ping, params, server) do
-    put_broadcast_except(
-      server,
-      {:session, server.session_id},
-      {:trip, params.trip_id},
-      :show_ping,
-      x: params.x,
-      y: params.y
-    )
+    if on_trip?(server, params.trip_id) do
+      put_broadcast_except(
+        server,
+        {:session, server.session_id},
+        {:trip, params.trip_id},
+        :show_ping,
+        x: params.x,
+        y: params.y
+      )
+    else
+      server
+    end
   end
 
   # Only the server can forget an identity - the session cookie it is kept in is the
@@ -501,6 +540,13 @@ defmodule Offgrid.Pages.TripPage do
     idle_stroke(component)
   end
 
+  # Asks for the subscription and counts the asking, so a refusal knows when to stop.
+  defp join(component) do
+    component
+    |> put_state(:join_tries, component.state.join_tries + 1)
+    |> put_command(:join, trip_id: component.state.trip_id)
+  end
+
   defp idle_stroke(component) do
     component
     |> put_state(:stroke, [])
@@ -516,6 +562,12 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:ping, %{x: x, y: y})
     |> put_action(name: :clear_ping, delay: 2_000)
     |> put_command(:ping, trip_id: component.state.trip_id, x: x, y: y)
+  end
+
+  # The trip's own read rule, asked on the server from the grants it holds. A trip the server
+  # has never heard of answers no, which is what the retry in `:join_refused` is for.
+  defp on_trip?(server, trip_id) do
+    Auth.can?(server.user_id, :read, %Trip{id: trip_id})
   end
 
   defp pen_class(true), do: "pen on"
