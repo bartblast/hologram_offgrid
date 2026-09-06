@@ -82,11 +82,19 @@ overflow: hidden;
  .ink-anna { stroke: var(--anna); opacity: .85; }
 .lay path { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
 .lay .rt { stroke: var(--route); stroke-width: 2.2; stroke-dasharray: 6 7; opacity: .9; }
-.ping { position: absolute; width: 13px; height: 13px; border-radius: 50%; background: var(--you); transform: translate(-50%,-50%); z-index: 2; }
-.ping::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--you); animation: rip 2.4s ease-out infinite; }
-@keyframes rip { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
+/* A pulse after Cupertino, which is what the rest of this screen is: the dot wears a white
+   collar and a soft shadow, so it sits ON the map rather than in it - the same thing the member
+   faces and a chosen pin already do - and what spreads is a wash of light with a hairline on its
+   leading edge, not a drawn circle. Wash and edge share a start, so they read as one thing
+   spreading. The dot is painted last, so both pass behind it. */
+.ping { position: absolute; width: 18px; height: 18px; transform: translate(-50%,-50%); z-index: 2; }
+.ping b { position: absolute; inset: 0; border-radius: 50%; background: var(--you); border: 2.5px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.28); }
+.ping i { position: absolute; inset: 0; border-radius: 50%; animation: rip 1.8s ease-out infinite; }
+.ping .wash { background: color-mix(in srgb, var(--you) 26%, transparent); }
+.ping .edge { border: 1.5px solid var(--you); }
+@keyframes rip { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(5.4); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .ping::before { animation: none; }
+  .ping i { animation: none; opacity: .3; transform: scale(3); }
   .editor { animation: none; transition: none; }
   .pen, .faces, .members { transition: none; }
 }

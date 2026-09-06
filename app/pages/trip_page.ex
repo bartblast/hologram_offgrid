@@ -137,8 +137,12 @@ defmodule Offgrid.Pages.TripPage do
 
         <Cursors cid="cursors" cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
 
+        <!-- Three parts, in the order they are drawn: the wash that spreads, the hairline
+             riding its edge, and the dot last so both pass behind it rather than tinting it. -->
         {%if @ping}
-          <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}></div>
+          <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}>
+            <i class="wash"></i><i class="edge"></i><b></b>
+          </div>
         {/if}
 
         <div class="lpanel">
@@ -569,11 +573,12 @@ defmodule Offgrid.Pages.TripPage do
   def action(:show_ping, params, component) do
     component
     |> put_state(:ping, %{x: params.x, y: params.y})
-    |> put_action(name: :clear_ping, delay: 2_000)
+    |> put_action(name: :clear_ping, delay: 3_000)
   end
 
-  # A ping is a gesture, not a record: nothing stores it, and after two seconds it is gone
-  # from every screen it reached.
+  # A ping is a gesture, not a record: nothing stores it, and after three seconds it is gone
+  # from every screen it reached. Three rather than two, so the ring has time to travel its
+  # full width twice instead of being cut off part way through its first.
   def action(:clear_ping, _params, component) do
     put_state(component, :ping, nil)
   end
@@ -803,7 +808,7 @@ defmodule Offgrid.Pages.TripPage do
 
     component
     |> put_state(:ping, %{x: x, y: y})
-    |> put_action(name: :clear_ping, delay: 2_000)
+    |> put_action(name: :clear_ping, delay: 3_000)
     |> tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
   end
 
