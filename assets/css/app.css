@@ -85,7 +85,11 @@ overflow: hidden;
 .ping { position: absolute; width: 13px; height: 13px; border-radius: 50%; background: var(--you); transform: translate(-50%,-50%); z-index: 2; }
 .ping::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--you); animation: rip 2.4s ease-out infinite; }
 @keyframes rip { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ping::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ping::before { animation: none; }
+  .editor { animation: none; }
+  .pen, .faces, .members { transition: none; }
+}
 /* An arrow, because that is what a pointer is, with its tip at the place it names - so no
    offset transform. The name beside it is the members list's own row in miniature: the same
    circle, in the same colour, ahead of the same letters. */
@@ -99,9 +103,11 @@ overflow: hidden;
 .cursor.t b i { background: var(--tom); }
 @media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
 .pen { position: absolute; right: var(--clear-editor); bottom: 16px; width: 34px; height: 34px; display: grid; place-items: center; font-size: 15px; background: var(--ink); color: var(--panel); border: 0; border-radius: 50%; box-shadow: var(--shadow); cursor: pointer; z-index: 5; }
-.pen.mid { right: 16px; }
+.pen.mid, .faces.mid, .members.mid { right: 16px; }
+/* The three follow the panel rather than being placed by it: one duration for all four, so
+   the panel arriving and the controls making room are a single movement. */
+.pen, .faces, .members { transition: right .22s ease; }
 .faces { position: absolute; top: 16px; right: var(--clear-editor); display: flex; background: color-mix(in srgb, var(--panel) 90%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; z-index: 4; }
-.faces.mid { right: 16px; }
 .face { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-label); font-size: 11.5px; font-weight: 700; color: #fff; margin-left: -7px; border: 2px solid var(--panel); }
 .face:first-child { margin-left: 0; }
 .facepile { display: flex; align-items: center; padding: 0; background: none; border: 0; cursor: pointer; }
@@ -155,7 +161,8 @@ label .tag.a { background: var(--anna); }
 label .tag.t { background: var(--tom); }
 .inp.busy { border-color: var(--line2); box-shadow: inset 0 0 0 1px var(--line2); }
 /* editor */
-.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; }
+.editor { position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px 16px; overflow: auto; z-index: 3; animation: editor-in .22s ease; }
+@keyframes editor-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 /* The mirror of .lp-head and .addb in the itinerary panel: the same row, the same circle,
    the same size, the same inversion on hover - so the two panels read as a pair. */
 /* The control sits on the TITLE's line, not in the middle of the title and the day under it -

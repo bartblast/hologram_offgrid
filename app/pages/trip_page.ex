@@ -185,7 +185,7 @@ defmodule Offgrid.Pages.TripPage do
           />
         </div>
 
-        <div class={faces_class(@members_open)}>
+        <div class={faces_class(@members_open, @open_stop_id)}>
           <button
             class="facepile"
             type="button"
@@ -208,7 +208,7 @@ defmodule Offgrid.Pages.TripPage do
         </div>
 
         {%if @members_open}
-          <div class="members">
+          <div class={members_class(@open_stop_id)}>
             <MembersList
               cid="members_list"
               present={@present}
@@ -218,7 +218,12 @@ defmodule Offgrid.Pages.TripPage do
           </div>
         {/if}
 
-        <button class={pen_class(@drawing)} type="button" aria-label="Draw" $click="toggle_drawing">✎</button>
+        <button
+          class={pen_class(@drawing, @open_stop_id)}
+          type="button"
+          aria-label="Draw"
+          $click="toggle_drawing"
+        >✎</button>
 
         {%if @drawing}
           <div class="cpop">
@@ -811,9 +816,11 @@ defmodule Offgrid.Pages.TripPage do
     Auth.can?(server.user_id, :read, %Trip{id: trip_id})
   end
 
-  defp pen_class(true), do: "pen on"
+  defp pen_class(drawing, open_stop_id), do: "pen" <> armed(drawing) <> mid(open_stop_id)
 
-  defp pen_class(false), do: "pen"
+  defp armed(true), do: " on"
+
+  defp armed(false), do: ""
 
   # Screen space to the coordinates a sketch is stored in. The percentages ARE offsets in a
   # box a hundred wide, so the projection needs no other size.
@@ -833,9 +840,23 @@ defmodule Offgrid.Pages.TripPage do
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the
   # control they are rather than as decoration that happened to be clicked.
-  defp faces_class(true), do: "faces open"
+  defp faces_class(members_open, open_stop_id) do
+    "faces" <> ring(members_open) <> mid(open_stop_id)
+  end
 
-  defp faces_class(false), do: "faces"
+  defp members_class(open_stop_id), do: "members" <> mid(open_stop_id)
+
+  # With no stop open there is no panel to clear, so the three controls on the right sit at the
+  # window's edge - the mockup's own `mid`, drawn for exactly this and unused until now. They
+  # slide aside as the panel comes in rather than jumping, which is the same movement the panel
+  # makes and reads as one thing happening.
+  defp mid(nil), do: " mid"
+
+  defp mid(_open_stop_id), do: ""
+
+  defp ring(true), do: " open"
+
+  defp ring(false), do: ""
 
   # Nobody signed in has no face to show, which is a real state until the auth gates land.
   defp initials(nil), do: nil
