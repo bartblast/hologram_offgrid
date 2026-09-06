@@ -5,6 +5,8 @@ defmodule Offgrid.Components.TripDetails do
   alias Hologram.Auth
   alias Hologram.DB
   alias Offgrid.Dates
+  alias Offgrid.Entities.Comment
+  alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
@@ -20,10 +22,12 @@ defmodule Offgrid.Components.TripDetails do
   home of its own on the screen behind it, and a second copy of either would be a second place
   to look rather than a convenience.
 
-  Deleting takes the stops with it. A stop's trip is required and the framework's foreign keys
-  restrict rather than cascade, so a trip with an itinerary cannot simply go - the stops are
-  deleted first, in the same batch, which is also the only order that reads correctly to
-  another browser watching.
+  Deleting takes everything on the trip with it, innermost first: the remarks on each stop,
+  the ink, the stops, then the trip. Every reference is required and the framework's foreign
+  keys restrict rather than cascade, so a trip with anything on it cannot simply go - and a
+  batch the server refuses is rolled back by the browser without a word, so the trip would
+  quietly be back. Innermost first is also the only order that reads correctly to another
+  browser watching: nobody ever sees a remark on no stop, or a stop on no trip.
   """
 
   prop :stops, [Stop], from_query: &stops_query/1
@@ -80,12 +84,27 @@ defmodule Offgrid.Components.TripDetails do
     """
   end
 
-  # The stops first, then the trip, then away - one batch, so a browser watching never sees a
-  # trip whose itinerary has already gone.
+  # Innermost first, then away - one batch, so a browser watching never sees a trip whose
+  # itinerary has already gone. The remarks and the ink are read here rather than carried as
+  # props: they are needed once, on the way out.
   def action(:delete, _params, component) do
+    trip_id = component.props.trip_id
+
+    Enum.each(component.props.stops, fn stop ->
+      Comment
+      |> filter(stop_id: stop.id)
+      |> DB.read()
+      |> Enum.each(&(:ok = DB.delete(Comment, &1.id)))
+    end)
+
+    Sketch
+    |> filter(trip_id: trip_id)
+    |> DB.read()
+    |> Enum.each(&(:ok = DB.delete(Sketch, &1.id)))
+
     Enum.each(component.props.stops, &(:ok = DB.delete(Stop, &1.id)))
 
-    :ok = DB.delete(Trip, component.props.trip_id)
+    :ok = DB.delete(Trip, trip_id)
 
     put_page(component, TripsPage)
   end

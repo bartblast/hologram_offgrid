@@ -19,6 +19,11 @@ defmodule Offgrid.Components.StopEditor do
 
   The remarks under it are their own rows, read by the stop and written by whoever is on the
   trip, and shown in the order they were left.
+
+  The whole panel sits behind `{%if @stop}`, because the stop can go while the panel is open:
+  another browser deletes it, the row leaves this browser's database, and the query answers
+  nil. The panel renders nothing then rather than dying on a name that is not there. The page
+  still holds the id of a stop that is gone, and the next click on the list replaces it.
   Time chips arrive in C9, delete in C10, and real comments in phase G.
   """
 
@@ -35,6 +40,7 @@ defmodule Offgrid.Components.StopEditor do
 
   def template do
     ~HOLO"""
+    {%if @stop}
     <div class="editor">
       <div class="ed-title">{@stop.name}</div>
       <div class="ed-sub">{day_label(@stop.date)}</div>
@@ -82,6 +88,7 @@ defmodule Offgrid.Components.StopEditor do
         >Delete stop</button>
       </div>
     </div>
+    {/if}
     """
   end
 

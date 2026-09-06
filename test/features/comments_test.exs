@@ -88,6 +88,24 @@ defmodule Offgrid.Features.CommentsTest do
     assert comment.author.email == "member@offgrid.test"
   end
 
+  feature "deleting a stop removes its remarks too", %{session: session, stop: stop, trip: trip} do
+    remark(person("Tom Reyes", "tom@offgrid.test"), stop, "Onsen booked.")
+
+    session
+    |> sign_in_as_member(trip)
+    |> click(css(".stop", text: "Ryokan"))
+    |> assert_has(css(".cmt", count: 1))
+    |> click(button("Delete stop"))
+    |> refute_has(css(".editor"))
+    |> await_pending_writes(0)
+
+    # A remark names its stop and the reference restricts rather than cascades, so a stop
+    # deleted on its own is refused by the server however cleanly the browser showed it gone.
+    # Both rows have to leave, and the server is the only witness that they did.
+    assert DB.read(Stop) == []
+    assert DB.read(Comment) == []
+  end
+
   defp person(name, email) do
     %{email: email, name: name, password_hash: "x"}
     |> User.new()

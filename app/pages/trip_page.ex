@@ -14,6 +14,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
+  alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
@@ -224,7 +225,17 @@ defmodule Offgrid.Pages.TripPage do
   # Deleting closes in the SAME action, not through a follow-up: the editor renders the
   # row being deleted, so if it were still mounted for one render in between it would ask
   # the database for a row that is gone.
+  #
+  # The remarks go first. A remark names its stop and the reference restricts rather than
+  # cascades, so a stop deleted on its own is refused by the server however cleanly the
+  # browser showed it gone - and remarks-then-stop is also the only order another browser can
+  # watch without seeing a remark on no stop. One batch, so nobody sees it half done.
   def action(:delete_stop, params, component) do
+    Comment
+    |> filter(stop_id: params.id)
+    |> DB.read()
+    |> Enum.each(&(:ok = DB.delete(Comment, &1.id)))
+
     :ok = DB.delete(Stop, params.id)
 
     put_state(component, :open_stop_id, nil)

@@ -1,8 +1,13 @@
 defmodule Offgrid.Features.StopCrudTest do
   use Offgrid.FeatureCase, async: false
 
+  alias Hologram.Auth
   alias Hologram.DB
   alias Offgrid.Entities.Stop
+  alias Offgrid.Entities.User
+  alias Offgrid.Pages.LogInPage
+  alias Offgrid.Pages.TripPage
+  alias Offgrid.Pages.TripsPage
 
   setup do
     truncate_trip_data()
@@ -53,6 +58,33 @@ defmodule Offgrid.Features.StopCrudTest do
     |> assert_text(css(".lpanel"), "Haneda arrival")
   end
 
+  @sessions 2
+  feature "closes the editor when somebody else deletes the stop",
+          %{sessions: [nora, tom], trip: trip} do
+    %{date: ~D[2026-03-29], name: "Ryokan", trip_id: trip.id}
+    |> Stop.new()
+    |> DB.create!()
+
+    nora = sign_in_as_member(nora, trip)
+    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+
+    nora
+    |> click(css(".stop", text: "Ryokan"))
+    |> assert_text(css(".ed-title"), "Ryokan")
+
+    tom
+    |> click(css(".stop", text: "Ryokan"))
+    |> click(button("Delete stop"))
+    |> refute_has(css(".editor"))
+
+    # The row went out from under Nora's open editor. The editor closes rather than dying on a
+    # stop that is no longer there - which is the overlay a crash would have put on screen.
+    nora
+    |> refute_has(css(".editor"))
+    |> refute_has(css("#hologram-uncaught-error-overlay"))
+    |> refute_has(css(".stop", text: "Ryokan"))
+  end
+
   feature "places nothing until armed, and Escape disarms", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)
@@ -66,5 +98,22 @@ defmodule Offgrid.Features.StopCrudTest do
     |> click(css("#canvas"))
     |> refute_has(css(".editor"))
     |> refute_has(css(".pin"))
+  end
+
+  defp sign_in_as(session, trip, name, email) do
+    user =
+      %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt("hakone-2026")}
+      |> User.new()
+      |> DB.create!()
+
+    :ok = Auth.grant_role(user, trip, :member)
+
+    session
+    |> visit(LogInPage)
+    |> fill_in(css(".card .inp", at: 0), with: email)
+    |> fill_in(css(".card .inp", at: 1), with: "hakone-2026")
+    |> click(button("Log in"))
+    |> assert_page(TripsPage)
+    |> visit(TripPage, id: trip.id)
   end
 end

@@ -4,6 +4,8 @@ defmodule Offgrid.Features.TripPageTest do
 
   alias Hologram.Auth
   alias Hologram.DB
+  alias Offgrid.Entities.Comment
+  alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
@@ -178,10 +180,24 @@ defmodule Offgrid.Features.TripPageTest do
     assert String.to_float(kyoto_x) < String.to_float(tokyo_x)
   end
 
-  feature "an organizer deletes a trip that has an itinerary",
+  feature "an organizer deletes a trip that has an itinerary, remarks and ink",
           %{session: session, trip: trip} do
-    %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
-    |> Stop.new()
+    stop =
+      %{date: ~D[2026-03-28], name: "Fushimi Inari", trip_id: trip.id}
+      |> Stop.new()
+      |> DB.create!()
+
+    tom =
+      %{email: "tom@offgrid.test", name: "Tom Reyes", password_hash: "x"}
+      |> User.new()
+      |> DB.create!()
+
+    %{author_id: tom.id, body: "Before eight.", stop_id: stop.id}
+    |> Comment.new()
+    |> DB.create!()
+
+    %{author_id: tom.id, color: "#30b0c7", points: "35.1,135.7 35.2,135.9", trip_id: trip.id}
+    |> Sketch.new()
     |> DB.create!()
 
     session
@@ -191,9 +207,16 @@ defmodule Offgrid.Features.TripPageTest do
     |> click(button("Delete trip"))
     |> assert_page(TripsPage)
     |> await_pending_writes(0)
-    # The stops went with it. A trip's stop requires its trip, so one left behind would have
-    # been refused by the database rather than orphaned.
     |> assert_text(css(".card"), "No trips yet")
+
+    # Everything that named the trip, or named a stop of it, went with it. Every reference
+    # restricts rather than cascades, so anything left behind would have been the server
+    # refusing the whole batch - and the list above would still say "No trips yet", because the
+    # browser rolls a refused batch back without a word. Only the server can say it happened.
+    assert DB.read(Trip) == []
+    assert DB.read(Stop) == []
+    assert DB.read(Comment) == []
+    assert DB.read(Sketch) == []
   end
 
   feature "shows a member the trip card without a way to delete it",
