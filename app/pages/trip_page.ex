@@ -60,6 +60,8 @@ defmodule Offgrid.Pages.TripPage do
       component
       |> put_state(:box, nil)
       |> put_state(:cursors, %{})
+      |> put_state(:drag, nil)
+      |> put_state(:drag_rect, nil)
       |> put_state(:details_open, false)
       |> put_state(:drawing, false)
       |> put_state(:editing, %{})
@@ -124,7 +126,12 @@ defmodule Offgrid.Pages.TripPage do
           {/if}
         </svg>
 
-        <MapPins cid="map_pins" open_stop_id={@open_stop_id} trip_id={@trip_id} />
+        <MapPins
+          cid="map_pins"
+          drag={@drag}
+          open_stop_id={@open_stop_id}
+          trip_id={@trip_id}
+        />
 
         <Cursors cid="cursors" cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
 
@@ -227,6 +234,14 @@ defmodule Offgrid.Pages.TripPage do
              lands on whichever page comes next. -->
         <window $resize="measure" />
 
+        <!-- A drag outlives the pin it began on, so the pointer is followed on the document
+             rather than on the pin: the hand can wander over another pin, the panel or off the
+             map entirely and the stop still goes where it is let go. Listening only while a
+             drag is under way, so nothing is bound the rest of the time. -->
+        {%if @drag}
+          <document $pointer_move="drag_move" $pointer_up="drag_finish" />
+        {/if}
+
         {%if @placing}
           <document $key_down.escape="toggle_placing" />
         {/if}
@@ -289,6 +304,38 @@ defmodule Offgrid.Pages.TripPage do
     |> put_state(:focused_field, nil)
     |> put_state(:open_stop_id, nil)
     |> announce_editing()
+  end
+
+  # A pin was pressed. The map's place in the window is read once, here, and held for the
+  # length of the drag - every move after it is arithmetic, the way an ink stroke's is.
+  #
+  # Nothing is written yet, and the row is not touched until the pointer lifts: a write per
+  # frame would be a hundred rows on the wire for one gesture, where the stop only ever
+  # ends up in one place.
+  def action(:drag_start, params, component) do
+    component
+    |> put_state(:drag, %{id: params.id, x: nil, y: nil})
+    |> put_state(:drag_rect, Box.rect("canvas"))
+  end
+
+  # The pin follows the pointer, in hundredths of the map, which is what the pin's own style
+  # wants and what makes this independent of the map's size.
+  def action(:drag_move, params, component) do
+    {left, top, width, height} = component.state.drag_rect
+    event = params.event
+
+    put_state(component, :drag, %{
+      component.state.drag
+      | x: (event.client_x - left) / width * 100,
+        y: (event.client_y - top) / height * 100
+    })
+  end
+
+  # Letting go is what makes the move real. A press that never moved is not a drag and writes
+  # nothing - it is a click, and the pin's own binding opens the stop, which is also what a
+  # finished drag does, since the pointer comes up over the pin it is holding.
+  def action(:drag_finish, _params, component) do
+    drop(component, component.state.drag)
   end
 
   # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
@@ -796,6 +843,39 @@ defmodule Offgrid.Pages.TripPage do
       |> DB.read()
 
     if user, do: Cast.initials(user.name)
+  end
+
+  # A drag that went nowhere leaves the row alone.
+  defp drop(component, %{x: nil}), do: idle_drag(component)
+
+  defp drop(component, drag) do
+    trip =
+      Trip
+      |> filter(id: component.state.trip_id)
+      |> include(:basemap)
+      |> one()
+      |> DB.read()
+
+    write_place(component, drag, trip)
+  end
+
+  # No trip readable, nothing to move - the same nothing a stranger's click on the map gets.
+  defp write_place(component, _drag, nil), do: idle_drag(component)
+
+  # The hundredths the pin was let go at ARE offsets in a box a hundred wide, so the
+  # projection needs no other size - the same trick the ink stroke's points use.
+  defp write_place(component, drag, trip) do
+    {lat, lng} = Geo.from_offset(drag.x, drag.y, 100, 100, trip.basemap)
+
+    :ok = DB.update(Stop, drag.id, %{lat: lat, lng: lng})
+
+    idle_drag(component)
+  end
+
+  defp idle_drag(component) do
+    component
+    |> put_state(:drag, nil)
+    |> put_state(:drag_rect, nil)
   end
 
   defp place(component, event) do

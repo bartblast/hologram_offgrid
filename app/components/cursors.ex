@@ -31,7 +31,10 @@ defmodule Offgrid.Components.Cursors do
     ~HOLO"""
     {%for cursor <- others(@cursors, @user_id)}
       <div class={cursor_class(@grants, @user_id, cursor.id)} style={"left:#{cursor.x}%;top:#{cursor.y}%"}>
-        <i></i><b>{cursor.initials}</b>
+        <svg class="cur" viewBox="0 0 12 18" aria-hidden="true">
+          <path d="M1 1 L1 15.2 L4.6 11.7 L7 16.9 L9.5 15.8 L7.1 10.7 L11.6 10.4 Z" />
+        </svg>
+        <b><i></i>{cursor.initials}</b>
       </div>
     {/for}
     """

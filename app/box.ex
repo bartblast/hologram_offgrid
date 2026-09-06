@@ -14,6 +14,25 @@ defmodule Offgrid.Box do
   """
 
   @doc """
+  Returns where the element with the given id sits in the window and how big it is, as
+  `{left, top, width, height}`.
+
+  For a gesture that outlives the element it started on. A drag begins on a pin and carries
+  on wherever the pointer goes, so the offsets a pointer event measures against whatever it
+  is over are no use - what serves is the pointer's place in the window, `client_x` and
+  `client_y`, against the map's own place in the window, which is this.
+  """
+  @spec rect(String.t()) :: {number, number, number, number}
+  def rect(id) do
+    box =
+      :document
+      |> JS.call(:getElementById, [id])
+      |> JS.call(:getBoundingClientRect, [])
+
+    {JS.get(box, :left), JS.get(box, :top), JS.get(box, :width), JS.get(box, :height)}
+  end
+
+  @doc """
   Returns the width and height of the element with the given id, as the browser lays it out.
 
   The padding box (`clientWidth`, `clientHeight`), because that is what a click's `offset_x`
