@@ -16,8 +16,14 @@ defmodule Offgrid.Components.MapRoute do
   It reads the same ordering the itinerary does, date then time then creation, so moving a
   stop to another day redraws the line without anything telling it to: two components reading
   one row set, agreeing because they cannot disagree.
+
+  While a pin is being carried the line comes with it. The place under the pointer is the
+  page's, handed down the same way the pins take it, and it is already in the hundredths this
+  line is drawn in - so the line bends as the hand moves and no row is touched until the
+  pointer lifts.
   """
 
+  prop :drag, :map, default: nil
   prop :stops, [Stop], from_query: &stops_query/1
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
@@ -28,7 +34,7 @@ defmodule Offgrid.Components.MapRoute do
   def template do
     ~HOLO"""
     <svg class="lay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <polyline class="rt" points={points(@stops, @trip)} fill="none" vector-effect="non-scaling-stroke" />
+      <polyline class="rt" points={points(@stops, @trip, @drag)} fill="none" vector-effect="non-scaling-stroke" />
     </svg>
     """
   end
@@ -39,14 +45,22 @@ defmodule Offgrid.Components.MapRoute do
 
   defp placed?(stop, trip), do: Geo.placed?(stop, trip.basemap)
 
-  defp points(stops, trip) do
+  defp points(stops, trip, drag) do
     stops
     |> Enum.filter(&placed?(&1, trip))
-    |> Enum.map_join(" ", fn stop ->
-      {x, y} = Geo.to_percent(stop.lat, stop.lng, trip.basemap)
+    |> Enum.map_join(" ", &point(&1, trip, drag))
+  end
 
-      "#{x},#{y}"
-    end)
+  # Under the pointer for the stop being carried, and off its row for every other. A drag that
+  # has not moved yet still reads from the row.
+  defp point(stop, trip, %{id: id, x: x, y: y}) when x != nil do
+    if id == stop.id, do: "#{x},#{y}", else: point(stop, trip, nil)
+  end
+
+  defp point(stop, trip, _drag) do
+    {x, y} = Geo.to_percent(stop.lat, stop.lng, trip.basemap)
+
+    "#{x},#{y}"
   end
 
   defp stops_query(trip_id) do

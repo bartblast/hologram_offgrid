@@ -104,7 +104,7 @@ defmodule Offgrid.Pages.TripPage do
           $pointer_move.throttle(100)="point"
         ></div>
 
-        <MapRoute cid="map_route" trip_id={@trip_id} />
+        <MapRoute cid="map_route" drag={@drag} trip_id={@trip_id} />
 
         <div
           class={ink_class(@drawing)}

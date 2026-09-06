@@ -120,19 +120,100 @@ defmodule Offgrid.Features.PinsTest do
     assert unmoved.lng == stop.lng
   end
 
+  # The line joins the pins, so it has to come with one that is being carried - and it has to
+  # do it before anything is written, or the demo's whole claim is a round trip.
+  feature "the route follows a pin that is being carried", %{session: session, trip: trip} do
+    # Kyoto, west, on the first day.
+    west =
+      %{
+        date: ~D[2026-03-28],
+        lat: 35.0116,
+        lng: 135.7681,
+        name: "Fushimi Inari",
+        trip_id: trip.id
+      }
+      |> Stop.new()
+      |> DB.create!()
+
+    # Tokyo, east, on the second - so the line runs west to east.
+    %{
+      date: ~D[2026-03-29],
+      lat: 35.6762,
+      lng: 139.6503,
+      name: "Shibuya crossing",
+      trip_id: trip.id
+    }
+    |> Stop.new()
+    |> DB.create!()
+
+    session =
+      session
+      |> sign_in_as_member(trip)
+      |> assert_has(css(".pin", count: 2))
+
+    [first_before, second] = route_xs(session)
+
+    # Picked up and carried east of Tokyo, and still held.
+    session = press_pin(session, "Fushimi Inari", {820, 300})
+
+    # The line already bends: its first point has moved past the second, with the pointer
+    # still down and nothing written.
+    [first_during, ^second] = route_xs(session)
+    assert first_during > first_before
+    assert first_during > second
+
+    held = Stop |> filter(id: west.id) |> one() |> DB.read()
+    assert held.lng == west.lng
+
+    # Letting go is what writes it, and the line stays where the hand left it.
+    session = release_pointer(session, {820, 300})
+    assert await_pending_writes(session, 0)
+
+    [first_after, ^second] = route_xs(session)
+    assert first_after > second
+
+    moved = Stop |> filter(id: west.id) |> one() |> DB.read()
+    assert moved.lng > west.lng
+  end
+
   # Presses the only pin, carries the pointer to the given offset from the map's top left,
   # and lets go there. The moves go to the document, which is where the page listens once a
   # drag is under way.
   defp drag_pin(session, {x, y}) do
+    session
+    |> press_pin({x, y})
+    |> release_pointer({x, y})
+  end
+
+  defp press_pin(session, {x, y}), do: press_pin(session, nil, {x, y})
+
+  # Presses the pin with the given label (or the only one) and carries the pointer, leaving it
+  # down - so a test can look at the map mid-drag.
+  defp press_pin(session, label, {x, y}) do
+    finder =
+      if label do
+        "Array.from(document.querySelectorAll('.pin')).find(p => p.textContent.includes('#{label}'))"
+      else
+        "document.querySelector('.pin')"
+      end
+
     execute_script(session, """
-    const pin = document.querySelector('.pin');
+    const pin = #{finder};
     const box = document.getElementById('canvas').getBoundingClientRect();
     const at = (x, y) => ({bubbles: true, clientX: box.left + x, clientY: box.top + y});
     const from = pin.getBoundingClientRect();
 
     pin.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, clientX: from.left + 6, clientY: from.top + 6}));
     document.dispatchEvent(new PointerEvent('pointermove', at(#{x}, #{y})));
-    document.dispatchEvent(new PointerEvent('pointerup', at(#{x}, #{y})));
+    """)
+
+    session
+  end
+
+  defp release_pointer(session, {x, y}) do
+    execute_script(session, """
+    const box = document.getElementById('canvas').getBoundingClientRect();
+    document.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, clientX: box.left + #{x}, clientY: box.top + #{y}}));
     """)
 
     session
