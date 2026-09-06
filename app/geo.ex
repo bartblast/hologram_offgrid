@@ -27,6 +27,25 @@ defmodule Offgrid.Geo do
   end
 
   @doc """
+  Returns the `viewBox` that makes a drawing's own coordinates the basemap's own.
+
+  x is longitude and y is NEGATIVE latitude, because latitude grows northward while a drawing
+  grows downward - so a line stored in those two numbers needs no arithmetic to be drawn, the
+  browser's own projection puts it where it belongs, and it moves with the map when the trip
+  changes basemap because only this box changes.
+
+  Nothing readable answers the unit box, which is what the layers on this screen fall back to
+  while a trip is not there to be read.
+  """
+  @spec view_box(Basemap.t() | nil) :: String.t()
+  def view_box(nil), do: "0 0 100 100"
+
+  def view_box(basemap) do
+    "#{basemap.min_lng} #{-basemap.max_lat} " <>
+      "#{basemap.max_lng - basemap.min_lng} #{basemap.max_lat - basemap.min_lat}"
+  end
+
+  @doc """
   Returns true when the stop has a place, and that place is on the basemap.
 
   The one rule the pins and the route both follow, written once: a stop with no coordinates

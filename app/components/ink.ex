@@ -11,9 +11,15 @@ defmodule Offgrid.Components.Ink do
   @moduledoc """
   Every stroke drawn on this trip, by anybody.
 
-  A sketch keeps its points as real coordinates, so this projects them the way the pins and
-  the route are projected and for the same reason: the ink is where it was drawn whatever
-  size the window is, and it moves with the map when the trip changes basemap.
+  A sketch keeps its whole line as one SVG path, written in the map's own coordinates -
+  longitude across and latitude down. So this layer projects nothing: the basemap's bounds go
+  into the `viewBox` and the browser does the rest, which is why the ink is where it was drawn
+  whatever size the window is and moves with the map when the trip changes basemap.
+
+  That is what keeps this screen quick with ink on it. The path used to be rebuilt from stored
+  coordinates on every render - split, two numbers parsed and projected per point, the path
+  written out again - and a screen carrying a thousand points spent longer redrawing ink than
+  doing everything else together. Now a stroke is one string handed to one attribute.
 
   The stroke being drawn right now is not here - it is on the page, in screen space, because
   it is not a row yet. This layer is the ink that has become rows.
@@ -35,21 +41,26 @@ defmodule Offgrid.Components.Ink do
 
   def template do
     ~HOLO"""
-    <svg class="ink-saved" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <svg
+      class="ink-saved"
+      viewBox={view_box(@trip)}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       {%for sketch <- drawable(@sketches, @trip)}
         {%if erasable?(sketch, @drawing, @user_id)}
-          <polyline
+          <path
             class="ink-hit"
-            points={percent_points(sketch, @trip)}
+            d={sketch.points}
             fill="none"
             vector-effect="non-scaling-stroke"
             $click={:erase, id: sketch.id}
           />
         {/if}
 
-        <polyline
+        <path
           class="ink-line"
-          points={percent_points(sketch, @trip)}
+          d={sketch.points}
           stroke={sketch.color}
           fill="none"
           vector-effect="non-scaling-stroke"
@@ -81,23 +92,16 @@ defmodule Offgrid.Components.Ink do
 
   defp drawable(sketches, _trip), do: sketches
 
-  # "lat,lng lat,lng ..." back into the hundredths the map is drawn in.
-  defp percent_points(sketch, trip) do
-    sketch.points
-    |> String.split(" ", trim: true)
-    |> Enum.map_join(" ", fn pair ->
-      [lat, lng] = String.split(pair, ",")
-      {x, y} = Geo.to_percent(String.to_float(lat), String.to_float(lng), trip.basemap)
-
-      "#{x},#{y}"
-    end)
-  end
-
   defp sketches_query(trip_id) do
     Sketch
     |> filter(trip_id: trip_id)
     |> order_by([:created_at, :id])
   end
+
+  # The trip's own bounds, so every path inside needs no arithmetic at all.
+  defp view_box(nil), do: Geo.view_box(nil)
+
+  defp view_box(trip), do: Geo.view_box(trip.basemap)
 
   defp trip_query(trip_id) do
     Trip

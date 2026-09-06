@@ -20,20 +20,24 @@ defmodule Offgrid.Features.InkTest do
     # Unarmed the layer takes no pointer at all, so a drag over the map leaves no ink.
     session
     |> drag([{200, 150}, {260, 190}])
-    |> refute_has(css(".ink-paper polyline", visible: :any))
+    |> refute_has(css(".ink-paper path", visible: :any))
 
     session
     |> click(css(".pen"))
     |> assert_has(css(".pen.on"))
     # Still pressed: the live stroke follows the pointer and nothing has been written.
     |> press([{200, 150}, {240, 170}, {280, 210}, {320, 200}])
-    |> assert_has(css(".ink-paper polyline", visible: :any))
+    |> assert_has(css(".ink-paper path", visible: :any))
 
-    # One point per event, in the order the pointer went, left to right.
-    points = stroke_points(session)
-    assert length(points) == 4
-    [{first_x, _first_y}, _second, _third, {last_x, _last_y}] = points
+    # The line starts where the pointer went down and ends where it is now, left to right - and
+    # bends between, rather than running straight from one sample to the next: a curve needs a
+    # neighbour on each side, so four points make two of them and the ends are joined straight.
+    # One names its control and the rest continue from it, which is why both letters count.
+    d = stroke_path(session)
+    [{first_x, _first_y} | _rest] = places = stroke_places(d)
+    {last_x, _last_y} = List.last(places)
     assert first_x < last_x
+    assert length(String.split(d, ["Q", "T"])) - 1 == 2
 
     assert DB.read(Sketch) == []
 
@@ -41,13 +45,18 @@ defmodule Offgrid.Features.InkTest do
     session = release(session, {320, 200})
 
     assert await_pending_writes(session, 0)
-           |> refute_has(css(".ink-paper polyline", visible: :any))
+           |> refute_has(css(".ink-paper path", visible: :any))
            |> assert_has(css(".ink-line", count: 1, visible: :any))
 
     [sketch] = Sketch |> include(:author) |> DB.read()
     assert sketch.author.email == "member@offgrid.test"
     assert sketch.color == "#ff2d55"
-    assert length(String.split(sketch.points, " ", trim: true)) == 4
+    # Stored as the line itself, in the map's own coordinates: a move, two curves and a close.
+    # Longitude rises eastward and latitude is written negative, so the drawing grows downward
+    # the way a screen does.
+    assert String.starts_with?(sketch.points, "M")
+    assert length(String.split(sketch.points, ["Q", "T"])) - 1 == 2
+    assert String.contains?(sketch.points, ",-")
 
     # And it is still there on a reload, drawn from the row rather than from the screen.
     session
@@ -62,7 +71,9 @@ defmodule Offgrid.Features.InkTest do
       %{
         author_id: other.id,
         color: "#30b0c7",
-        points: "35.1,135.7 35.2,135.9",
+        # A line in the map's own coordinates, the way one is stored: longitude across,
+        # latitude down.
+        points: "M135.7,-35.1 L135.9,-35.2",
         trip_id: trip.id
       }
       |> Sketch.new()
@@ -126,7 +137,7 @@ defmodule Offgrid.Features.InkTest do
     |> sign_in_as_member(trip)
     |> click(css(".pen"))
     |> drag([{200, 150}])
-    |> refute_has(css(".ink-saved polyline", visible: :any))
+    |> refute_has(css(".ink-saved path", visible: :any))
 
     assert DB.read(Sketch) == []
   end
@@ -144,15 +155,17 @@ defmodule Offgrid.Features.InkTest do
     |> refute_has(css(".addb.on"))
   end
 
-  defp stroke_points(session) do
+  defp stroke_path(session) do
     session
-    |> find(css(".ink-paper polyline", visible: :any))
-    |> Element.attr("points")
-    |> String.split(" ", trim: true)
-    |> Enum.map(fn pair ->
-      [x, y] = String.split(pair, ",")
+    |> find(css(".ink-paper path", visible: :any))
+    |> Element.attr("d")
+  end
 
-      {String.to_float(x), String.to_float(y)}
-    end)
+  # Every place the path names, whatever command carries it - enough to say where the line
+  # begins and ends without this test knowing how a curve is spelled.
+  defp stroke_places(d) do
+    ~r/(-?[\d.]+),(-?[\d.]+)/
+    |> Regex.scan(d)
+    |> Enum.map(fn [_pair, x, y] -> {String.to_float(x), String.to_float(y)} end)
   end
 end

@@ -27,6 +27,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Link
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Presence
+  alias Offgrid.Stroke
 
   @moduledoc """
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
@@ -119,9 +120,9 @@ defmodule Offgrid.Pages.TripPage do
 
         <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {%if @stroke != []}
-            <polyline
+            <path
               class="ink-mine"
-              points={stroke_points(@stroke)}
+              d={stroke_path(@stroke)}
               fill="none"
               vector-effect="non-scaling-stroke"
             />
@@ -402,7 +403,11 @@ defmodule Offgrid.Pages.TripPage do
   # when it is saved, which is the only moment the map's bounds matter.
   def action(:ink_extend, params, component) do
     if component.state.stroke_box do
-      put_state(component, :stroke, [ink_point(component, params.event) | component.state.stroke])
+      put_state(
+        component,
+        :stroke,
+        extend(component.state.stroke, ink_point(component, params.event))
+      )
     else
       component
     end
@@ -749,6 +754,19 @@ defmodule Offgrid.Pages.TripPage do
   # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
   defp ink_colors, do: ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
 
+  # A pointer reports far more places than a line needs, and every one of them is paid for
+  # again on EVERY render for as long as the sketch exists - measured at about a fifth of a
+  # millisecond per point, so a screen with a few hundred of them spends more time redrawing
+  # ink than everything else together. A place within half a percent of the last one - some
+  # seven pixels on a full screen - says nothing the curve through it does not already say.
+  # Manhattan distance, because this runs per pointer event and a square root would buy
+  # nothing at this scale.
+  defp extend([{last_x, last_y} | _rest] = stroke, {x, y} = point) do
+    if abs(x - last_x) + abs(y - last_y) < 0.5, do: stroke, else: [point | stroke]
+  end
+
+  defp extend(stroke, point), do: [point | stroke]
+
   defp ink_point(component, event) do
     {width, height} = component.state.stroke_box
 
@@ -780,7 +798,7 @@ defmodule Offgrid.Pages.TripPage do
       %{
         author_id: component.state.user_id,
         color: component.state.ink_color,
-        points: sketch_points(points, trip),
+        points: sketch_path(points, trip),
         trip_id: trip.id
       }
       |> Sketch.new()
@@ -877,20 +895,25 @@ defmodule Offgrid.Pages.TripPage do
 
   defp armed(false), do: ""
 
-  # Screen space to the coordinates a sketch is stored in. The percentages ARE offsets in a
-  # box a hundred wide, so the projection needs no other size.
-  defp sketch_points(points, trip) do
-    Enum.map_join(points, " ", fn {x, y} ->
+  # Screen space to the line a sketch is stored AS: the whole stroke written once, as an SVG
+  # path in the map's own coordinates - longitude across, latitude down, which is why it is
+  # negated. Doing this here, once, is what lets the layer that draws it do nothing at all.
+  # The percentages ARE offsets in a box a hundred wide, so the projection needs no other size.
+  defp sketch_path(points, trip) do
+    points
+    |> Enum.map(fn {x, y} ->
       {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
 
-      "#{lat},#{lng}"
+      {lng, -lat}
     end)
+    |> Stroke.path()
   end
 
-  defp stroke_points(stroke) do
+  # The points are held newest first, because a stroke grows by prepending.
+  defp stroke_path(stroke) do
     stroke
     |> Enum.reverse()
-    |> Enum.map_join(" ", fn {x, y} -> "#{x},#{y}" end)
+    |> Stroke.path()
   end
 
   # The pill takes an accent ring while the panel it opens is up, so the faces read as the
