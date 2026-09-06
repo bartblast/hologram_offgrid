@@ -234,7 +234,7 @@ defmodule Offgrid.Pages.TripPage do
         >✎</button>
 
         {%if @drawing}
-          <div class="cpop">
+          <div class={cpop_class(@panel_open)}>
             {%for color <- ink_colors()}
               <button
                 class={cdot_class(color, @ink_color)}
@@ -921,6 +921,10 @@ defmodule Offgrid.Pages.TripPage do
   defp faces_class(members_open, panel_open) do
     "faces" <> ring(members_open) <> mid(panel_open)
   end
+
+  # The colours belong to the pen, so they go where it goes - pinned to the window's edge they
+  # stayed behind when the panel pushed the pen aside, and drew over the panel.
+  defp cpop_class(panel_open), do: "cpop" <> mid(panel_open)
 
   defp members_class(panel_open), do: "members" <> mid(panel_open)
 
