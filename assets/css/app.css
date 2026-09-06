@@ -72,11 +72,18 @@ overflow: hidden;
 .map .terrain { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .pin { position: absolute; transform: translate(-50%, -50%); z-index: 2; }
-.pin i { display: block; width: 13px; height: 13px; border-radius: 50%; background: var(--ink); }
-.pin i { cursor: grab; }
+/* The collar the rest of the map's markers wear - the faces, the ping, somebody else's
+   pointer - so a stop sits ON the map rather than in it. 16px rather than 13 because the
+   collar eats inward and the ink has to survive it. The route line breaks at each stop as a
+   result, which is the point: the itinerary reads as beads you can count rather than one
+   unbroken stroke. The ping is the same 16px: a passing gesture has no business drawing itself
+   larger than the stops that live there, and its ripple is what earns the eye. */
+.pin i { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); border: 2.5px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.28); cursor: grab; }
 .pin.dragging i { cursor: grabbing; }
 .pin em { position: absolute; left: 50%; top: calc(100% + 4px); transform: translateX(-50%); font-style: normal; font-family: var(--f-label); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2); background: color-mix(in srgb, var(--panel) 82%, transparent); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
-.pin.mine i { background: var(--you); box-shadow: 0 0 0 3px color-mix(in srgb, var(--you) 25%, transparent); }
+/* The open stop takes the accent and keeps the collar, the way a chosen marker does - a second
+   halo underneath would only fight the shadow every pin now carries. */
+.pin.mine i { background: var(--you); }
 .pin.mine em { color: var(--you); }
 .ink-mine { stroke: var(--you); }
  .ink-anna { stroke: var(--anna); opacity: .85; }
@@ -87,12 +94,14 @@ overflow: hidden;
    faces and a chosen pin already do - and what spreads is a wash of light with a hairline on its
    leading edge, not a drawn circle. Wash and edge share a start, so they read as one thing
    spreading. The dot is painted last, so both pass behind it. */
-.ping { position: absolute; width: 18px; height: 18px; transform: translate(-50%,-50%); z-index: 2; }
+.ping { position: absolute; width: 16px; height: 16px; transform: translate(-50%,-50%); z-index: 2; }
 .ping b { position: absolute; inset: 0; border-radius: 50%; background: var(--you); border: 2.5px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.28); }
 .ping i { position: absolute; inset: 0; border-radius: 50%; animation: rip 1.8s ease-out infinite; }
 .ping .wash { background: color-mix(in srgb, var(--you) 26%, transparent); }
 .ping .edge { border: 1.5px solid var(--you); }
-@keyframes rip { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(5.4); opacity: 0; } }
+/* 6x of a 16px dot, which is the same reach the ripple had at 5.4x of an 18px one - the dot
+   came down to match the pins and the wash kept its distance. */
+@keyframes rip { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .ping i { animation: none; opacity: .3; transform: scale(3); }
   .editor { animation: none; transition: none; }
