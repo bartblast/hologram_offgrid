@@ -56,18 +56,24 @@ defmodule Offgrid.Components.StopEditor do
     ~HOLO"""
     {%if @stop}
     <div class="editor">
-      <!-- Escape closes the panel too, and did before this - but a keyboard shortcut nobody
-           is told about is not a way out, and a panel that covers a fifth of the screen needs
-           a visible one. The page owns which stop is open, so the button asks the page. -->
-      <button
-        class="ed-close"
-        type="button"
-        aria-label="Close"
-        $click={action: :close_stop, target: "page"}
-      >×</button>
+      <!-- The header is the itinerary panel's, mirrored: what the panel is about on the left,
+           the one control it has on the right, in the same circle at the same size. Escape
+           closes this too and did before the button - but a keyboard shortcut nobody is told
+           about is not a way out of a panel this size. The page owns which stop is open, so
+           the button asks the page. -->
+      <div class="ed-head">
+        <div>
+          <div class="ed-title">{@stop.name}</div>
+          <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
+        </div>
 
-      <div class="ed-title">{@stop.name}</div>
-      <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
+        <button
+          class="ed-close"
+          type="button"
+          aria-label="Close"
+          $click={action: :close_stop, target: "page"}
+        >×</button>
+      </div>
 
       <label>Name {%for person <- others_in(@editing, @stop_id, "name", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       <input
