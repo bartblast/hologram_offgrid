@@ -330,9 +330,11 @@ defmodule Offgrid.Pages.TripPage do
   # A click on the map, in hundredths of it. It places a stop when + has armed it, and
   # otherwise pings the place for everyone else on the trip.
   def action(:map_clicked, params, component) do
-    if component.state.mode == :placing,
-      do: place(component, params, read_trip(component)),
-      else: ping(component, params)
+    if component.state.mode == :placing do
+      place(component, params, read_trip(component))
+    else
+      ping(component, params)
+    end
   end
 
   # Everyone answers an arrival, so a newcomer learns who is here without anybody keeping a

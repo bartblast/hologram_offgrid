@@ -98,8 +98,15 @@ defmodule Offgrid.Components.MembersList do
     for %{user_id: id} <- Enum.uniq_by(grants, & &1.user_id) do
       here = id == user_id or Enum.any?(present, &(&1.id == id))
 
+      color =
+        if here do
+          MemberColor.of(grants, user_id, id)
+        else
+          "off"
+        end
+
       %{
-        color: if(here, do: MemberColor.of(grants, user_id, id), else: "off"),
+        color: color,
         grant: Map.fetch!(strongest, id),
         removable: may_remove and id != user_id
       }
@@ -108,7 +115,9 @@ defmodule Offgrid.Components.MembersList do
 
   defp stronger(%{role: :organizer} = held, _grant), do: held
 
-  defp stronger(held, grant), do: if(grant.role == :organizer, do: grant, else: held)
+  defp stronger(_held, %{role: :organizer} = grant), do: grant
+
+  defp stronger(held, _grant), do: held
 
   # The gate and the write both name the trip, and neither reads anything off it but its id.
   defp trip(trip_id), do: %Trip{id: trip_id}

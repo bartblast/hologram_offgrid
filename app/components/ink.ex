@@ -172,7 +172,11 @@ defmodule Offgrid.Components.Ink do
   # Skips a point within half a percent of the last one, since every kept point costs time on
   # every render. Manhattan distance, because this runs on every pointer event.
   defp extend([{last_x, last_y} | _rest] = stroke, {x, y} = point) do
-    if abs(x - last_x) + abs(y - last_y) < 0.5, do: stroke, else: [point | stroke]
+    if abs(x - last_x) + abs(y - last_y) < 0.5 do
+      stroke
+    else
+      [point | stroke]
+    end
   end
 
   defp finish(component, [_single_point]), do: put_state(component, :stroke, [])

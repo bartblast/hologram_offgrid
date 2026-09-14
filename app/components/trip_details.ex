@@ -106,14 +106,18 @@ defmodule Offgrid.Components.TripDetails do
   end
 
   defp date_changes(trip, :starts_on, date) do
-    if Date.compare(date, trip.ends_on) == :gt,
-      do: %{ends_on: date, starts_on: date},
-      else: %{starts_on: date}
+    if Date.compare(date, trip.ends_on) == :gt do
+      %{ends_on: date, starts_on: date}
+    else
+      %{starts_on: date}
+    end
   end
 
   defp date_changes(trip, :ends_on, date) do
-    if Date.compare(date, trip.starts_on) == :lt,
-      do: %{ends_on: date, starts_on: date},
-      else: %{ends_on: date}
+    if Date.compare(date, trip.starts_on) == :lt do
+      %{ends_on: date, starts_on: date}
+    else
+      %{ends_on: date}
+    end
   end
 end

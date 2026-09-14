@@ -67,7 +67,11 @@ defmodule Offgrid.Components.MapSurface do
       pointer ->
         moved = put_state(component, :pointer, pointer)
 
-        if moved.state.pointer_ticking, do: moved, else: start_pointing(moved)
+        if moved.state.pointer_ticking do
+          moved
+        else
+          start_pointing(moved)
+        end
     end
   end
 

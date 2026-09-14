@@ -16,7 +16,9 @@ defmodule Offgrid.Utils.CSS do
     |> Enum.join(" ")
   end
 
-  defp names({name, condition}), do: if(condition, do: [Atom.to_string(name)], else: [])
+  defp names({_name, condition}) when condition in [nil, false], do: []
+
+  defp names({name, _condition}), do: [Atom.to_string(name)]
 
   defp names(name), do: [name]
 end

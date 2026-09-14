@@ -74,6 +74,10 @@ defmodule Offgrid.TripChannel do
   """
   @spec tell(Component.t(), atom, keyword) :: Component.t()
   def tell(component, command, params) do
-    if Device.online?(), do: Component.put_command(component, command, params), else: component
+    if Device.online?() do
+      Component.put_command(component, command, params)
+    else
+      component
+    end
   end
 end
