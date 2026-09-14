@@ -5,7 +5,7 @@ defmodule Offgrid.Entities.Sketch do
   Written once when the pointer lifts and never edited, like a comment. Rubbing a line out
   deletes the row.
 
-  `points` is an SVG path string built by `Offgrid.Stroke.path/1` from `{lng, -lat}` points.
+  `path` is an SVG path string built by `Offgrid.Stroke.path/1` from `{lng, -lat}` points.
   `Offgrid.Components.Ink` uses it directly as the `d` attribute inside a `viewBox` set to the
   basemap's bounds, so the line is drawn without any projection. It is only stored and drawn,
   never queried, which is why one string is enough.
@@ -20,7 +20,7 @@ defmodule Offgrid.Entities.Sketch do
   alias Offgrid.Entities.User
 
   attribute :color, :string
-  attribute :points, :string
+  attribute :path, :string
 
   relationship :author, User
   relationship :trip, Trip

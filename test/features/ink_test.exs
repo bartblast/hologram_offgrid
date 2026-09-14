@@ -62,9 +62,9 @@ defmodule Offgrid.Features.InkTest do
     # Stored as the line itself, in the map's own coordinates: a move, two curves and a close.
     # Longitude rises eastward and latitude is written negative, so the drawing grows downward
     # the way a screen does.
-    assert String.starts_with?(sketch.points, "M")
-    assert length(String.split(sketch.points, ["Q", "T"])) - 1 == 2
-    assert String.contains?(sketch.points, ",-")
+    assert String.starts_with?(sketch.path, "M")
+    assert length(String.split(sketch.path, ["Q", "T"])) - 1 == 2
+    assert String.contains?(sketch.path, ",-")
 
     # And it is still there on a reload, drawn from the row rather than from the screen.
     session

@@ -88,12 +88,12 @@ defmodule Offgrid.FeatureHelpers do
   @doc """
   Creates a line by the given author on the given trip and returns it.
 
-  The colour and the points can be given. By default the line is red and short, stored the way
+  The colour and the path can be given. By default the line is red and short, stored the way
   one is: an SVG path in the map's own coordinates, longitude across and latitude negated.
   """
   @spec create_sketch(struct, struct, keyword | map) :: struct
   def create_sketch(author, trip, attrs \\ []) do
-    %{color: "#ff2d55", points: "M135.7,-35.1 L135.9,-35.2"}
+    %{color: "#ff2d55", path: "M135.7,-35.1 L135.9,-35.2"}
     |> Map.merge(Map.new(attrs))
     |> Map.merge(%{author_id: author.id, trip_id: trip.id})
     |> Sketch.new()

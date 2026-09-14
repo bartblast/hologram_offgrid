@@ -10,7 +10,7 @@ defmodule Offgrid.Entities.SketchTest do
   alias Offgrid.Entities.Sketch
 
   @author_id "01a05d36-4826-77cc-b885-6bb4a30a5ba5"
-  @points "M135.7681,-35.0116 L139.6503,-35.6762"
+  @path "M135.7681,-35.0116 L139.6503,-35.6762"
   @trip_id "01a05d99-76cf-73b7-bf0e-4045ea59b4f1"
 
   describe "Auth.can?/3" do
@@ -26,13 +26,13 @@ defmodule Offgrid.Entities.SketchTest do
     test "lets a member draw on their trip", %{trip: trip, user: user} do
       :ok = Auth.grant_role(user, trip, :member)
 
-      sketch = new(author_id: user.id, color: "#ff2d55", points: @points, trip_id: trip.id)
+      sketch = new(author_id: user.id, color: "#ff2d55", path: @path, trip_id: trip.id)
 
       assert Auth.can?(user, :create, sketch)
     end
 
     test "refuses somebody with no role on the trip", %{trip: trip, user: user} do
-      sketch = new(author_id: user.id, color: "#ff2d55", points: @points, trip_id: trip.id)
+      sketch = new(author_id: user.id, color: "#ff2d55", path: @path, trip_id: trip.id)
 
       refute Auth.can?(user, :create, sketch)
     end
@@ -41,7 +41,7 @@ defmodule Offgrid.Entities.SketchTest do
       :ok = Auth.grant_role(user, trip, :member)
       other = create_user("Tom Reyes", "tom@offgrid.test")
 
-      sketch = new(author_id: other.id, color: "#ff2d55", points: @points, trip_id: trip.id)
+      sketch = new(author_id: other.id, color: "#ff2d55", path: @path, trip_id: trip.id)
 
       refute Auth.can?(user, :create, sketch)
     end
@@ -49,31 +49,31 @@ defmodule Offgrid.Entities.SketchTest do
 
   describe "Entity.validate/1" do
     test "accepts a complete sketch" do
-      sketch = new(author_id: @author_id, color: "#ff2d55", points: @points, trip_id: @trip_id)
+      sketch = new(author_id: @author_id, color: "#ff2d55", path: @path, trip_id: @trip_id)
 
       assert Entity.validate(sketch) == :ok
     end
 
-    test "refuses a stroke with no points" do
+    test "refuses a stroke with no path" do
       sketch = new(author_id: @author_id, color: "#ff2d55", trip_id: @trip_id)
 
-      assert Entity.validate(sketch) == {:error, %{points: [:required]}}
+      assert Entity.validate(sketch) == {:error, %{path: [:required]}}
     end
 
     test "refuses a stroke with no colour" do
-      sketch = new(author_id: @author_id, points: @points, trip_id: @trip_id)
+      sketch = new(author_id: @author_id, path: @path, trip_id: @trip_id)
 
       assert Entity.validate(sketch) == {:error, %{color: [:required]}}
     end
 
     test "refuses a stroke with no author" do
-      sketch = new(color: "#ff2d55", points: @points, trip_id: @trip_id)
+      sketch = new(color: "#ff2d55", path: @path, trip_id: @trip_id)
 
       assert Entity.validate(sketch) == {:error, %{author_id: [:required]}}
     end
 
     test "refuses a stroke on no trip" do
-      sketch = new(author_id: @author_id, color: "#ff2d55", points: @points)
+      sketch = new(author_id: @author_id, color: "#ff2d55", path: @path)
 
       assert Entity.validate(sketch) == {:error, %{trip_id: [:required]}}
     end
@@ -81,12 +81,12 @@ defmodule Offgrid.Entities.SketchTest do
 
   describe "new/1" do
     test "holds the stroke as it was given" do
-      sketch = new(author_id: @author_id, color: "#ff2d55", points: @points, trip_id: @trip_id)
+      sketch = new(author_id: @author_id, color: "#ff2d55", path: @path, trip_id: @trip_id)
 
       assert %Sketch{
                author_id: @author_id,
                color: "#ff2d55",
-               points: @points,
+               path: @path,
                trip_id: @trip_id,
                created_at: nil,
                updated_at: nil

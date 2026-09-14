@@ -140,7 +140,7 @@ defmodule Offgrid.Components.InkTools do
       %{
         author_id: component.props.user_id,
         color: component.state.ink_color,
-        points: sketch_path(points, component.props.trip),
+        path: sketch_path(points, component.props.trip),
         trip_id: component.props.trip_id
       }
       |> Sketch.new()

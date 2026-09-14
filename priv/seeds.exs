@@ -230,7 +230,7 @@ case find_or_create.(Trip, [name: japan_attrs.name], japan_attrs, japan_attrs.na
         |> Enum.map(fn {lat, lng} -> {Float.round(lng, 4), Float.round(-lat, 4)} end)
         |> Stroke.path()
 
-      %{author_id: author.id, color: color, points: path, trip_id: japan.id}
+      %{author_id: author.id, color: color, path: path, trip_id: japan.id}
       |> Sketch.new()
       |> DB.create!()
     end

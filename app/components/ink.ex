@@ -36,7 +36,7 @@ defmodule Offgrid.Components.Ink do
         {%if erasable?(sketch, @drawing, @user_id)}
           <path
             class="ink-hit"
-            d={sketch.points}
+            d={sketch.path}
             fill="none"
             vector-effect="non-scaling-stroke"
             $click={:erase, id: sketch.id}
@@ -45,7 +45,7 @@ defmodule Offgrid.Components.Ink do
 
         <path
           class="ink-line"
-          d={sketch.points}
+          d={sketch.path}
           stroke={sketch.color}
           fill="none"
           vector-effect="non-scaling-stroke"
