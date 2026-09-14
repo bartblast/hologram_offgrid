@@ -31,7 +31,7 @@ defmodule Offgrid.Components.MembersList do
     ~HOLO"""
     {%for row <- rows(@grants, @present, @user_id, @trip_id)}
       <div class="mrow">
-        <i class={row.colour}></i>{row.grant.user.name} <em>{role_label(row.grant.role)}</em>
+        <i class={row.color}></i>{row.grant.user.name} <em>{role_label(row.grant.role)}</em>
 
         {%if row.removable}
           <button
@@ -100,7 +100,7 @@ defmodule Offgrid.Components.MembersList do
       here = id == user_id or Enum.any?(present, &(&1.id == id))
 
       %{
-        colour: if(here, do: Cast.colour(members, user_id, id), else: "off"),
+        color: if(here, do: Cast.color(members, user_id, id), else: "off"),
         grant: Map.fetch!(strongest, id),
         removable: may_remove and id != user_id
       }

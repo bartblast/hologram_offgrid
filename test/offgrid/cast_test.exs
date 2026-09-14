@@ -11,34 +11,34 @@ defmodule Offgrid.CastTest do
   # Bart made the trip, then Anna, Tom and Mira joined, in that order.
   @members [@bart, @anna, @tom, @mira]
 
-  describe "colour/3" do
+  describe "color/3" do
     test "you are always your own colour" do
-      assert colour(@members, @tom, @tom) == "y"
+      assert color(@members, @tom, @tom) == "y"
     end
 
     test "the first other member is violet and the second teal" do
-      assert colour(@members, @bart, @anna) == "a"
-      assert colour(@members, @bart, @tom) == "t"
+      assert color(@members, @bart, @anna) == "a"
+      assert color(@members, @bart, @tom) == "t"
     end
 
     test "anyone after the second is grey" do
-      assert colour(@members, @bart, @mira) == ""
+      assert color(@members, @bart, @mira) == ""
     end
 
     test "skips you when counting the others" do
       # On Anna's screen Bart is first and Tom second - Anna herself is not in the count.
-      assert colour(@members, @anna, @bart) == "a"
-      assert colour(@members, @anna, @tom) == "t"
-      assert colour(@members, @anna, @mira) == ""
+      assert color(@members, @anna, @bart) == "a"
+      assert color(@members, @anna, @tom) == "t"
+      assert color(@members, @anna, @mira) == ""
     end
 
     test "somebody not on the trip is grey" do
-      assert colour(@members, @bart, "01a05db0-0000-7000-8000-000000000000") == ""
+      assert color(@members, @bart, "01a05db0-0000-7000-8000-000000000000") == ""
     end
 
     test "with nobody signed in everyone is somebody else" do
-      assert colour(@members, nil, @bart) == "a"
-      assert colour(@members, nil, @anna) == "t"
+      assert color(@members, nil, @bart) == "a"
+      assert color(@members, nil, @anna) == "t"
     end
   end
 

@@ -38,7 +38,7 @@ defmodule Offgrid.Components.StopsList do
           <span class="stop-name">{row.stop.name}</span>
           <span class="stop-summary">{summary(row.stop)}</span>
           {%for person <- row.people}
-            <span class={"sel " <> person.colour}><b>{person.initials}</b></span>
+            <span class={"sel " <> person.color}><b>{person.initials}</b></span>
           {/for}
         </button>
       {/for}
@@ -64,7 +64,7 @@ defmodule Offgrid.Components.StopsList do
 
   defp others_on(editing, stop_id, members, user_id) do
     for person <- Presence.on_stop(editing, stop_id), person.id != user_id do
-      Map.put(person, :colour, Cast.colour(members, user_id, person.id))
+      Map.put(person, :color, Cast.color(members, user_id, person.id))
     end
   end
 

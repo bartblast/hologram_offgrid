@@ -23,7 +23,7 @@ defmodule Offgrid.Components.Cursors do
   def template do
     ~HOLO"""
     {%for cursor <- others(@cursors, @grants, @user_id)}
-      <div class={"cursor " <> cursor.colour} style={"left:#{cursor.x}%;top:#{cursor.y}%"}>
+      <div class={"cursor " <> cursor.color} style={"left:#{cursor.x}%;top:#{cursor.y}%"}>
         <svg class="cur" viewBox="0 0 12 18" aria-hidden="true">
           <path d="M1 1 L1 15.2 L4.6 11.7 L7 16.9 L9.5 15.8 L7.1 10.7 L11.6 10.4 Z" />
         </svg>
@@ -40,7 +40,7 @@ defmodule Offgrid.Components.Cursors do
     members = Cast.members(grants)
 
     for {id, cursor} <- cursors, id != user_id do
-      Map.merge(cursor, %{colour: Cast.colour(members, user_id, id), id: id})
+      Map.merge(cursor, %{color: Cast.color(members, user_id, id), id: id})
     end
   end
 end

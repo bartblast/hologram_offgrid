@@ -22,7 +22,7 @@ defmodule Offgrid.Components.Faces do
   def template do
     ~HOLO"""
     {%for face <- faces(@present, @grants, @user_id)}
-      <div class={"face " <> face.colour}>{face.initials}</div>
+      <div class={"face " <> face.color}>{face.initials}</div>
     {/for}
 
     <div class="face y">{@you}</div>
@@ -32,7 +32,7 @@ defmodule Offgrid.Components.Faces do
   defp faces(present, grants, user_id) do
     members = Cast.members(grants)
 
-    Enum.map(present, &Map.put(&1, :colour, Cast.colour(members, user_id, &1.id)))
+    Enum.map(present, &Map.put(&1, :color, Cast.color(members, user_id, &1.id)))
   end
 
   defp members_query(trip_id), do: Queries.members(trip_id)

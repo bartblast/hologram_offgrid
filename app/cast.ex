@@ -16,10 +16,10 @@ defmodule Offgrid.Cast do
   `member_ids` is the trip's members in join order; `you_id` is who is looking, or nil when
   nobody is signed in, in which case everyone is somebody else.
   """
-  @spec colour(list(String.t()), String.t() | nil, String.t()) :: String.t()
-  def colour(_member_ids, you_id, you_id) when you_id != nil, do: "y"
+  @spec color(list(String.t()), String.t() | nil, String.t()) :: String.t()
+  def color(_member_ids, you_id, you_id) when you_id != nil, do: "y"
 
-  def colour(member_ids, you_id, id) do
+  def color(member_ids, you_id, id) do
     case Enum.find_index(member_ids -- [you_id], &(&1 == id)) do
       0 -> "a"
       1 -> "t"

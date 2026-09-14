@@ -36,6 +36,6 @@ defmodule Offgrid.Components.MemberChips do
   # There is no trip yet to take a join order from, so invites are coloured in the order they
   # were added, which is the order they will join in.
   defp chip_class(invites, invite) do
-    Cast.colour(Enum.map(invites, & &1.id), nil, invite.id)
+    Cast.color(Enum.map(invites, & &1.id), nil, invite.id)
   end
 end

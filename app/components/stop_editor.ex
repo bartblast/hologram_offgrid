@@ -65,7 +65,7 @@ defmodule Offgrid.Components.StopEditor do
       </div>
 
       {%for field <- [:name, :description]}
-        <label>{field_label(field)} {%for person <- others_in(@editing, @stop_id, field, @grants, @user_id)}<b class={"tag " <> person.colour}>{person.initials}</b>{/for}</label>
+        <label>{field_label(field)} {%for person <- others_in(@editing, @stop_id, field, @grants, @user_id)}<b class={"tag " <> person.color}>{person.initials}</b>{/for}</label>
         <input
           id={"stop_#{field}"}
           class={classes(["inp", busy: busy?(@editing, @stop_id, field, @user_id)])}
@@ -90,10 +90,10 @@ defmodule Offgrid.Components.StopEditor do
         {/for}
       </div>
 
-      <label>{field_label(:comment)} {%for person <- others_in(@editing, @stop_id, :comment, @grants, @user_id)}<b class={"tag " <> person.colour}>{person.initials}</b>{/for}</label>
+      <label>{field_label(:comment)} {%for person <- others_in(@editing, @stop_id, :comment, @grants, @user_id)}<b class={"tag " <> person.color}>{person.initials}</b>{/for}</label>
       {%for remark <- remarks(@comments, @grants, @user_id)}
         <div class="cmt">
-          <b><i class={remark.colour}></i>{remark.comment.author.name} · {Dates.clock(remark.comment.created_at, @tz_offset)}</b>
+          <b><i class={remark.color}></i>{remark.comment.author.name} · {Dates.clock(remark.comment.created_at, @tz_offset)}</b>
           <p>{remark.comment.body}</p>
         </div>
       {/for}
@@ -195,7 +195,7 @@ defmodule Offgrid.Components.StopEditor do
     members = Cast.members(grants)
 
     for person <- Presence.on_field(editing, stop_id, field), person.id != user_id do
-      Map.put(person, :colour, Cast.colour(members, user_id, person.id))
+      Map.put(person, :color, Cast.color(members, user_id, person.id))
     end
   end
 
@@ -204,13 +204,13 @@ defmodule Offgrid.Components.StopEditor do
     members = Cast.members(grants)
 
     for comment <- comments do
-      colour =
-        case Cast.colour(members, user_id, comment.author_id) do
+      color =
+        case Cast.color(members, user_id, comment.author_id) do
           "" -> "off"
-          colour -> colour
+          color -> color
         end
 
-      %{colour: colour, comment: comment}
+      %{color: color, comment: comment}
     end
   end
 
