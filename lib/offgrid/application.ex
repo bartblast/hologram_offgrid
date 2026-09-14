@@ -5,7 +5,7 @@ defmodule Offgrid.Application do
 
   use Application
 
-  @impl true
+  @impl Application
   def start(_type, _args) do
     children = [OffgridWeb.Endpoint]
 
@@ -17,7 +17,7 @@ defmodule Offgrid.Application do
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
-  @impl true
+  @impl Application
   def config_change(changed, _new, removed) do
     OffgridWeb.Endpoint.config_change(changed, removed)
     :ok

@@ -52,7 +52,11 @@ defmodule Offgrid.Features.InkTest do
     |> refute_has(css(".ink-paper path", visible: :any))
     |> assert_has(css(".ink-line", count: 1, visible: :any))
 
-    [sketch] = Sketch |> include(:author) |> DB.read()
+    [sketch] =
+      Sketch
+      |> include(:author)
+      |> DB.read()
+
     assert sketch.author.email == "member@offgrid.test"
     assert sketch.color == "#ff2d55"
     # Stored as the line itself, in the map's own coordinates: a move, two curves and a close.

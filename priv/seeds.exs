@@ -31,7 +31,7 @@ find_or_create = fn entity_type, match, attrs, label ->
     |> DB.read()
 
   if existing do
-    IO.puts("· #{label}")
+    Mix.shell().info("· #{label}")
 
     {:existing, existing}
   else
@@ -40,7 +40,7 @@ find_or_create = fn entity_type, match, attrs, label ->
       |> entity_type.new()
       |> DB.create!()
 
-    IO.puts("+ #{label}")
+    Mix.shell().info("+ #{label}")
 
     {:created, created}
   end
@@ -205,7 +205,7 @@ case find_or_create.(Trip, [name: japan_attrs.name], japan_attrs, japan_attrs.na
             |> Stop.new()
             |> DB.create!()
 
-          IO.puts("+ #{stop.name}")
+          Mix.shell().info("+ #{stop.name}")
 
           {stop.name, stop}
         end
@@ -219,7 +219,7 @@ case find_or_create.(Trip, [name: japan_attrs.name], japan_attrs, japan_attrs.na
     |> Comment.new()
     |> DB.create!()
 
-    IO.puts("+ Bart's remark on Fushimi Inari")
+    Mix.shell().info("+ Bart's remark on Fushimi Inari")
 
     # A sketch stores its whole line as one SVG path in the map's own coordinates, x being
     # longitude and y being NEGATIVE latitude, the way the page writes one when a pointer lifts.
@@ -277,5 +277,5 @@ case find_or_create.(Trip, [name: japan_attrs.name], japan_attrs, japan_attrs.na
 
     ink.(people.emilia, "#007aff", arrow)
 
-    IO.puts("+ Bart's circles around Kyoto and Takayama, Emilia's arrow to the ryokan")
+    Mix.shell().info("+ Bart's circles around Kyoto and Takayama, Emilia's arrow to the ryokan")
 end

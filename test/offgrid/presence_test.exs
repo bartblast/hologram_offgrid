@@ -23,9 +23,9 @@ defmodule Offgrid.PresenceTest do
     end
 
     test "bumps the sequence per person, not per screen" do
-      {cursors, 1} = cursor(%{}, %{id: "anna", initials: "AK", x: 10.0, y: 20.0})
-      {cursors, 1} = cursor(cursors, %{id: "tom", initials: "TR", x: 30.0, y: 40.0})
-      {cursors, 2} = cursor(cursors, %{id: "anna", initials: "AK", x: 11.0, y: 21.0})
+      {anna_here, 1} = cursor(%{}, %{id: "anna", initials: "AK", x: 10.0, y: 20.0})
+      {both_here, 1} = cursor(anna_here, %{id: "tom", initials: "TR", x: 30.0, y: 40.0})
+      {cursors, 2} = cursor(both_here, %{id: "anna", initials: "AK", x: 11.0, y: 21.0})
 
       assert cursors["anna"] == %{initials: "AK", seq: 2, x: 11.0, y: 21.0}
       assert cursors["tom"].seq == 1
@@ -149,7 +149,12 @@ defmodule Offgrid.PresenceTest do
     end
 
     test "lists everyone on that stop, whatever field", %{editing: editing} do
-      assert Enum.sort_by(on_stop(editing, "ryokan"), & &1.id) == [
+      on_ryokan =
+        editing
+        |> on_stop("ryokan")
+        |> Enum.sort_by(& &1.id)
+
+      assert on_ryokan == [
                %{field: :name, id: "anna", initials: "AK"},
                %{field: nil, id: "tom", initials: "TR"}
              ]

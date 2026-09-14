@@ -73,15 +73,14 @@ defmodule Offgrid.Features.PinsTest do
     |> assert_has(css(".pin.mine", count: 1))
 
     # It landed on the first day, so it comes before Tokyo and the route runs west to east.
-    [{first, _first_y}, {second, _second_y}] = route_points(session)
-    assert first < second
+    [{new_x, _new_y}, {tokyo_x, _tokyo_y}] = route_points(session)
+    assert new_x < tokyo_x
 
     # Move it to the third day and the route turns around - nothing redrew it but the row.
     click(session, css(".cal button", text: "30"))
     assert_text(session, css(".ed-sub"), "Mon 30 Mar")
 
-    [{first, _first_y}, {second, _second_y}] = route_points(session)
-    assert first > second
+    assert [{^tokyo_x, _tokyo_y}, {^new_x, _new_y}] = route_points(session)
 
     session
     |> click(button("Delete stop"))
@@ -111,7 +110,7 @@ defmodule Offgrid.Features.PinsTest do
     [{before_x, _before_y}] = pin_positions(session)
 
     # Picked up and carried east, and let go there.
-    session = drag_pin(session, {600, 300})
+    drag_pin(session, {600, 300})
 
     # The pin is where it was let go, on screen and in the row - and further east than it was.
     [{after_x, _after_y}] = pin_positions(session)
@@ -119,7 +118,7 @@ defmodule Offgrid.Features.PinsTest do
 
     await_pending_writes(session, 0)
 
-    moved = Stop |> filter(id: stop.id) |> one() |> DB.read()
+    moved = read_stop(stop.id)
     assert moved.lng > stop.lng
     # It was carried, not re-created: the same row, with its name and day untouched.
     assert moved.name == "Fushimi Inari"
@@ -142,7 +141,7 @@ defmodule Offgrid.Features.PinsTest do
     |> assert_text(css(".ed-title"), "Fushimi Inari")
     |> await_pending_writes(0)
 
-    unmoved = Stop |> filter(id: stop.id) |> one() |> DB.read()
+    unmoved = read_stop(stop.id)
     assert unmoved.lat == stop.lat
     assert unmoved.lng == stop.lng
   end
@@ -170,7 +169,7 @@ defmodule Offgrid.Features.PinsTest do
     [{first_before, _first_y}, {second, _second_y}] = route_points(session)
 
     # Picked up and carried east of Tokyo, and still held.
-    session = press_pin(session, {".pin", "Fushimi Inari"}, {820, 300})
+    press_pin(session, {".pin", "Fushimi Inari"}, {820, 300})
 
     # The line already bends: its first point has moved past the second, with the pointer
     # still down and nothing written.
@@ -178,18 +177,16 @@ defmodule Offgrid.Features.PinsTest do
     assert first_during > first_before
     assert first_during > second
 
-    held = Stop |> filter(id: west.id) |> one() |> DB.read()
-    assert held.lng == west.lng
+    assert read_stop(west.id).lng == west.lng
 
     # Letting go is what writes it, and the line stays where the hand left it.
-    session = release_pointer(session, {820, 300})
+    release_pointer(session, {820, 300})
     await_pending_writes(session, 0)
 
     [{first_after, _first_y}, {^second, _second_y}] = route_points(session)
     assert first_after > second
 
-    moved = Stop |> filter(id: west.id) |> one() |> DB.read()
-    assert moved.lng > west.lng
+    assert read_stop(west.id).lng > west.lng
   end
 
   # Presses the only pin, carries the pointer to the given offset from the map's top left,
@@ -205,10 +202,10 @@ defmodule Offgrid.Features.PinsTest do
     session
     |> all(css(".pin"))
     |> Enum.map(fn pin ->
-      style = Element.attr(pin, "style")
-
       [x, y] =
-        Regex.scan(~r/([\d.]+)%/, style) |> Enum.map(fn [_all, n] -> String.to_float(n) end)
+        ~r/([\d.]+)%/
+        |> Regex.scan(Element.attr(pin, "style"))
+        |> Enum.map(fn [_all, number] -> String.to_float(number) end)
 
       {x, y}
     end)
@@ -219,6 +216,13 @@ defmodule Offgrid.Features.PinsTest do
   # drag is under way.
   defp press_pin(session, pin, at) do
     dispatch_pointer(session, [{:down, pin, :target}, {:move, :document, at}])
+  end
+
+  defp read_stop(id) do
+    Stop
+    |> filter(id: id)
+    |> one()
+    |> DB.read()
   end
 
   defp release_pointer(session, at) do

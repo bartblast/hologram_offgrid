@@ -36,7 +36,7 @@ defmodule Offgrid.Features.PingTest do
     await_pending_writes(one, 0)
     assert DB.read(Stop) == []
 
-    one |> refute_has(css(".ping"))
-    two |> refute_has(css(".ping"))
+    refute_has(one, css(".ping"))
+    refute_has(two, css(".ping"))
   end
 end

@@ -45,7 +45,11 @@ defmodule Offgrid.Features.SocialTest do
     await_pending_writes(tom, 0)
     assert_has(nora, css(".ink-line", count: 1, visible: :any))
 
-    stroke = nora |> find(css(".ink-line", visible: :any)) |> Element.attr("stroke")
+    stroke =
+      nora
+      |> find(css(".ink-line", visible: :any))
+      |> Element.attr("stroke")
+
     assert stroke == "#30b0c7"
 
     # A ping, which is the one thing here that leaves nothing behind.

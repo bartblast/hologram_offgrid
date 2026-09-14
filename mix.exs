@@ -16,6 +16,7 @@ defmodule Offgrid.MixProject do
       dialyzer: [
         plt_add_apps: [:ex_unit, :iex, :mix],
         plt_core_path: Path.join(["priv", "plts", "core.plt"]),
+        ignore_warnings: ".dialyzer_ignore.exs",
         plt_local_path: Path.join(["priv", "plts", "project.plt"])
       ]
     ]
@@ -33,7 +34,7 @@ defmodule Offgrid.MixProject do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["app", "lib", "test/support"]
-  defp elixirc_paths(_), do: ["app", "lib"]
+  defp elixirc_paths(_env), do: ["app", "lib"]
 
   # Specifies your project dependencies.
   #

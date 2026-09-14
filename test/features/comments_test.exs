@@ -47,8 +47,13 @@ defmodule Offgrid.Features.CommentsTest do
       |> assert_text(css(".cmt", at: 1), "I can call tomorrow morning")
 
     # Coloured by the cast - Tom the first other member, Anna the second.
-    session |> find(css(".cmt", at: 0)) |> assert_has(css("i.a"))
-    session |> find(css(".cmt", at: 1)) |> assert_has(css("i.t"))
+    session
+    |> find(css(".cmt", at: 0))
+    |> assert_has(css("i.a"))
+
+    session
+    |> find(css(".cmt", at: 1))
+    |> assert_has(css("i.t"))
 
     # The clock reads as this browser reads it, not as the server wrote it: the row holds
     # UTC, and the screen shows it shifted by the offset the browser itself reports.
@@ -84,8 +89,11 @@ defmodule Offgrid.Features.CommentsTest do
       |> assert_text(css(".cmt", at: 1), "NORA VALE")
       |> assert_text(css(".cmt", at: 1), "I can call tomorrow morning")
 
-    session |> find(css(".cmt", at: 1)) |> assert_has(css("i.y"))
-    assert session |> find(css("#stop_comment")) |> Element.value() == ""
+    session
+    |> find(css(".cmt", at: 1))
+    |> assert_has(css("i.y"))
+
+    assert draft(session) == ""
 
     # It was a row, not a screen: read back from the server, with the author the gate pinned.
     await_pending_writes(session, 0)
@@ -112,7 +120,7 @@ defmodule Offgrid.Features.CommentsTest do
 
     # The half-written remark was Ryokan's. The panel keeps its state from one stop to the
     # next, so the draft has to know which stop it was for.
-    assert session |> find(css("#stop_comment")) |> Element.value() == ""
+    assert draft(session) == ""
   end
 
   feature "deleting a stop removes its remarks too", %{session: session, stop: stop, trip: trip} do
@@ -148,5 +156,11 @@ defmodule Offgrid.Features.CommentsTest do
       end
 
     Dates.clock(at, offset)
+  end
+
+  defp draft(session) do
+    session
+    |> find(css("#stop_comment"))
+    |> Element.value()
   end
 end

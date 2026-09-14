@@ -18,7 +18,7 @@ defmodule Offgrid.Presence do
   """
 
   @typedoc "Somebody on the screen: their id and the two letters they are drawn as."
-  @type person :: %{id: String.t(), initials: String.t()}
+  @type person :: %{id: String.t(), initials: String.t() | nil}
 
   @typedoc "Everyone else's pointer, by person id, with the sequence number of its newest position."
   @type cursors :: %{
@@ -38,11 +38,18 @@ defmodule Offgrid.Presence do
   @doc """
   Adds the person to those present, once, however many times they say they are here.
   """
-  @spec arrive(list(person), person) :: list(person)
+  @spec arrive(list(person), %{
+          :id => String.t(),
+          :initials => String.t() | nil,
+          optional(atom) => term
+        }) ::
+          list(person)
   def arrive(present, %{id: id, initials: initials}) do
     if Enum.any?(present, &(&1.id == id)) do
       present
     else
+      # Arrival order, and the list is a handful of people long.
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       present ++ [%{id: id, initials: initials}]
     end
   end
@@ -51,7 +58,13 @@ defmodule Offgrid.Presence do
   Puts the person's pointer at the given place and returns the cursors with the sequence
   number this position got, which is what `expire/3` later asks about.
   """
-  @spec cursor(cursors, %{id: String.t(), initials: String.t(), x: number, y: number}) ::
+  @spec cursor(cursors, %{
+          :id => String.t(),
+          :initials => String.t() | nil,
+          :x => number,
+          :y => number,
+          optional(atom) => term
+        }) ::
           {cursors, pos_integer}
   def cursor(cursors, %{id: id, initials: initials, x: x, y: y}) do
     seq =
@@ -71,11 +84,12 @@ defmodule Offgrid.Presence do
   count of the messages they have sent.
   """
   @spec edit(editing, %{
-          id: String.t(),
-          initials: String.t(),
-          stop_id: String.t() | nil,
-          field: atom | nil,
-          seq: integer
+          :id => String.t(),
+          :initials => String.t() | nil,
+          :stop_id => String.t() | nil,
+          :field => atom | nil,
+          :seq => integer,
+          optional(atom) => term
         }) :: editing
   def edit(editing, %{id: id, initials: initials, stop_id: stop_id, field: field, seq: seq}) do
     case editing do

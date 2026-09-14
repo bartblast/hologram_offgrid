@@ -106,6 +106,8 @@ defmodule Offgrid.Pages.NewTripPage do
     if Enum.any?(invites, &(&1.id == params.user.id)) do
       component
     else
+      # Invites keep the order they were added in, which is the order they are coloured by.
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       put_state(component, :invites, invites ++ [params.user])
     end
   end
