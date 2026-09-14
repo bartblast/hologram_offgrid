@@ -2,23 +2,17 @@ defmodule Offgrid.Geo do
   @moduledoc """
   The arithmetic between a place on Earth and a place on the screen.
 
-  A basemap is a rectangle of latitude and longitude drawn at some size, and the projection
-  between the two is linear in both directions - a stand-in for the real thing, chosen because
-  it can be read, tested and ported to the browser in one piece. Real cartography would put a
-  Mercator curve in the vertical, which matters over a continent and not over one country.
-
-  The vertical runs the other way from the horizontal, which is the only part worth watching:
-  latitude grows northward and screen offsets grow downward, so the top of the map is
-  `max_lat` and the arithmetic subtracts rather than adds.
+  A basemap is a rectangle of latitude and longitude, and the projection between it and the
+  screen is linear in both directions. Real cartography would use a Mercator curve vertically,
+  which matters over a continent but not over one country. Latitude grows northward while
+  screen offsets grow downward, so the top of the map is `max_lat` and the vertical arithmetic
+  subtracts.
   """
 
   alias Offgrid.Entities.Basemap
 
   @doc """
   Returns true when the place falls inside the basemap's bounds, edges included.
-
-  A place outside them has nowhere to be drawn, which is what keeps a stop in Warsaw off a map
-  of Japan rather than off its edge.
   """
   @spec within?(float, float, Basemap.t()) :: boolean
   def within?(lat, lng, basemap) do
@@ -27,15 +21,11 @@ defmodule Offgrid.Geo do
   end
 
   @doc """
-  Returns the `viewBox` that makes a drawing's own coordinates the basemap's own.
+  Returns the `viewBox` that makes a drawing's coordinates the basemap's own.
 
   x is longitude and y is NEGATIVE latitude, because latitude grows northward while a drawing
-  grows downward - so a line stored in those two numbers needs no arithmetic to be drawn, the
-  browser's own projection puts it where it belongs, and it moves with the map when the trip
-  changes basemap because only this box changes.
-
-  Nothing readable answers the unit box, which is what the layers on this screen fall back to
-  while a trip is not there to be read.
+  grows downward. A path stored in those units needs no projection: the browser draws it in
+  place at whatever size the map is. With no basemap to read, the answer is the unit box.
   """
   @spec view_box(Basemap.t() | nil) :: String.t()
   def view_box(nil), do: "0 0 100 100"
@@ -48,9 +38,8 @@ defmodule Offgrid.Geo do
   @doc """
   Returns true when the stop has a place, and that place is on the basemap.
 
-  The one rule the pins and the route both follow, written once: a stop with no coordinates
-  yet is not drawn, and neither is one whose place is off the edge of the map the trip is on.
-  Neither is an error.
+  The one rule the pins and the route both follow: a stop with no coordinates yet is not drawn,
+  and neither is one off the edge of the trip's map. Neither is an error.
   """
   @spec placed?(map, Basemap.t()) :: boolean
   def placed?(stop, basemap) do
@@ -61,10 +50,8 @@ defmodule Offgrid.Geo do
   Returns where the place sits on the basemap, as percentages of its width and height from the
   top left.
 
-  Percentages because that is what a pin's `style` wants, and because they hold whatever size
-  the map is drawn at. A place outside the basemap's bounds gets a percentage outside 0 to 100
-  rather than an error - whether such a place is drawn at all is the map's question, not this
-  one's.
+  Percentages because that is what a pin's `style` wants, and they hold at any size the map is
+  drawn at. A place outside the bounds gets a percentage outside 0 to 100 rather than an error.
   """
   @spec to_percent(float, float, Basemap.t()) :: {float, float}
   def to_percent(lat, lng, basemap) do
@@ -78,9 +65,8 @@ defmodule Offgrid.Geo do
   Returns the place a point in the drawn map stands for, given where the point falls inside a
   box of the given size.
 
-  The offsets are the ones a click event carries, measured from the box's top left, and the
-  size is the box as the browser last measured it. Both are needed: percentages alone cannot
-  say where a click landed, and the map is drawn at whatever size the window allows.
+  The offsets are measured from the box's top left, as a click event carries them, and the size
+  is the box as the browser last measured it.
   """
   @spec from_offset(number, number, number, number, Basemap.t()) :: {float, float}
   def from_offset(offset_x, offset_y, width, height, basemap) do

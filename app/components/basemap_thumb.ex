@@ -1,14 +1,12 @@
 defmodule Offgrid.Components.BasemapThumb do
-  use Hologram.Component
-
   @moduledoc """
   A map in miniature, named by its slug.
 
-  The three shapes are the mockup's own, unchanged - they are stand-ins for real
-  cartography rather than drawings of anywhere, which is why they can be this crude and
-  still read as Japan, a city and a mountain range. Every colour comes from a token, so a
-  thumbnail and the full-size terrain behind it are the same map at two sizes.
+  The shapes are stand-ins for real cartography, coloured from the same tokens as `Terrain`,
+  so a thumbnail and the full-size map behind it look like one map at two sizes.
   """
+
+  use Hologram.Component
 
   prop :slug, :string
 

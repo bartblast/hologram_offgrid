@@ -1,28 +1,18 @@
 defmodule Offgrid.Stroke do
   @moduledoc """
-  The shape of a freehand line drawn through a run of points.
+  The SVG path of a freehand line drawn through a run of points.
 
-  A pointer reports its place a few dozen times a second and the places between are the
-  hand's, not the browser's - so joining them with straight segments draws the sampling rather
-  than the gesture, and a quick flick comes out as a row of facets. This turns the points into
-  a curve instead.
+  A pointer reports its place a few dozen times a second, so joining the samples with straight
+  segments draws the sampling rather than the gesture. Instead, each point becomes the control
+  of a quadratic curve that ends at the midpoint between it and the next point, which costs one
+  division per point. The line ends with a straight run to the last point.
 
-  The method is the cheap one and the right one here: every point becomes the control of a
-  quadratic curve whose ends are the midpoints of its neighbours. The line then passes through
-  each midpoint and bends towards each sample, which is what a hand does, and it costs one
-  division per point - no fitting, no lookahead, nothing to tune. The first and last points are
-  joined straight, because a curve needs a neighbour on both sides and the ends have one.
+  Only the first curve names its control. Every later one is a `T`, which reflects the previous
+  control about the previous endpoint, and that reflection lands exactly on the next sample. It
+  is the same curve, written with two numbers per point instead of four.
 
-  Only the first curve names its control. Every one after it is a `T`, which continues the
-  quadratic by reflecting the previous control about the previous endpoint - and that
-  reflection lands exactly on the next sample, which is the control this method wanted anyway.
-  So it is the SAME curve written with two numbers per point instead of four. That halves the
-  number-to-string conversions, which is what this costs: measured at about 106 microseconds a
-  point before, against 47 for parsing and projecting the same point.
-
-  Coordinates are whatever the caller is drawing in. The page hands it hundredths of the map
-  while a stroke is being made and `Ink` hands it the same hundredths projected back from the
-  real coordinates a sketch is stored in, so one function serves both.
+  Coordinates are in the caller's units: the trip page passes hundredths of the map for the
+  stroke being drawn, and `{lng, -lat}` for the path a sketch is saved with.
   """
 
   @typedoc "A place on the drawing, in the caller's own units."
@@ -31,8 +21,8 @@ defmodule Offgrid.Stroke do
   @doc """
   Returns the `d` of an SVG path through the points, curved.
 
-  Nothing to draw answers the empty string, and a single point answers a move with no line -
-  both render as nothing, which is what a stroke that has not started yet should look like.
+  No points answer the empty string, and a single point answers a move with no line. Both
+  render as nothing.
   """
   @spec path(list(point)) :: String.t()
   def path([]), do: ""
@@ -43,8 +33,8 @@ defmodule Offgrid.Stroke do
     "M#{spell(first)} " <> segments(rest, true)
   end
 
-  # Walked rather than chunked: chunk_every allocates a list of pairs the size of the stroke,
-  # and this runs for every sketch on every render.
+  # Walked rather than chunked, because chunk_every would allocate a list of pairs the size of
+  # the stroke, and the stroke being drawn is re-spelled on every render.
   defp segments([last], _first?), do: "L#{spell(last)}"
 
   defp segments([{cx, cy} = control, {nx, ny} = next | rest], first?) do

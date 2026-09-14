@@ -2,17 +2,11 @@ defmodule Offgrid.Cast do
   @moduledoc """
   One colour per person on a trip, the same wherever that person is drawn.
 
-  The theme names three colours for people: yours, and two for the others. Who gets which is
-  decided once, here, from the order people joined the trip - the grant rows, oldest first,
-  which puts whoever made the trip at the head without storing an order anywhere. Faces,
-  remark dots, member rows, chips, cursors and editing marks all ask this module, so a person
-  is one colour on a screen and stays it tomorrow.
-
-  You are always your own colour. Everyone else is coloured by their place among the others:
-  the first is violet, the second teal, anyone after that grey - and so is anybody not on the
-  trip at all, such as somebody whose remark outlived their membership. The colours differ
-  from one person's screen to another's, since "you" moves, and that is what the eye needs:
-  stable on the screen in front of it.
+  You are always your own colour. Everyone else is coloured by the order they joined the trip,
+  read from the grant rows oldest first, so whoever made the trip comes first without an order
+  being stored: the first other member is violet, the second teal, and anyone after that grey.
+  So is anybody no longer on the trip, such as the author of a remark who has since left.
+  Colours differ between screens, since "you" differs, but stay stable on each one.
   """
 
   @doc """
@@ -34,8 +28,8 @@ defmodule Offgrid.Cast do
   end
 
   @doc """
-  Returns the first letter of each of the first two words of the name, upper case - "Nora
-  Vale" is "NV" - which is what a face is.
+  Returns the first letter of each of the first two words of the name, upper case: "Nora Vale"
+  is "NV".
   """
   @spec initials(String.t()) :: String.t()
   def initials(name) do
@@ -49,8 +43,8 @@ defmodule Offgrid.Cast do
   @doc """
   Returns the ids of the people the given grants name, in join order, each once.
 
-  One person can hold several roles on one trip, so the store answers a row per grant and the
-  collapsing to one id per person happens here.
+  One person can hold several roles on one trip, so there can be more than one grant row per
+  person.
   """
   @spec members(list(struct)) :: list(String.t())
   def members(grants) do

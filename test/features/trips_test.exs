@@ -18,8 +18,7 @@ defmodule Offgrid.Features.TripsTest do
   end
 
   # Two browsers, two accounts, and nothing between them but the sync: what one writes the
-  # other reads, and what one takes away the other loses. This is the beat the talk is built
-  # around, so it is a test rather than a rehearsal.
+  # other reads, and what one takes away the other loses.
   @sessions 2
   feature "puts a trip on somebody else's screen, and takes it back off",
           %{sessions: [anna, bart]} do

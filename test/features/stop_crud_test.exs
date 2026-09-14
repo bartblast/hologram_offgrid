@@ -37,8 +37,8 @@ defmodule Offgrid.Features.StopCrudTest do
     # The title reads the same row the list does, so renaming shows up in both at once.
     |> assert_text(css(".ed-title"), "Tsukiji breakfast")
     |> assert_text(css(".stop.open"), "Tsukiji breakfast")
-    # Picking a day is the only way a stop moves - nothing is dragged, and no position is
-    # stored. A second day heading appearing is the list re-deriving its own grouping.
+    # Picking a day moves the stop in the itinerary. A second day heading appearing is the
+    # list re-deriving its own grouping.
     |> click(css(".cal button", text: "30"))
     |> assert_text(css(".ed-sub"), "Mon 30 Mar")
     |> assert_text(css(".lpanel"), "Mon 30 Mar")

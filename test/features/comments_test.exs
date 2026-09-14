@@ -42,7 +42,7 @@ defmodule Offgrid.Features.CommentsTest do
       |> click(css(".stop", text: "Ryokan"))
       |> assert_has(css(".cmt", count: 2))
       # Upper case because `.cmt b` is text-transform: uppercase and a browser reports the
-      # text it rendered - the same trap the roles and the map thumbs set.
+      # text it rendered.
       |> assert_text(css(".cmt", at: 0), "TOM REYES")
       |> assert_text(css(".cmt", at: 0), "Onsen booked")
       |> assert_text(css(".cmt", at: 1), "ANNA KIM")

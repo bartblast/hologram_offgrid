@@ -2,10 +2,8 @@ defmodule Offgrid.Dates do
   @moduledoc """
   How dates and times are spelled on screen.
 
-  One place for every spelling, so the itinerary, the editor and the calendar cannot drift
-  apart: a trip's span, a day with its weekday, a time of day, a weekday or a month on its
-  own. Each takes a date or a time rather than an entity, so the formatting owes the rows
-  nothing.
+  One place for every spelling, so the screens that show dates cannot drift apart. Each
+  function takes a date or a time rather than an entity.
   """
 
   @doc """
@@ -46,9 +44,8 @@ defmodule Offgrid.Dates do
   Returns the date a `type="date"` input spells as `value`, or nil when it spells nothing yet
   or something that is not a date at all.
 
-  Written out rather than handed to `Date.from_iso8601/1`, which the client does not have.
-  Nothing here raises: a part that is not a whole number, or a day that does not exist, is
-  nil the same as an empty field, so a caller has one thing to check.
+  Parsed by hand so it also runs on the client. Nothing here raises: a part that is not a whole
+  number, or a day that does not exist, is nil the same as an empty field.
   """
   @spec parse(String.t()) :: Date.t() | nil
   def parse(value) do
@@ -75,9 +72,6 @@ defmodule Offgrid.Dates do
   @doc """
   Returns the span between the two dates as one line: "28 Mar – 6 Apr", or "28 – 30 Mar" when
   a single month covers it.
-
-  The month is repeated only when it changes, because repeating it is noise the reader has to
-  look past to find the days, which are what they came for.
   """
   @spec span(Date.t(), Date.t()) :: String.t()
   def span(starts_on, ends_on) do

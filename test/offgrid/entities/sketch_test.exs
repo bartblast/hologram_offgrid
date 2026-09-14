@@ -7,7 +7,7 @@ defmodule Offgrid.Entities.SketchTest do
   alias Offgrid.Entities.Sketch
 
   @author_id "01a05d36-4826-77cc-b885-6bb4a30a5ba5"
-  @points "35.0116,135.7681 35.6762,139.6503"
+  @points "M135.7681,-35.0116 L139.6503,-35.6762"
   @trip_id "01a05d99-76cf-73b7-bf0e-4045ea59b4f1"
 
   describe "Entity.validate/1" do

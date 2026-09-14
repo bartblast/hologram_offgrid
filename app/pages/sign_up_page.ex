@@ -1,4 +1,13 @@
 defmodule Offgrid.Pages.SignUpPage do
+  @moduledoc """
+  The card a person makes an account on. The fields live in page state, and the button hands
+  them to a command, because a browser cannot be trusted to say who it is: the password is
+  hashed, the row written and the session set on the server.
+
+  `User` grants nobody `:create`, so the command claims server authority with `trust/1`. A
+  client's batch carries field values and never a claim, so no browser can create an account.
+  """
+
   use Hologram.Page
   use Hologram.DB
 
@@ -7,31 +16,6 @@ defmodule Offgrid.Pages.SignUpPage do
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.TripsPage
-
-  @moduledoc """
-  The card a person makes an account on, over the same map every other screen shows.
-
-  The three fields write to page state as they are typed, and the button hands them to a
-  command. Everything about an account happens on the server: the password is hashed
-  there, the row is written there, and the session identity is set there. Nothing about
-  signing up is local-first, and that is the correct answer rather than a gap - a browser
-  cannot be trusted to say who it is.
-
-  The write claims the server's own authority with `trust/1`, and that claim is what makes
-  creating an account server-side by construction rather than by luck: `User` grants nobody
-  `:create`, so there is no rule a browser could use, and the only path that works is a
-  command saying the write is the server's. A claim lives in the struct's metadata and is
-  set by server code - a client's batch carries field values and never a claim - so this is
-  not something a browser can spell.
-
-  What comes back is an action either way. On success the server has already put the user
-  id on the session, so the page just navigates. On failure the message renders under the
-  email field and names the field to look at.
-
-  The password's floor is checked in the command rather than declared on the entity, because
-  the password is not an attribute - only its hash is, and a hash of nothing is as long as
-  any other.
-  """
 
   route "/sign-up"
 
@@ -93,9 +77,7 @@ defmodule Offgrid.Pages.SignUpPage do
     put_state(component, params.field, params.event.value)
   end
 
-  # The page holds what was typed, so the command is handed values rather than reading a
-  # form. Clearing the error here means a second attempt starts clean instead of showing
-  # the previous refusal until the round trip answers.
+  # Clearing the error first, so a retry does not show the old refusal until the server answers.
   def action(:sign_up, _params, component) do
     component
     |> put_state(:error, nil)
@@ -110,14 +92,13 @@ defmodule Offgrid.Pages.SignUpPage do
     put_state(component, :error, params.message)
   end
 
-  # Somebody signing up is on no trips at all, so the list they land on is empty and says so -
-  # which is the screen that offers them the way to make one.
+  # A new account is on no trips, and the empty trips list offers the way to start one.
   def action(:signed_up, _params, component) do
     put_page(component, TripsPage)
   end
 
-  # The password is checked before it is hashed - a hash costs real time, and one of nothing
-  # is not worth it.
+  # The length is checked here rather than on the entity, which stores only the hash, and before
+  # hashing, which is slow.
   def command(:sign_up, params, server) do
     if String.length(params.password) < @password_min_length do
       put_action(server, :sign_up_failed, %{message: password_message()})
@@ -146,8 +127,8 @@ defmodule Offgrid.Pages.SignUpPage do
     end
   end
 
-  # One sentence, naming the field to look at, in the order the card asks for them. The map
-  # may hold several keys at once, so each clause matches on one and the first wins.
+  # One sentence naming the field to fix, in the order the card asks for them. The map may hold
+  # several keys, so the first matching clause wins.
   defp message(%{name: _violations}), do: "Tell us your name."
 
   defp message(%{email: [:unique]}), do: "That email is already taken."

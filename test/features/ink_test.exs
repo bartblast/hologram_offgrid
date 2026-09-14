@@ -35,10 +35,8 @@ defmodule Offgrid.Features.InkTest do
     |> press([{200, 150}, {240, 170}, {280, 210}, {320, 200}])
     |> assert_has(css(".ink-paper path", visible: :any))
 
-    # The line starts where the pointer went down and ends where it is now, left to right - and
-    # bends between, rather than running straight from one sample to the next: a curve needs a
-    # neighbour on each side, so four points make two of them and the ends are joined straight.
-    # One names its control and the rest continue from it, which is why both letters count.
+    # The line runs left to right from where the pointer went down, and bends: each interior
+    # point makes one curve (Q, then T for the rest), so four points make two.
     d = stroke_path(session)
     [{first_x, _first_y} | _rest] = places = stroke_places(d)
     {last_x, _last_y} = List.last(places)
@@ -123,8 +121,7 @@ defmodule Offgrid.Features.InkTest do
       |> click(css(".addb"))
       |> click(css(".pen"))
       |> assert_has(css(".cdot.on", count: 1))
-      # Violet while it is being drawn, not only once it is let go: the live line used to take
-      # the accent colour whatever was picked, and changed under the hand on release.
+      # Violet while it is being drawn, not only once it is let go.
       |> press([{200, 150}, {240, 190}, {280, 230}])
       |> assert_has(css(".ink-paper path[stroke=\"#af52de\"]", visible: :any))
       |> release({280, 230})

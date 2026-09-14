@@ -1,27 +1,16 @@
 defmodule Offgrid.Policies.TripMembers do
-  use Hologram.Policy
-
   @moduledoc """
-  The rules of anything that belongs to a trip, written once.
+  The rules for anything that belongs to a trip: whoever is on the trip may read, create,
+  update and delete it. An entity taking this policy on must have a `trip` relationship.
 
-  A policy is a set of `allow` lines an entity type takes on with one `policy` line, as if it
-  had written them itself. This one says a single sentence: whoever is on the trip may see
-  what is on it, add to it, change it and remove it.
-
-  `to: {:trip, :member}` asks whether the acting user holds the member role on the row this
-  entity's `trip` reference names - per row, so a member of another trip gets nothing. An
-  organizer counts, because the organizer role extends member. The entity type taking this
-  on has to declare that `trip` relationship, which is what makes the four lines mean the
-  same thing wherever they land.
-
-  Why not `via: :trip`, which reads shorter: that delegates the SAME operation to the trip,
-  and the trip grants nobody `:create` and only organizers `:delete`, so creating a stop
-  would refuse everyone and deleting one would refuse every member. The member role is the
-  thing to ask about, and this is where it is asked.
+  `to: {:trip, :member}` asks whether the actor holds the member role on the referenced trip,
+  and organizers count because their role extends member. `via: :trip` would not work: it asks
+  the trip about the same operation, and the trip lets everyone create, so anyone could create
+  on any trip, while deleting would be left to organizers.
   """
 
-  # Whoever is on the trip may see what is on it, add to it, change it and remove it.
-  # Written once, taken on by every entity type that belongs to a trip.
+  use Hologram.Policy
+
   allow :create, to: {:trip, :member}
   allow :delete, to: {:trip, :member}
   allow :read, to: {:trip, :member}

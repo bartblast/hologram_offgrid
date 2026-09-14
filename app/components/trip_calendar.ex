@@ -1,25 +1,18 @@
 defmodule Offgrid.Components.TripCalendar do
+  @moduledoc """
+  The trip's days as a grid, with a dot for each of this trip's stops on that day.
+
+  Picking a day writes the open stop's date. The itinerary derives its order from date and
+  time, so moving a stop is a field edit like any other, and merges like one. Only days within
+  the trip's dates are offered.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
-
-  @moduledoc """
-  The trip's days as a grid, with a dot per stop already on each one.
-
-  Picking a day writes the open stop's date. Nothing is reordered by hand anywhere in
-  this app - the list derives its order from the date and time, so moving a stop is a
-  field edit like any other, and merges like one.
-
-  The range is the whole trip, so a day outside it cannot be chosen at all - read off the trip
-  rather than written here, which it was until trips had dates of their own to read.
-
-  The dots are the stops of THIS trip. They were every stop the client could read, which was
-  invisible while one trip owned the screen and wrong the moment two did - the same mistake the
-  itinerary made, and the same fix.
-  """
 
   prop :date, :date
   prop :stop_id, :string
@@ -73,8 +66,7 @@ defmodule Offgrid.Components.TripCalendar do
     |> one()
   end
 
-  # No trip readable, no days to offer - the same nothing every other layer on this screen
-  # shows for a trip that is not this person's.
+  # No readable trip, no days to offer.
   defp trip_days(nil), do: []
 
   defp trip_days(trip), do: Date.range(trip.starts_on, trip.ends_on)

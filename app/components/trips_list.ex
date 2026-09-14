@@ -1,4 +1,12 @@
 defmodule Offgrid.Components.TripsList do
+  @moduledoc """
+  Every trip the person is on, newest first, because the trip you just made is usually the one
+  you want.
+
+  The query asks for all trips and gets back only those the session's memberships let it read,
+  so nothing here filters by user.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
@@ -7,17 +15,6 @@ defmodule Offgrid.Components.TripsList do
   alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripPage
-
-  @moduledoc """
-  Every trip the person is on, newest first.
-
-  The query is the whole authorization: it asks for trips and gets back the ones the
-  session may read, which membership decides. Nothing here filters by user, and nothing
-  here could - a client asking for more would be answered with the same rows.
-
-  Newest first because the trip you just made is the one you want, and a trip's own dates
-  say nothing about when you last cared about it.
-  """
 
   prop :trips, [Trip], from_query: &trips_query/0
 

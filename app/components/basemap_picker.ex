@@ -1,18 +1,17 @@
 defmodule Offgrid.Components.BasemapPicker do
+  @moduledoc """
+  The maps a new trip can be drawn on, as a row of thumbnails to choose from.
+
+  The maps come from a query, so adding one is a row in the seeds. The choice belongs to the
+  new trip form: it comes down as a prop and goes back up as an action. An existing trip
+  changes its map through `MapPicker`, which writes to the trip directly.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
-
-  @moduledoc """
-  The maps a trip can be drawn on, as a row of thumbnails to choose from.
-
-  The maps come from a query rather than a list in the markup, so adding a fourth is a row
-  in the seeds and nothing else. Which one is chosen belongs to whoever is filling the form,
-  not to this component - it is handed down as a prop and handed back as an action, so the
-  same picker works for a trip being created and a trip being edited.
-  """
 
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
   prop :selected_id, :string, default: nil

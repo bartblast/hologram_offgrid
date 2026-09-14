@@ -44,7 +44,7 @@ defmodule Offgrid.Features.TripPageTest do
     :ok = Auth.grant_role(signed_in_user(), other_trip, :member)
 
     session
-    # The header names the trip in the address, not the one the mockup was drawn from.
+    # The header names the trip in the address.
     |> assert_text(css(".lp-title"), "Japan, blossom run")
     |> assert_text(css(".lp-dates"), "28 MAR – 6 APR")
     |> assert_text(css(".lpanel"), "Fushimi Inari")
@@ -214,7 +214,7 @@ defmodule Offgrid.Features.TripPageTest do
     |> Comment.new()
     |> DB.create!()
 
-    %{author_id: tom.id, color: "#30b0c7", points: "35.1,135.7 35.2,135.9", trip_id: trip.id}
+    %{author_id: tom.id, color: "#30b0c7", points: "M135.7,-35.1 L135.9,-35.2", trip_id: trip.id}
     |> Sketch.new()
     |> DB.create!()
 
@@ -227,10 +227,8 @@ defmodule Offgrid.Features.TripPageTest do
     |> await_pending_writes(0)
     |> assert_text(css(".card"), "No trips yet")
 
-    # Everything that named the trip, or named a stop of it, went with it. Every reference
-    # restricts rather than cascades, so anything left behind would have been the server
-    # refusing the whole batch - and the list above would still say "No trips yet", because the
-    # browser rolls a refused batch back without a word. Only the server can say it happened.
+    # Everything that named the trip or one of its stops went with it. References restrict
+    # rather than cascade, so a row left behind means the server refused the batch.
     assert DB.read(Trip) == []
     assert DB.read(Stop) == []
     assert DB.read(Comment) == []
@@ -251,11 +249,11 @@ defmodule Offgrid.Features.TripPageTest do
 
     session
     |> sign_in_as_member(trip)
-    # The city, because that is the basemap the trip was made on.
+    # Japan, because that is the basemap the trip was made on.
     |> assert_has(css(".terrain.japan"))
     |> click(css(".swatch"))
     # Upper case because `.thumb b` is text-transform: uppercase and a browser reports what it
-    # rendered - the same trap the member roles set.
+    # rendered.
     |> click(css(".thumb", text: "ALPS"))
     # One local write, and the map behind the panel is drawn from the row it changed - no
     # round trip between the click and the new terrain.

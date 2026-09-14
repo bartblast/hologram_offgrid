@@ -1,4 +1,13 @@
 defmodule Offgrid.Components.StopEditor do
+  @moduledoc """
+  The right-hand panel for one stop: its name, description, day, time and comments. Name and
+  description are written to the database as you type, so there is no save button.
+
+  Another browser can delete the stop while the panel is open, so the content sits behind
+  `{%if @stop}`. The box itself shows for `@stop || @away`, so a stop deleted from this panel
+  still slides out after its row is gone.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
@@ -11,30 +20,6 @@ defmodule Offgrid.Components.StopEditor do
   alias Offgrid.Entities.Trip
   alias Offgrid.Presence
 
-  @moduledoc """
-  The right-hand panel for one stop: what it is called, when it happens, and what
-  people have said about it.
-
-  The stop arrives through its own query, bound to the id the page says is open, so the
-  panel reads the same local database the list does.
-
-  Name and description write straight to the database as you type - there is no save
-  button, because there is nothing to save to. The day comes from the calendar below.
-
-  The remarks under it are their own rows, read by the stop and written by whoever is on the
-  trip, and shown in the order they were left.
-
-  What is drawn sits behind `{%if @stop}`, because the stop can go while the panel is open:
-  another browser deletes it, the row leaves this browser's database, and the query answers
-  nil. The panel draws nothing then rather than dying on a name that is not there. The page
-  still holds the id of a stop that is gone, and the next click on the list replaces it.
-
-  The BOX outlives the stop by one condition, `@stop || @away`, and that is what lets deleting
-  slide out the way closing does: the row goes this instant, so without it the panel would be
-  gone before the slide began. A stop deleted by somebody else leaves `@away` false, so the
-  panel is not left standing empty on this screen either.
-  """
-
   prop :away, :boolean, default: false
   prop :comments, [Comment], from_query: &comments_query/1
   prop :editing, :map, default: %{}
@@ -45,12 +30,8 @@ defmodule Offgrid.Components.StopEditor do
   prop :tz_offset, :integer, default: 0
   prop :user_id, :string
 
-  # The draft of a remark is the panel's own business, so it is state here - everything else
-  # the panel shows is a row. init/2 because the panel appears in a page that is already
-  # loaded, the way it does when a stop is clicked.
-  #
-  # The panel keeps its cid, and so its state, from one stop to the next, so the draft
-  # remembers which stop it was typed under and reads as empty under any other.
+  # Mounts in a page that is already loaded, so it needs init/2. The panel keeps its state from
+  # one stop to the next, so the comment draft remembers which stop it was typed under.
   def init(_props, component) do
     put_state(component, draft: "", draft_stop_id: nil)
   end
@@ -143,10 +124,7 @@ defmodule Offgrid.Components.StopEditor do
     """
   end
 
-  # Clearing the time is as legitimate as setting one - an untimed stop sinks to the end
-  # of its day rather than disappearing.
-  # Enter with nothing typed is not a remark. Anything else becomes a row at once - the list
-  # above reads the same rows, so it grows in the same frame - and travels afterwards.
+  # Enter with nothing typed adds no comment.
   def action(:add_comment, _params, component) do
     state = component.state
     draft = draft_for(state.draft, state.draft_stop_id, component.props.stop_id)
@@ -171,35 +149,31 @@ defmodule Offgrid.Components.StopEditor do
     put_state(component, draft: params.event.value, draft_stop_id: component.props.stop_id)
   end
 
+  # Clearing the time is as valid as setting one - an untimed stop sinks to the end of its day.
   def action(:set_time, params, component) do
     :ok = DB.update(Stop, component.props.stop_id, %{time: params.time})
 
     component
   end
 
-  # Every keystroke is a write. It lands in the client's own database first, so the row
-  # and this panel agree immediately, and travels afterwards.
+  # Every keystroke is a write, to the client's own database first.
   def action(:edit, params, component) do
     :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
 
     component
   end
 
-  # The time the remark was left, as a clock reading rather than "2h ago". A relative time
-  # needs a "now", and this browser's now against a stamp another device wrote is not a
-  # number worth showing - offline for a day, it would say a comment is from the future.
-  #
-  # Read as the browser reads it: the row holds UTC, and the page hands down the minutes the
-  # browser is behind it. Plain integer arithmetic, wrapped at midnight, rather than a
-  # `DateTime` shift whose client port nothing here has checked.
+  # A clock reading rather than "2h ago", because this browser's clock against a stamp from
+  # another device is not reliable. The row holds UTC and the page passes the browser's offset
+  # in minutes, applied with integer arithmetic rather than a `DateTime` shift.
   defp clock(at, offset) do
     minutes = Integer.mod(at.hour * 60 + at.minute - offset, 1_440)
 
     "#{Dates.pad(div(minutes, 60))}:#{Dates.pad(rem(minutes, 60))}"
   end
 
-  # The id breaks a tie in the stamp: ids are time-ordered too, and two remarks written in
-  # the same millisecond must still come out in the order they were left.
+  # Ids are time-ordered too, so they break a tie between comments left in the same
+  # millisecond.
   defp comments_query(stop_id) do
     Comment
     |> filter(stop_id: stop_id)
@@ -207,8 +181,7 @@ defmodule Offgrid.Components.StopEditor do
     |> order_by([:created_at, :id])
   end
 
-  # Each remark carries its author's colour - the one the cast gives them everywhere else on
-  # the screen. Somebody who is no longer on the trip, or never was, gets the neutral dot.
+  # The author's cast colour, or the neutral dot for somebody not on the trip.
   defp dot_class(grants, user_id, comment) do
     case Cast.colour(Cast.members(grants), user_id, comment.author_id) do
       "" -> "off"
@@ -229,8 +202,7 @@ defmodule Offgrid.Components.StopEditor do
     if others_in(editing, stop_id, field, user_id) == [], do: "inp", else: "inp busy"
   end
 
-  # Everyone but you with this field of this stop focused. Your own focus is under your own
-  # hand and needs no mark.
+  # Everyone but you with this field of this stop focused.
   defp others_in(editing, stop_id, field, user_id) do
     editing
     |> Presence.on_field(stop_id, field)
@@ -241,8 +213,7 @@ defmodule Offgrid.Components.StopEditor do
     "tag " <> Cast.colour(Cast.members(grants), user_id, id)
   end
 
-  # Off to the right while it is leaving, which is where it came from. The page keeps the stop
-  # for a moment after saying go, so there is something to look at on the way out.
+  # Slides off to the right while leaving. The page keeps the stop until the slide ends.
   defp editor_class(true), do: "editor away"
 
   defp editor_class(false), do: "editor"
@@ -258,9 +229,8 @@ defmodule Offgrid.Components.StopEditor do
     |> one()
   end
 
-  # Time.compare/2 rather than a pattern match or ==: a time read back from the database
-  # carries microsecond precision (~T[09:00:00.000000]) while a time built here does not
-  # (~T[09:00:00]), so the two structs differ while naming the same moment.
+  # Time.compare/2 rather than ==: a time read from the database carries microseconds
+  # (~T[09:00:00.000000]) and one built here does not, so the structs differ for one moment.
   defp time_class(nil, nil), do: "on"
 
   defp time_class(nil, _selected), do: nil

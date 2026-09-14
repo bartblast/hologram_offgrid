@@ -120,8 +120,8 @@ defmodule Offgrid.Features.PinsTest do
     assert unmoved.lng == stop.lng
   end
 
-  # The line joins the pins, so it has to come with one that is being carried - and it has to
-  # do it before anything is written, or the demo's whole claim is a round trip.
+  # The line joins the pins, so it follows one that is being carried, before anything is
+  # written.
   feature "the route follows a pin that is being carried", %{session: session, trip: trip} do
     # Kyoto, west, on the first day.
     west =
@@ -233,9 +233,8 @@ defmodule Offgrid.Features.PinsTest do
     end)
   end
 
-  # The x of every point on the route, in the order the line runs them. Visibility is not
-  # asked about, because a line through one point has no area and a browser calls that
-  # invisible - and one point is precisely what the last assertion wants to see.
+  # The x of every point on the route, in order. `visible: :any` because a browser calls a
+  # line through a single point invisible.
   defp route_xs(session) do
     session
     |> find(css(".lay polyline", visible: :any))

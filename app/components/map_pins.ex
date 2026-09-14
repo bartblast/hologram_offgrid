@@ -1,26 +1,19 @@
 defmodule Offgrid.Components.MapPins do
+  @moduledoc """
+  Every stop of the trip that has a place on this map, drawn where that place falls.
+
+  A pin's position is computed from the stop's latitude and longitude, so pins follow a change
+  of basemap and a resized window. A stop with no coordinates yet, or a place off the map, is
+  not drawn. While a pin is dragged the page holds the pointer position and the pin is drawn
+  there. The row is written once, when the pointer lifts.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
-
-  @moduledoc """
-  Every stop of the trip that has a place, drawn where that place falls on the map.
-
-  A stop keeps its latitude and longitude and nothing else about where it is on screen, so
-  the pins move when the trip changes map and follow the window when it resizes - the position
-  is arithmetic on the row rather than a number stored beside it.
-
-  Two kinds of stop are not drawn and neither is an error: one with no coordinates yet, which
-  is every stop until somebody points at the map, and one whose place is off the edge of the
-  map the trip is on.
-
-  A pin can be picked up and put down somewhere else. While that is happening the page holds
-  where the pointer is and this draws that pin there instead of where its row says - the row
-  is only written when the pointer lifts, so a drag costs one write rather than one per frame.
-  """
 
   prop :drag, :map, default: nil
   prop :open_stop_id, :string, default: nil

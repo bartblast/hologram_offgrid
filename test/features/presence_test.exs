@@ -57,8 +57,7 @@ defmodule Offgrid.Features.PresenceTest do
     # Nora opens the stop and lands in its name.
     nora
     |> click(css(".stop", text: "Ryokan"))
-    # By name rather than by position: three inputs and an index is a fragile way to say which
-    # field, and Wallaby picking the wrong one made this feature fail about two runs in five.
+    # By id rather than by position among the editor's inputs, which is fragile.
     |> click(css("#stop_name"))
     # Her own screen carries no mark of her own.
     |> refute_has(css(".sel"))
@@ -71,8 +70,8 @@ defmodule Offgrid.Features.PresenceTest do
     |> assert_has(css(".stop .sel.a"))
     # Opening the same stop, he sees which field she is in.
     |> click(css(".stop", text: "Ryokan"))
-    # One query rather than find-then-read-text: the label is re-rendered the moment the tag
-    # lands on it, so an element found first and read second goes stale about one run in three.
+    # One query rather than find-then-read-text: the label re-renders when the tag lands on it,
+    # so an element found first can go stale before it is read.
     |> assert_has(css("label", text: "Name NV"))
     |> assert_has(css("label .tag", count: 1))
     |> assert_has(css(".inp.busy", count: 1))
@@ -148,7 +147,7 @@ defmodule Offgrid.Features.PresenceTest do
   end
 
   # Pointer moves over the map's click surface, at offsets from its top left, fifty
-  # milliseconds apart - slower than the throttle, so each one is sent.
+  # milliseconds apart - no faster than the page's pointer throttle.
   defp move_pointer(session, points) do
     moves =
       Enum.map_join(points, "\n", fn {x, y} ->

@@ -1,19 +1,19 @@
 defmodule Offgrid.FeatureCase do
-  use ExUnit.CaseTemplate
-
-  alias Hologram.Test.FeatureHelpers
-
   @moduledoc """
   The case for tests that drive a real browser against the running app.
 
       defmodule Offgrid.Features.SomethingTest do
         use Offgrid.FeatureCase, async: false
 
-        feature "does something", %{session: session} do
+        feature "adds a stop", %{session: session} do
+          trip = create_trip()
+
           session
-          |> visit(TripPage)
-          |> click(button("Add a stop"))
-          |> assert_text(css(".editor"), "New stop")
+          |> sign_in_as_member(trip)
+          |> visit(TripPage, id: trip.id)
+          |> click(css(".addb"))
+          |> click(css("#canvas"))
+          |> assert_text(css(".ed-title"), "New stop")
         end
       end
 
@@ -21,14 +21,17 @@ defmodule Offgrid.FeatureCase do
   `mix test --only feature` runs them.
 
   A test needing more than one browser says so with `@sessions 2` and receives
-  `%{sessions: [one, two]}` in place of `%{session: session}`, which is how both halves of
-  a sync get watched at once.
+  `%{sessions: [one, two]}` in place of `%{session: session}`.
 
-  `visit/2` is Hologram's, which takes a page module rather than a URL and waits for the
+  `visit` is Hologram's, which takes a page module rather than a URL and waits for the
   client runtime to finish mounting. `assert_text/3` and `refute_has/2` are
   `Offgrid.FeatureHelpers`' - the first stays pipeable, the second returns as soon as the
   element is absent instead of always waiting out `:max_wait_time`.
   """
+
+  use ExUnit.CaseTemplate
+
+  alias Hologram.Test.FeatureHelpers
 
   using do
     quote do

@@ -1,22 +1,17 @@
 defmodule Offgrid.Components.MapPicker do
+  @moduledoc """
+  The maps an existing trip can be drawn on, opened from the swatch in the panel header.
+
+  Picking one is a plain write to the trip. It lands in the client's database first, so the
+  terrain behind the panel, drawn from the same row, changes in the same frame.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Trip
-
-  @moduledoc """
-  The maps a trip can be drawn on, opened from the swatch in the panel header.
-
-  Every basemap is readable by everyone - they are the app's own scenery rather than anybody's
-  data - so the row is the same three wherever you are. Which one is on comes from the trip.
-
-  Picking one is a plain write to the trip, so it lands in the client's database first: the
-  terrain behind the panel is drawn from the same row and changes in the same frame, with no
-  network in between. That makes this the smallest complete demonstration of the claim - one
-  click, one local write, the whole screen answering.
-  """
 
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
   prop :trip, Trip, from_query: &trip_query/1
@@ -47,8 +42,7 @@ defmodule Offgrid.Components.MapPicker do
 
   defp basemaps_query, do: order_by(Basemap, :name)
 
-  # Nothing is marked while the trip is unreadable, which is the same nothing the header and
-  # the itinerary show for it.
+  # Nothing is marked while the trip is unreadable.
   defp thumb_class(_basemap, nil), do: "thumb"
 
   defp thumb_class(basemap, trip) do

@@ -1,8 +1,6 @@
-# Feature tests drive a real browser and take far longer than the rest of the suite, so
-# they are excluded by default. `mix test` runs the unit tests, `mix test --only feature`
-# runs the browser ones. Everything the browser needs - the Hologram compile, a converged
-# schema, chromedriver - is booted below only when they are actually included, which keeps
-# the unit run as fast as it was before this file grew.
+# Feature tests drive a real browser and are excluded by default: `mix test` runs the unit
+# tests, `mix test --only feature` the browser ones. What the browser needs is booted below
+# only when they are included, so the unit run stays fast.
 ExUnit.start(exclude: [:feature])
 
 if :feature in ExUnit.configuration()[:include] do

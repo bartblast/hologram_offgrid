@@ -1,26 +1,21 @@
 defmodule Offgrid.Box do
-  use Hologram.JS
-
   @moduledoc """
-  The size of an element on screen, asked of the DOM.
+  Where an element sits on screen and how big it is, asked of the DOM.
 
-  A click carries where it landed inside its element and nothing about the element, so the
-  one number a projection is missing is one only the browser has. This is the app's single
-  place that asks for it - the framework's own door to JavaScript, kept behind a facade so
-  the rest of the app reads a size rather than a DOM.
-
-  Answers only inside an action on the client, which is where interop runs. On the server it
-  is a no-op, and nothing on the server has a reason to ask.
+  A pointer event says where it landed inside an element and nothing about the element, so a
+  projection from the screen to the map needs the element's size from the browser. Answers only
+  inside a client action, since interop is a no-op on the server.
   """
+
+  use Hologram.JS
 
   @doc """
   Returns where the element with the given id sits in the window and how big it is, as
   `{left, top, width, height}`.
 
-  For a gesture that outlives the element it started on. A drag begins on a pin and carries
-  on wherever the pointer goes, so the offsets a pointer event measures against whatever it
-  is over are no use - what serves is the pointer's place in the window, `client_x` and
-  `client_y`, against the map's own place in the window, which is this.
+  For a drag, which starts on a pin and carries on wherever the pointer goes. Offsets measured
+  against whatever the pointer is over are no use then, so the drag compares the pointer's
+  `client_x` and `client_y` with this.
   """
   @spec rect(String.t()) :: {number, number, number, number}
   def rect(id) do

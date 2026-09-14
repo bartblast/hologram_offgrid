@@ -1,4 +1,13 @@
 defmodule Offgrid.Components.TripDetails do
+  @moduledoc """
+  The trip's own card: its name and dates, and the button that deletes it. Every keystroke is
+  a write to the client's database, so the panel header behind the card renames itself at once.
+
+  Deleting removes everything on the trip in one batch, innermost first: comments, ink, stops,
+  then the trip. Foreign keys restrict rather than cascade, so the server would refuse a trip
+  with anything still on it, and the browser would quietly roll the delete back.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
@@ -9,25 +18,6 @@ defmodule Offgrid.Components.TripDetails do
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
-
-  @moduledoc """
-  The trip's own card: what it is called and when it runs.
-
-  Every keystroke is a write, the way the stop editor's are. The row lands in the client's
-  database first, so the panel header behind this card renames itself in the same frame -
-  two components reading one row, with no message passing between them and no network.
-
-  The map and the people are not here, though the mockup drew them in this card. Each grew a
-  home of its own on the screen behind it, and a second copy of either would be a second place
-  to look rather than a convenience.
-
-  Deleting takes everything on the trip with it, innermost first: the remarks on each stop,
-  the ink, the stops, then the trip. Every reference is required and the framework's foreign
-  keys restrict rather than cascade, so a trip with anything on it cannot simply go - and a
-  batch the server refuses is rolled back by the browser without a word, so the trip would
-  quietly be back. Innermost first is also the only order that reads correctly to another
-  browser watching: nobody ever sees a remark on no stop, or a stop on no trip.
-  """
 
   prop :stops, [Stop], from_query: &stops_query/1
   prop :trip, Trip, from_query: &trip_query/1
@@ -84,9 +74,8 @@ defmodule Offgrid.Components.TripDetails do
     """
   end
 
-  # Innermost first, then away - one batch, so a browser watching never sees a trip whose
-  # itinerary has already gone. The remarks and the ink are read here rather than carried as
-  # props: they are needed once, on the way out.
+  # Comments and ink are read here rather than held as props, because they are needed only
+  # once.
   def action(:delete, _params, component) do
     trip_id = component.props.trip_id
 
@@ -115,15 +104,13 @@ defmodule Offgrid.Components.TripDetails do
     component
   end
 
-  # A half-typed date is a date the input has not finished spelling, not a date to store. The
-  # control emits one on the way to every complete one, so writing it would empty the field
-  # under the person filling it in.
+  # The date input emits half-typed dates on the way to a complete one. Writing them would empty
+  # the field under the person typing.
   def action(:edit_date, params, component) do
     write_date(component, params.field, Dates.parse(params.event.value))
   end
 
-  # Organizers only, which the browser answers from the grants it holds - the same question the
-  # server asks again when the batch lands.
+  # Organizers only. The server checks again when the batch lands.
   defp deletable?(user_id, trip_id) do
     Auth.can?(user_id, :delete, %Trip{id: trip_id})
   end
@@ -140,9 +127,8 @@ defmodule Offgrid.Components.TripDetails do
 
   defp write_date(component, _field, nil), do: component
 
-  # A date moved past the other takes the other with it, so a trip is never backwards and
-  # nobody is told to edit the other field first. One write either way - two fields when the
-  # dates would have crossed, one when they would not.
+  # A date moved past the other one takes it along, so a trip never runs backwards and nobody
+  # has to edit the other field first.
   defp write_date(component, field, date) do
     :ok =
       DB.update(Trip, component.props.trip_id, date_changes(component.props.trip, field, date))

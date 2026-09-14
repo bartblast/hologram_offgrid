@@ -1,30 +1,22 @@
 defmodule Offgrid.Components.MemberChips do
+  @moduledoc """
+  The people a new trip starts with, added by email.
+
+  `User` declares `allow :read`, so every account syncs to the browser and an address becomes a
+  person without the network. The typed address is state here, and each pick is handed up to
+  the page, which holds the invites.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Cast
   alias Offgrid.Entities.User
 
-  @moduledoc """
-  The people a trip starts with, added by email.
-
-  The lookup is LOCAL. Every account syncs to every browser, so turning an address into a
-  person is a query against the client's own database rather than a question for the server -
-  which is what lets a trip be filled in with no network. That is a choice this app makes by
-  declaring `allow :read` on User, and an app that would rather not ship its user directory
-  writes `allow :read, id: user_id()` instead and gets the same screen back with a round trip
-  in it. How offline an app is, is something it declares.
-
-  The typed address is this component's own business and the people chosen are the page's, so
-  the input is state here and each pick is handed up.
-  """
-
   prop :invites, [User]
   prop :users, [User], from_query: &users_query/0
 
-  # init/3, because every page comes from the server - a Link navigation fetches one too - so a
-  # component the page always renders is always initialized there. init/2 is for a component
-  # that appears in a page ALREADY loaded, the way the stop editor does when a stop is opened.
+  # The page always renders this, so it is initialized on the server with init/3.
   def init(_props, component, _server), do: blank(component)
 
   def template do
@@ -66,10 +58,8 @@ defmodule Offgrid.Components.MemberChips do
     put_state(component, :email, params.event.value)
   end
 
-  # An address the app has never seen is the one failure worth naming - anything else and the
-  # person is already on the list, which the chips show without a sentence.
-  # There is no trip yet, so no join order to colour by: the invites are coloured in the order
-  # they were added, which is the order they will join in.
+  # There is no trip yet to take a join order from, so invites are coloured in the order they
+  # were added, which is the order they will join in.
   defp chip_class(invites, invite) do
     Cast.colour(Enum.map(invites, & &1.id), nil, invite.id)
   end
@@ -78,6 +68,8 @@ defmodule Offgrid.Components.MemberChips do
     put_state(component, email: "", error: nil)
   end
 
+  # An unknown address is the one failure worth a message. The page ignores a person already
+  # invited, and the chips already show them.
   defp add(component, nil) do
     put_state(component, :error, "Nobody here uses that address.")
   end

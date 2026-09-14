@@ -8,8 +8,7 @@ defmodule Offgrid.Features.AuthTest do
 
   @password "hakone-2026"
 
-  # A trip, because the trip screen is where a face proves a session was made, and that screen
-  # now needs one named in its address.
+  # A trip, because the trip screen is where a face proves a session was made.
   setup do
     reset_data()
 
@@ -23,9 +22,8 @@ defmodule Offgrid.Features.AuthTest do
     |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
     |> fill_in(css(".card .inp", at: 2), with: @password)
     |> click(button("Create account"))
-    # Signing up leaves you signed in and on your trips, which for a new account is none of
-    # them. The trip screen is where the proof shows: it carries the face the name derives -
-    # NV rather than either of the two placeholder faces beside it.
+    # Signing up leaves you signed in on your trips list, empty for a new account. The trip
+    # screen shows the proof: the initials derived from the name.
     |> assert_page(TripsPage)
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
@@ -72,9 +70,8 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(SignUpPage)
   end
 
-  # Its own feature on its own browser rather than a second try on the card above: opening
-  # the same address again let the browser put the typed address back into the field, and
-  # the card went through.
+  # Its own feature on a fresh browser, because revisiting the card lets the browser refill
+  # the field.
   feature "asks for an email on the sign-up card", %{session: session} do
     session
     |> visit(SignUpPage)
@@ -156,9 +153,8 @@ defmodule Offgrid.Features.AuthTest do
     |> click(button("Log in"))
     |> assert_text(css(".card"), "Wrong email or password.")
     |> assert_page(LogInPage)
-    # Asking for the trip screen is what proves no session was made: with none, the gate sends
-    # you straight back to the card. Refuting the log-out control on the card itself would pass
-    # whatever happened - that card never has one.
+    # Asking for the trip screen proves no session was made: with none, the gate sends you
+    # back to the card.
     |> visit("/trips/#{trip.id}")
     |> assert_page(LogInPage)
   end

@@ -1,4 +1,9 @@
 defmodule Offgrid.Pages.TripsPage do
+  @moduledoc """
+  The screen a person lands on after signing in: the trips they are on, and the way to start
+  another.
+  """
+
   use Hologram.Page
 
   alias Hologram.UI.Link
@@ -6,15 +11,6 @@ defmodule Offgrid.Pages.TripsPage do
   alias Offgrid.Components.TripsList
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.NewTripPage
-
-  @moduledoc """
-  The screen a person lands on after signing in: the trips they are on, and the way to
-  start another.
-
-  The card sits over the same terrain every other screen uses. The map behind it belongs to
-  no trip in particular here - it is the app's backdrop rather than anybody's itinerary,
-  which is the one place in the app where that is true.
-  """
 
   route "/trips"
 
@@ -51,9 +47,7 @@ defmodule Offgrid.Pages.TripsPage do
     put_page(component, LogInPage)
   end
 
-  # Only the server can forget an identity - the session cookie it is kept in is the
-  # server's to write, which is why this is a command and not an action. The same pair the
-  # trip screen has: this is the other screen a signed-in person stands on.
+  # A command, because only the server can write the session.
   def command(:log_out, _params, server) do
     server
     |> delete_user_id()

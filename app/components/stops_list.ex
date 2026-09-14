@@ -1,4 +1,12 @@
 defmodule Offgrid.Components.StopsList do
+  @moduledoc """
+  The itinerary: every stop of the trip, under the day it happens on.
+
+  The query runs against the client's own database, so a stop written by an action shows up in
+  the same frame. Order is never stored: day, then time, then creation. Postgres and the client
+  both sort nulls last, so an untimed stop ends its day on either side.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
@@ -8,18 +16,6 @@ defmodule Offgrid.Components.StopsList do
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Presence
-
-  @moduledoc """
-  The itinerary: every stop of the trip, under the day it happens on.
-
-  The stops arrive as a registered query the client evaluates against its own database,
-  so a stop written by an action shows up here in the same frame - before anything has
-  been sent anywhere.
-
-  Order is derived, never stored: day, then time, then when the row was created. A stop
-  with no time sinks to the end of its day, which both tiers agree on - Postgres sorts
-  nulls last ascending, and so does the client's query kernel.
-  """
 
   prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -69,8 +65,7 @@ defmodule Offgrid.Components.StopsList do
     |> order_by(:created_at)
   end
 
-  # Everyone but you who has this stop open. A ring around the row, in their colour, with
-  # their letters on it - the mockup's own mark for "somebody is here".
+  # Everyone but you who has this stop open, drawn as a ring in their colour.
   defp others_on(editing, stop_id, user_id) do
     editing
     |> Presence.on_stop(stop_id)
@@ -81,9 +76,7 @@ defmodule Offgrid.Components.StopsList do
     "sel " <> Cast.colour(Cast.members(grants), user_id, id)
   end
 
-  # Scoped by trip, now that a screen is one trip's. The policy would already keep another
-  # person's stops out, but it would not keep out the ones on YOUR other trips - membership is
-  # what it answers, not which trip is on screen.
+  # Scoped by trip. The policy keeps out trips you are not on, but not your other trips.
   defp stops_query(trip_id) do
     Stop
     |> filter(trip_id: trip_id)

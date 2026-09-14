@@ -35,8 +35,7 @@ defmodule Offgrid.Entities.StopTest do
   end
 
   describe "__policies__/0" do
-    # The rules the entity ends up with are the policy's four, exactly as they were when they
-    # were written here - taking a policy on changes where a rule is said, not what it says.
+    # Taking on a policy gives the entity exactly the policy's four rules.
     test "carries the trip members' rules, taken from the policy" do
       assert Stop.__policies__() == [
                {:create, {:trip, :member}, nil, []},

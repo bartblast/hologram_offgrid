@@ -1,20 +1,16 @@
 defmodule Offgrid.Components.Terrain do
+  @moduledoc """
+  The map background, drawn for whichever basemap the trip is on.
+
+  Stylised stand-ins for real cartography, coloured from theme tokens and slice-scaled so they
+  crop rather than stretch. `BasemapThumb` draws the same maps small. Without a readable trip,
+  the screen gets one fixed map as a backdrop.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Entities.Trip
-
-  @moduledoc """
-  The map background, drawn for whichever basemap the trip is on.
-
-  Stylised stand-ins for real cartography rather than drawings of anywhere. Every colour comes
-  from a token, so the terrain follows the theme, and each 900x520 viewBox is slice-scaled, so
-  a drawing keeps its proportions and crops rather than stretching. The same three shapes
-  appear as thumbnails in `BasemapThumb` - one map at two sizes.
-
-  Without a trip there is nothing to look up, and the screen gets the app's backdrop: the
-  trips list, the log-in card and the sign-up card all sit over the same city.
-  """
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string, default: nil
@@ -79,9 +75,7 @@ defmodule Offgrid.Components.Terrain do
     """
   end
 
-  # The app's backdrop when no trip is named, and when the one named is not this person's to
-  # read - the query answers nothing either way, and a screen with no map behind it would be
-  # a stranger sight than a city.
+  # The backdrop when no trip is named, or the named one is not this person's to read.
   defp slug(nil), do: "japan"
 
   defp slug(trip), do: trip.basemap.slug

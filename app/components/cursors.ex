@@ -1,26 +1,20 @@
 defmodule Offgrid.Components.Cursors do
+  @moduledoc """
+  Where everyone else's pointer is on the map, as a dot with their initials. Your own pointer
+  is not drawn.
+
+  The positions are broadcasts the page keeps in its state, as percentages of the map so a
+  cursor lands in the same place at any size, and drops once nothing newer arrives. This
+  component adds each person's `Offgrid.Cast` colour, which needs the trip's member list, and
+  only a component can hold a query.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Cast
   alias Offgrid.Entities.Trip
-
-  @moduledoc """
-  Where everyone else's pointer is on the map, as a dot with their initials.
-
-  The positions belong to the page - they are broadcasts, kept in its state until they fade -
-  and arrive as a prop, as a share of the map's width and height, so a cursor lands on the
-  same place whatever size the map is drawn at. What this component adds is the colour, the
-  one `Offgrid.Cast` gives the person, which needs the trip's member list, and a member list
-  is a query, which only a component can hold.
-
-  Your own pointer is not here. It is the real one, under your hand.
-
-  A cursor that stops moving fades: the page drops a position two and a half seconds after
-  nothing newer has arrived, which is what a pointer that left the map, or stopped over the
-  panel, looks like from another screen. There is no leave event to say so.
-  """
 
   prop :cursors, :map
   prop :grants, [RoleGrant], from_query: &members_query/1

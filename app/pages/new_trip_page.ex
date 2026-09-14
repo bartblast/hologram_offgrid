@@ -1,4 +1,12 @@
 defmodule Offgrid.Pages.NewTripPage do
+  @moduledoc """
+  The form a trip begins on.
+
+  The form lives in page state, and the trip and its members' grants are written by an action,
+  not a command. Both are client writes that land in the browser's database first, so a trip
+  can be created offline and reaches the server as one batch when the network returns.
+  """
+
   use Hologram.Page
   use Hologram.DB
 
@@ -9,25 +17,6 @@ defmodule Offgrid.Pages.NewTripPage do
   alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripPage
-
-  @moduledoc """
-  Where a trip begins.
-
-  The whole form lives in page state and the trip is written by an ACTION, not a command,
-  which is the point: a create is a client write like any other, so it lands in the
-  browser's own database first and travels afterwards. Starting a trip works with no
-  network, and the person who started it sees it immediately - before the server has been
-  told, and before the organizer grant that write will earn them exists.
-
-  The people invited are granted their membership in the same action, which works for the
-  same reason: a grant is a client write too, and the organizer grant the create earns rides
-  in that create's own batch. So a trip can be named, mapped, filled with people and started
-  on a plane, and the whole thing lands as one when the network comes back.
-
-  Dates arrive from the browser's own date control as "2026-03-28", which is picked apart
-  here rather than parsed: `Date.from_iso8601!/1` is not among the functions that reach the
-  client, and splitting three integers is the same work without the dependency.
-  """
 
   route "/trips/new"
 
@@ -132,8 +121,7 @@ defmodule Offgrid.Pages.NewTripPage do
     put_state(component, :invites, invites)
   end
 
-  # Everything the row needs, said in the order the form asks for it, so the message names
-  # the field the person should look at next rather than the first one that happens to fail.
+  # Checked in the order the form asks for the fields, so the message names the next one to fix.
   defp create(component, %{name: ""}, _starts_on, _ends_on) do
     put_state(component, :error, "Give the trip a name.")
   end
@@ -150,6 +138,7 @@ defmodule Offgrid.Pages.NewTripPage do
     put_state(component, :error, "Pick a map.")
   end
 
+  # `Date.compare/2` cannot sit in a guard, so the date order is checked in a body.
   defp create(component, state, starts_on, ends_on) do
     if Date.compare(ends_on, starts_on) == :lt do
       put_state(component, :error, "It cannot end before it starts.")
@@ -158,9 +147,6 @@ defmodule Offgrid.Pages.NewTripPage do
     end
   end
 
-  # A `Date.compare/2` cannot sit in a guard, so the last check is a clause of its own body
-  # rather than a fifth head - after the two dates are known to be dates, before anything is
-  # written.
   defp start(component, state, starts_on, ends_on) do
     {:ok, trip} =
       %{
@@ -172,15 +158,12 @@ defmodule Offgrid.Pages.NewTripPage do
       |> Trip.new()
       |> DB.create()
 
-    # The create wrote the organizer grant this needs, into the same batch, so the browser
-    # already knows whose trip it is - which is what lets a trip be started and filled in
-    # with nobody watching.
+    # The create wrote the organizer grant these need into the same batch, so the browser
+    # already knows whose trip it is.
     Enum.each(state.invites, &(:ok = Auth.grant_role(&1, trip, :member)))
 
-    # Straight into the trip, which is what somebody who just made one wants to look at. The
-    # row was written locally, so this navigation carries an id the server has not necessarily
-    # heard of yet - and the screen it opens reads the same local rows, so there is nothing to
-    # wait for.
+    # The server may not have the trip yet, but the trip screen reads the same local rows, so
+    # there is nothing to wait for.
     put_page(component, TripPage, id: trip.id)
   end
 end

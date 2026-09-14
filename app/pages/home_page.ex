@@ -1,19 +1,15 @@
 defmodule Offgrid.Pages.HomePage do
+  @moduledoc """
+  The root, which renders nothing: somebody with a session is redirected to their trips, and
+  anybody else to the log-in card.
+
+  The redirect is middleware rather than `init/3`, so it happens before anything renders.
+  """
+
   use Hologram.Page
 
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.TripsPage
-
-  @moduledoc """
-  The door at the root: it sends you where you were going and renders nothing of its own.
-
-  Middleware rather than `init/3`, because middleware answers BEFORE anything is rendered -
-  no template, no queries, no page bundle - which is what a door should cost. Somebody with a
-  session lands on their trips, and anybody else on the log-in card.
-
-  There is no third answer to give. The root belonged to the trip screen while one trip owned
-  the app, and now that a trip's address names it, the root has nothing to show.
-  """
 
   route "/"
 

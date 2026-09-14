@@ -1,23 +1,17 @@
 defmodule Offgrid.Components.TripHeader do
+  @moduledoc """
+  The trip's name and dates, at the top of the itinerary panel. Clicking the name opens the
+  trip details card.
+
+  A component because a page cannot hold a query prop, and edits from the details card should
+  show here without a reload. For a trip this person may not read, the header is empty.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Dates
   alias Offgrid.Entities.Trip
-
-  @moduledoc """
-  The trip's name and dates, at the top of the itinerary panel.
-
-  A component rather than markup on the page, because a page cannot hold a query prop and this
-  wants to be one: the name and the dates become editable in the trip details card, and an
-  edit should show without a reload.
-
-  The name opens the trip's own card, which is the only affordance on this screen that is not
-  a button - a title you can click to edit is the shape people expect from a document.
-
-  The query answers nothing for a trip this person may not read - the trip's own rules decide
-  that, not this component - so the header is empty rather than wrong.
-  """
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string

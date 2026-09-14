@@ -1,4 +1,9 @@
 defmodule Offgrid.FeatureHelpers do
+  @moduledoc """
+  Helpers the feature tests share, imported by `Offgrid.FeatureCase`: fixtures, signing in,
+  pointer and date input, and two assertions that replace Wallaby's.
+  """
+
   import Hologram.Test.FeatureHelpers, only: [assert_page: 2, visit: 3]
   import Wallaby.Query, only: [button: 1, css: 2]
 
@@ -22,20 +27,13 @@ defmodule Offgrid.FeatureHelpers do
   alias Wallaby.Query.ErrorMessage
   alias Wallaby.StaleReferenceError
 
-  @moduledoc """
-  What every feature test needs and Wallaby does not give it, imported by
-  `Offgrid.FeatureCase`: the two assertions that replace Wallaby's, and the fixtures for
-  data the entity declarations make mandatory.
-  """
-
   @max_wait_time Application.compile_env(:wallaby, :max_wait_time, 3_000)
 
   @doc """
   Creates a basemap with the given name and slug and returns it.
 
-  The bounds are Japan's whatever the map is called: the pins and the route project through
-  them, so a stop in Kyoto lands on the map and one in Warsaw is off its edge, whichever
-  basemap the row is named after. A test that needs other bounds will say so by needing them.
+  The bounds are always Japan's, so a stop in Kyoto lands on the map and one in Warsaw is off
+  its edge, whatever the basemap is called.
   """
   @spec create_basemap(String.t(), String.t()) :: struct
   def create_basemap(name, slug) do
@@ -52,8 +50,7 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Creates a trip with a basemap under it and returns the trip - the two rows that have to
-  exist before any stop can, since a stop's trip is required and a trip's basemap is.
+  Creates a trip on a new Japan basemap and returns the trip.
   """
   @spec create_trip() :: struct
   def create_trip do
@@ -70,11 +67,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Creates a user with a real password hash and returns it.
-
-  One place for the account every feature needs beside the browser's own: the person who
-  left a remark, drew a line, or is about to be invited. The password is the suite's one
-  password unless a test says otherwise, so any of them can sign in through the card.
+  Creates a user with a real password hash and returns it. The password defaults to the one
+  the sign-in helpers type, so any user created here can log in.
   """
   @spec create_user(String.t(), String.t(), String.t()) :: struct
   def create_user(name, email, password \\ "hakone-2026") do
@@ -84,11 +78,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Signs the browser in as a new member of the given trip, by name and address, and returns the
-  session landing on the trip screen.
-
-  The second browser of every two-browser feature: somebody other than the suite's default
-  member, so the two can be told apart on screen.
+  Signs the browser in as a new member of the given trip with the given name and email, and
+  returns the session on the trip screen. For the second browser in a two-browser feature.
   """
   @spec sign_in_as(struct, struct, String.t(), String.t()) :: struct
   def sign_in_as(session, trip, name, email) do
@@ -96,8 +87,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Signs the browser in as somebody with no role on the given trip at all, and lands them on
-  its screen - which is where the trip's rules can be watched answering nothing.
+  Signs the browser in as a new user with no role on the given trip, and returns the session
+  on the trip screen.
   """
   @spec sign_in_as_stranger(struct, struct, String.t(), String.t()) :: struct
   def sign_in_as_stranger(session, trip, name, email) do
@@ -107,14 +98,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Signs the browser in as a member of the given trip and returns the session, landing on the
-  trip screen.
-
-  A stop is visible only to a member of its trip, so a test that wants to see one needs both
-  halves: a user with a grant on that trip, and a browser carrying that user's session. The
-  grant is written directly - the interface for adding members does not exist yet - and the
-  signing in goes through the log-in card, because a session cookie is the server's to mint
-  and there is no other door to it.
+  Signs the browser in as a member of the given trip and returns the session on the trip
+  screen. The role is granted directly, and signing in goes through the log-in card.
   """
   @spec sign_in_as_member(struct, struct) :: struct
   def sign_in_as_member(session, trip) do
@@ -122,11 +107,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Signs the browser in as an organizer of the given trip and returns the session, landing on
-  the trip screen.
-
-  The same two halves as `sign_in_as_member/2`, with the role that may change who else is on
-  the trip - which is what the controls for adding and removing people are gated on.
+  Signs the browser in as an organizer of the given trip and returns the session on the trip
+  screen. Organizers see the controls for adding and removing members.
   """
   @spec sign_in_as_organizer(struct, struct) :: struct
   def sign_in_as_organizer(session, trip) do
@@ -134,11 +116,9 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Presses the pointer on the ink layer at the first offset and moves it through the rest,
-  leaving it down - so a test can look at a stroke while it is still being drawn.
-
-  Offsets are from the layer's top left. Dispatched as pointer events through a script,
-  because a real drag is not something a driver can hold half-way.
+  Presses the pointer on the ink layer at the first offset (from its top left) and moves it
+  through the rest, leaving it down so a test can inspect a stroke mid-draw. Dispatched by
+  script, because a driver cannot hold a real drag half-way.
   """
   @spec press(struct, [{number, number}]) :: struct
   def press(session, [{first_x, first_y} | rest]) do
@@ -176,12 +156,9 @@ defmodule Offgrid.FeatureHelpers do
   @doc """
   Sets the date input with the given id to `value` (an ISO date) and returns the session.
 
-  Neither `fill_in` nor `Element.set_value/2` works here, and both fail the same way: a
-  `type="date"` control is segmented, and both send keystrokes, so the characters go to
-  whichever segment has focus. "2026-05-15" typed into one lands as year 60515, month 02,
-  day 20 - a real Date, five digits wide, which then fails the wire format. Assigning the
-  value and dispatching `input` is what the browser's own picker does, and the only way to
-  put a whole date in from a test.
+  Set by script because `fill_in` and `Element.set_value/2` send keystrokes, which land in the
+  wrong segments of a `type="date"` control. Assigning the value and dispatching `input` is
+  what the browser's own picker does.
   """
   @spec fill_date(struct, String.t(), String.t()) :: struct
   def fill_date(session, id, value) do
@@ -195,12 +172,8 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Empties every table the app writes, in one statement.
-
-  One statement because PostgreSQL refuses to truncate a table something references unless
-  the referencing one goes with it, and these form a chain: a comment names its stop and its
-  author, a sketch names its trip and its author, a stop names its trip, a trip names its
-  basemap, and a grant names both a user and the entity it is held on.
+  Empties every table the app writes, in one statement - PostgreSQL refuses to truncate a
+  referenced table unless the tables referencing it go in the same statement.
   """
   @spec reset_data() :: :ok
   def reset_data do
@@ -220,10 +193,7 @@ defmodule Offgrid.FeatureHelpers do
 
   @doc """
   Asserts that the element `query` finds inside `parent` contains `text`, and returns
-  `parent` so the assertion can sit in the middle of a pipe.
-
-  Wallaby's own three-argument version returns the element it found rather than what it was
-  given, which ends a pipe of session steps.
+  `parent` so it can sit in a pipe - Wallaby's version returns the element it found.
   """
   @spec assert_text(struct, Query.t(), String.t()) :: struct
   def assert_text(parent, query, text) do
@@ -235,13 +205,8 @@ defmodule Offgrid.FeatureHelpers do
   @doc """
   Refutes that `query` matches inside `parent`, and returns `parent`.
 
-  Returns as soon as the element is absent. Wallaby's own version retries until
-  `:max_wait_time` elapses whether or not it ever finds anything, so an assertion about
-  something that is already gone - the usual case after a delete - costs the full wait, and
-  two of them in one test exhaust ExUnit's default timeout on their own.
-
-  An element that is still present is still waited on, so this keeps catching the thing it
-  is for: something that should disappear and does not.
+  Returns as soon as the element is absent, where Wallaby's version always waits out
+  `:max_wait_time`. An element still present is waited on until it goes or the time runs out.
   """
   @spec refute_has(struct, Query.t()) :: struct
   def refute_has(parent, query) do
@@ -269,9 +234,8 @@ defmodule Offgrid.FeatureHelpers do
     session
   end
 
-  # Through the log-in card, because a session cookie is the server's to mint and there is no
-  # other door to it. Signing in lands on the trips list; the helper goes on to the trip
-  # screen, which is what every caller is actually after.
+  # Through the log-in card, because only the server can mint a session cookie. Logging in
+  # lands on the trips list, so the helper then opens the trip.
   defp log_in(session, trip, email) do
     session
     |> visit(LogInPage, [])

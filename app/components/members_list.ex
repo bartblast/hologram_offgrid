@@ -1,4 +1,14 @@
 defmodule Offgrid.Components.MembersList do
+  @moduledoc """
+  Who is on this trip, read from the role grants themselves - there is no members table. The
+  query is filtered by `allow :read_roles` on Trip, and one person can hold several grants, so
+  rows collapse to one per person here.
+
+  The browser decides from the grants it holds whether to show the add and remove controls,
+  and the server checks the same rules when the write lands. Adding and removing are plain
+  actions, and the email lookup is local, as in `MemberChips`, so both work offline.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
@@ -8,40 +18,13 @@ defmodule Offgrid.Components.MembersList do
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
 
-  @moduledoc """
-  Who is on this trip, read from the grants themselves.
-
-  There is no members table - a membership IS a grant of a role on the trip, so the list is a
-  query over the grant store with the person each one names pulled in beside it. That is why
-  adding someone later is one write and not two.
-
-  What the query returns is already filtered by `allow :read_roles` on Trip: a member sees the
-  whole list, and somebody with no role on the trip sees nothing, without this component
-  asking who is looking.
-
-  One person can hold several roles on one trip - the creator of a trip they were invited to
-  holds both - so the store answers a row per grant and the collapsing to a row per person
-  happens here.
-
-  Whether the controls for changing the list are drawn at all is a question the browser answers
-  for itself, from the grants it already holds. Nobody is asked, and the answer is the same one
-  the server gives when the write lands.
-
-  Adding is by email and the lookup is LOCAL, the way `MemberChips` does it when a trip is
-  first made: every account syncs to every browser, so turning an address into a person needs
-  no network. Both changing verbs are plain actions, which is what puts membership on the
-  offline side of the line.
-  """
-
   prop :grants, [RoleGrant], from_query: &members_query/1
   prop :present, :list, default: []
   prop :trip_id, :string
   prop :user_id, :string
   prop :users, [User], from_query: &users_query/0
 
-  # The typed address is this component's own business, so it is state here. init/2 rather than
-  # init/3 because the list appears in a page that is ALREADY loaded, the way the stop editor
-  # does - the popover opening is what mounts it, on the client.
+  # Mounts when the members popover opens in a page that is already loaded, so it needs init/2.
   def init(_props, component), do: blank(component)
 
   def template do
@@ -89,9 +72,7 @@ defmodule Offgrid.Components.MembersList do
     put_state(component, :email, params.event.value)
   end
 
-  # Removing somebody means they hold NO role on the trip afterwards, so every grant of theirs
-  # goes and not just the one the row happens to show. A plain write, so it lands in the local
-  # database and the row leaves the list before anything travels.
+  # Revokes every role the person holds on the trip, not just the one the row shows.
   def action(:remove, params, component) do
     trip = trip(component.props.trip_id)
 
@@ -102,9 +83,8 @@ defmodule Offgrid.Components.MembersList do
     component
   end
 
-  # Oldest first, which puts whoever made the trip at the top without storing an order - they
-  # hold the creator's grant, written in the same breath as the trip. The nil beside the id is
-  # the type-wide grant, "member of every trip", which the gate counts and this list must too.
+  # Oldest first, which puts the trip's creator at the top. The nil beside the id is the
+  # type-wide grant, "member of every trip", which the gate counts and this list must too.
   defp members_query(trip_id) do
     RoleGrant
     |> filter(entity_id: [trip_id, nil], entity_type: Trip)
@@ -112,9 +92,8 @@ defmodule Offgrid.Components.MembersList do
     |> order_by(:created_at)
   end
 
-  # An address the app has never seen is the one failure worth naming - anything else and the
-  # person is already in the list above, which says it without a sentence. Granting a role
-  # somebody already holds keeps the grant they have, so adding twice is not an error either.
+  # An unknown address is the one failure worth a message. Granting a role somebody already
+  # holds keeps the grant they have, so adding twice is not an error.
   defp add(component, nil) do
     put_state(component, :error, "Nobody here uses that address.")
   end
@@ -139,10 +118,8 @@ defmodule Offgrid.Components.MembersList do
     Auth.can?(user_id, :grant_role, trip(trip_id))
   end
 
-  # The strongest role each person holds, which for Offgrid means organizer over member, since
-  # organizer extends it. This is the app's answer and not the framework's: "strongest" is only
-  # well-defined where an app's roles form a chain, and two roles neither of which extends the
-  # other have no order to pick by.
+  # The strongest role each person holds: organizer, which extends member. This only works
+  # because Offgrid's roles form a chain.
   defp one_per_person(grants) do
     grants
     |> Enum.map(& &1.user_id)
@@ -154,15 +131,14 @@ defmodule Offgrid.Components.MembersList do
     end)
   end
 
-  # Somebody else's row, and only when this browser's user may take a role away. Your own row
-  # carries no cross - leaving a trip is a different act from removing a person, and it is not
-  # in this panel.
+  # Somebody else's row, when you may take a role away. Leaving a trip yourself is not offered
+  # here.
   defp removable?(grant, user_id, trip_id) do
     grant.user_id != user_id and Auth.can?(user_id, :revoke_role, trip(trip_id))
   end
 
-  # Somebody on the screen right now - you, or anyone the page has seen this session - carries
-  # their cast colour. Anyone else gets the hollow dot: on the trip, not here.
+  # You and anyone else present right now carry their cast colour. Everyone else gets the
+  # hollow dot.
   defp dot_class(grants, present, user_id, id) do
     if id == user_id or Enum.any?(present, &(&1.id == id)) do
       Cast.colour(Cast.members(grants), user_id, id)

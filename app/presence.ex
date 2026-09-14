@@ -1,39 +1,27 @@
 defmodule Offgrid.Presence do
   @moduledoc """
-  What the trip screen knows about the other people on it right now, and how that changes.
+  What the trip screen knows about the other people on it right now: who is here, where their
+  pointer is and what they have open. None of it is a row. It arrives as broadcasts on the
+  trip's channel and lives in page state, and these pure functions change that state.
 
-  None of this is a row. Who is here, where their pointer is and what they have open all
-  arrive as broadcasts on the trip's channel and live in the page's state until they expire
-  or the page goes. These are the pure functions that change that state, kept apart from the
-  page so they can be read and tested without a browser.
+  The app gets no leave or disconnect signal, so it infers departure from silence: everyone
+  says they are still here on a timer, and anyone not heard from for a few turns is dropped.
 
-  Nobody is ever told that somebody left. The framework notices a browser's stream dying and
-  quietly drops it, but says nothing an app could hear, so departure cannot be waited for - it
-  can only be inferred. Everyone therefore says they are still here on a timer, and anyone not
-  heard from for a few of those turns is let go. A closed tab, a slept laptop and a lost
-  network all look the same from here, which is honest: what this knows is who is still
-  answering.
+  Nothing here reads a clock. Each cursor carries a sequence number that every new position
+  bumps. The page queues a delayed check with the number it saw, and the check drops the cursor
+  only if no newer position has arrived since.
 
-  Nothing here knows the time. A cursor expires by a sequence number: every position a
-  person sends bumps theirs, the page queues a delayed check carrying the number it saw, and
-  the check drops the cursor only if no newer position has arrived since. No clock, no
-  "leave" event - Hologram has neither a pointer-leave binding nor a disconnect signal - and
-  no timer to cancel.
-
-  What somebody has open is stamped the same way, and for a sharper reason: commands are
-  asynchronous, so opening a stop and landing in one of its fields - two messages, sent a
-  moment apart - can arrive in the other order, and the older one would then wipe the newer
-  truth. Each sender counts its own messages and a lower count is ignored. Somebody who has
-  closed everything stays in the map with no stop rather than leaving it, because their count
-  has to outlive them for the next stale message to be refused.
+  What somebody has open is guarded by a count too. Commands are asynchronous, so two messages
+  sent a moment apart can arrive in the other order. Each sender counts its own messages and a
+  lower count is ignored. Somebody who has closed everything stays in the map with no stop, so
+  their count is still there to refuse the next stale message.
   """
 
   @typedoc "Somebody on the screen: their id and the two letters they are drawn as."
   @type person :: %{id: String.t(), initials: String.t()}
 
   @doc """
-  Adds the person to those present, once - somebody already here is not here twice, however
-  many times they say so.
+  Adds the person to those present, once, however many times they say they are here.
   """
   @spec arrive(list(person), person) :: list(person)
   def arrive(present, %{id: id, initials: initials}) do
@@ -65,7 +53,7 @@ defmodule Offgrid.Presence do
   have closed it.
 
   Ignored when the sender has already been heard saying something newer - `seq` is their own
-  count of the messages they have sent, and a message that lost a race carries a lower one.
+  count of the messages they have sent.
   """
   @spec edit(map, %{
           id: String.t(),
@@ -97,11 +85,8 @@ defmodule Offgrid.Presence do
   end
 
   @doc """
-  Drops the person from both what is drawn about them - their face and whatever they had open -
-  but only if nothing newer has been heard from them since the check was queued.
-
-  The same guard the cursors use, for the same reason: the check is queued when a message
-  arrives and fires long after, by which time the person may well have spoken again.
+  Drops the person's face and whatever they had open, but only if nothing newer has been heard
+  from them since the check was queued.
   """
   @spec depart(list(person), map, String.t(), integer) :: {list(person), map}
   def depart(present, editing, id, seq) do

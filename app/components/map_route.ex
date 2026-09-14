@@ -1,27 +1,19 @@
 defmodule Offgrid.Components.MapRoute do
+  @moduledoc """
+  The line through the trip's stops, in the order the itinerary runs them.
+
+  Drawn in a 100 by 100 box stretched over the map, the same percentages the pins use, with a
+  non-scaling stroke so the stretch does not distort its width. It sorts the way `StopsList`
+  does, so moving a stop to another day redraws the line. While a pin is dragged, the line
+  follows the page's drag position.
+  """
+
   use Hologram.Component
   use Hologram.DB
 
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
-
-  @moduledoc """
-  The line through the trip's stops, in the order the itinerary runs them.
-
-  Drawn in percent space - a 100 by 100 box stretched over the map - so a point here and the
-  pin at the same place are the same two numbers, and neither knows the map's size. The
-  stroke is told not to scale, or the stretch would draw it thick one way and thin the other.
-
-  It reads the same ordering the itinerary does, date then time then creation, so moving a
-  stop to another day redraws the line without anything telling it to: two components reading
-  one row set, agreeing because they cannot disagree.
-
-  While a pin is being carried the line comes with it. The place under the pointer is the
-  page's, handed down the same way the pins take it, and it is already in the hundredths this
-  line is drawn in - so the line bends as the hand moves and no row is touched until the
-  pointer lifts.
-  """
 
   prop :drag, :map, default: nil
   prop :stops, [Stop], from_query: &stops_query/1
@@ -36,8 +28,7 @@ defmodule Offgrid.Components.MapRoute do
     """
   end
 
-  # A stop with no place, or a place off this map, is not on the line - the same rule the pins
-  # follow, so the line only ever joins pins that are drawn.
+  # The same rule the pins follow, so the line only joins pins that are drawn.
   defp placed?(_stop, nil), do: false
 
   defp placed?(stop, trip), do: Geo.placed?(stop, trip.basemap)
