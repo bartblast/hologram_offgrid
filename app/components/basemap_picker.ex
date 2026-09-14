@@ -4,8 +4,8 @@ defmodule Offgrid.Components.BasemapPicker do
 
   The maps come from a query, so adding one is a row in the seeds. The choice is not kept here:
   it comes down as `selected_id`, and each pick goes to the `on_pick` action on `target` as
-  `%{id: basemap_id}`. The new trip form keeps it in page state, and `MapPicker` writes it to
-  the trip.
+  `%{id: basemap_id}`. The new trip form keeps it in page state, and `TripBasemapPicker` writes
+  it to the trip.
   """
 
   use Hologram.Component
@@ -20,7 +20,7 @@ defmodule Offgrid.Components.BasemapPicker do
   prop :selected_id, :string, default: nil
   prop :target, :string, required: true
 
-  # Mounts inside `MapPicker` in a page that is already loaded, so it needs init/2.
+  # Mounts inside `TripBasemapPicker` in a page that is already loaded, so it needs init/2.
   def init(_props, component), do: component
 
   def template do

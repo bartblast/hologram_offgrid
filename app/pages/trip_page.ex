@@ -19,7 +19,6 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.Faces
   alias Offgrid.Components.Ink
   alias Offgrid.Components.LogOutButton
-  alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapSurface
   alias Offgrid.Components.MapSwatch
   alias Offgrid.Components.MemberList
@@ -27,6 +26,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.StopLayer
   alias Offgrid.Components.StopList
   alias Offgrid.Components.Terrain
+  alias Offgrid.Components.TripBasemapPicker
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
   alias Offgrid.Device
@@ -141,7 +141,7 @@ defmodule Offgrid.Pages.TripPage do
           </div>
 
           {%if @maps_open}
-            <MapPicker cid="map_picker" trip_id={@trip_id} />
+            <TripBasemapPicker cid="trip_basemap_picker" trip_id={@trip_id} />
           {/if}
 
           <StopList

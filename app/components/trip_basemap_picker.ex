@@ -1,4 +1,4 @@
-defmodule Offgrid.Components.MapPicker do
+defmodule Offgrid.Components.TripBasemapPicker do
   @moduledoc """
   The maps an existing trip can be drawn on, opened from the swatch in the panel header.
 
@@ -22,7 +22,7 @@ defmodule Offgrid.Components.MapPicker do
 
   def template do
     ~HOLO"""
-    <BasemapPicker cid="map_basemaps" on_pick={:pick} selected_id={basemap_id(@trip)} target={@cid} />
+    <BasemapPicker cid="trip_basemaps" on_pick={:pick} selected_id={basemap_id(@trip)} target={@cid} />
     """
   end
 
