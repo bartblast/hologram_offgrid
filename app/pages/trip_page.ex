@@ -17,7 +17,7 @@ defmodule Offgrid.Pages.TripPage do
 
   import Offgrid.Classes
 
-  alias Offgrid.Clock
+  alias Offgrid.Browser.Clock
   alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
   alias Offgrid.Components.InkTools
@@ -62,7 +62,7 @@ defmodule Offgrid.Pages.TripPage do
 
   param :id, :string
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware Offgrid.Middleware.RequireSession
 

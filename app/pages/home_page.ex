@@ -13,7 +13,7 @@ defmodule Offgrid.Pages.HomePage do
 
   route "/"
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware :doorway
 

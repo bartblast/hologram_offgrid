@@ -1,5 +1,12 @@
-defmodule Offgrid.DefaultLayout do
+defmodule Offgrid.Components.DefaultLayout do
+  @moduledoc """
+  The HTML document every page renders into: the stylesheet, the Inter fallback font, and the
+  Hologram runtime.
+  """
+
   use Hologram.Component
+
+  alias Hologram.UI.Runtime
 
   def template do
     ~HOLO"""
@@ -16,7 +23,7 @@ defmodule Offgrid.DefaultLayout do
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
         />
         <link rel="stylesheet" href="/assets/app.css" />
-        <Hologram.UI.Runtime />
+        <Runtime />
       </head>
       <body>
         <slot />

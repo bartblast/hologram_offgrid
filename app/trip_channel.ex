@@ -12,10 +12,10 @@ defmodule Offgrid.TripChannel do
   alias Hologram.Auth
   alias Hologram.Component
   alias Hologram.Server
+  alias Offgrid.Browser.Network
   alias Offgrid.Cast
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
-  alias Offgrid.Link
 
   @doc """
   Returns the initials of the user with the given id, or nil when the account is gone.
@@ -75,6 +75,6 @@ defmodule Offgrid.TripChannel do
   """
   @spec tell(Component.t(), atom, keyword) :: Component.t()
   def tell(component, command, params) do
-    if Link.online?(), do: Component.put_command(component, command, params), else: component
+    if Network.online?(), do: Component.put_command(component, command, params), else: component
   end
 end

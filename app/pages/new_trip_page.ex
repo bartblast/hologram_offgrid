@@ -20,7 +20,7 @@ defmodule Offgrid.Pages.NewTripPage do
 
   route "/trips/new"
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware Offgrid.Middleware.RequireSession
 

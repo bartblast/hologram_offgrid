@@ -14,7 +14,7 @@ defmodule Offgrid.Pages.TripsPage do
 
   route "/trips"
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware Offgrid.Middleware.RequireSession
 

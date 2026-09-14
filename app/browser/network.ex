@@ -1,4 +1,4 @@
-defmodule Offgrid.Link do
+defmodule Offgrid.Browser.Network do
   @moduledoc """
   Whether this browser has a network right now.
 

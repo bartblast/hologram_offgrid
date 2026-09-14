@@ -18,7 +18,7 @@ defmodule Offgrid.Pages.LogInPage do
 
   route "/log-in"
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware Offgrid.Middleware.GuestOnly
 

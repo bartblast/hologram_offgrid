@@ -1,4 +1,4 @@
-defmodule Offgrid.Clock do
+defmodule Offgrid.Browser.Clock do
   @moduledoc """
   The browser's time zone, so remark timestamps stored in UTC can be shown in local time.
   Answers only inside a client action, since interop is a no-op on the server.

@@ -13,7 +13,7 @@ defmodule Offgrid.Components.MapSurface do
 
   import Offgrid.Classes
 
-  alias Offgrid.Box
+  alias Offgrid.Browser.Box
   alias Offgrid.TripChannel
 
   # How often this browser sends its pointer position while it moves. It has its own timer

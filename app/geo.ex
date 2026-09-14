@@ -14,7 +14,7 @@ defmodule Offgrid.Geo do
   @doc """
   Returns true when the place falls inside the basemap's bounds, edges included.
   """
-  @spec within?(float, float, Basemap.t()) :: boolean
+  @spec within?(number, number, Basemap.t()) :: boolean
   def within?(lat, lng, basemap) do
     lat >= basemap.min_lat and lat <= basemap.max_lat and
       lng >= basemap.min_lng and lng <= basemap.max_lng
@@ -53,7 +53,7 @@ defmodule Offgrid.Geo do
   Percentages because that is what a pin's `style` wants, and they hold at any size the map is
   drawn at. A place outside the bounds gets a percentage outside 0 to 100 rather than an error.
   """
-  @spec to_percent(float, float, Basemap.t()) :: {float, float}
+  @spec to_percent(number, number, Basemap.t()) :: {float, float}
   def to_percent(lat, lng, basemap) do
     x = (lng - basemap.min_lng) / (basemap.max_lng - basemap.min_lng) * 100
     y = (basemap.max_lat - lat) / (basemap.max_lat - basemap.min_lat) * 100

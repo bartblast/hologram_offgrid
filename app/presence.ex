@@ -20,6 +20,21 @@ defmodule Offgrid.Presence do
   @typedoc "Somebody on the screen: their id and the two letters they are drawn as."
   @type person :: %{id: String.t(), initials: String.t()}
 
+  @typedoc "Everyone else's pointer, by person id, with the sequence number of its newest position."
+  @type cursors :: %{
+          String.t() => %{initials: String.t(), seq: pos_integer, x: number, y: number}
+        }
+
+  @typedoc "What everyone else has open, by person id, with the count of their newest message."
+  @type editing :: %{
+          String.t() => %{
+            field: atom | nil,
+            initials: String.t(),
+            seq: integer,
+            stop_id: String.t() | nil
+          }
+        }
+
   @doc """
   Adds the person to those present, once, however many times they say they are here.
   """
@@ -36,8 +51,8 @@ defmodule Offgrid.Presence do
   Puts the person's pointer at the given place and returns the cursors with the sequence
   number this position got, which is what `expire/3` later asks about.
   """
-  @spec cursor(map, %{id: String.t(), initials: String.t(), x: number, y: number}) ::
-          {map, pos_integer}
+  @spec cursor(cursors, %{id: String.t(), initials: String.t(), x: number, y: number}) ::
+          {cursors, pos_integer}
   def cursor(cursors, %{id: id, initials: initials, x: x, y: y}) do
     seq =
       case cursors do
@@ -55,13 +70,13 @@ defmodule Offgrid.Presence do
   Ignored when the sender has already been heard saying something newer - `seq` is their own
   count of the messages they have sent.
   """
-  @spec edit(map, %{
+  @spec edit(editing, %{
           id: String.t(),
           initials: String.t(),
           stop_id: String.t() | nil,
           field: atom | nil,
           seq: integer
-        }) :: map
+        }) :: editing
   def edit(editing, %{id: id, initials: initials, stop_id: stop_id, field: field, seq: seq}) do
     case editing do
       %{^id => %{seq: heard}} when heard >= seq ->
@@ -76,7 +91,7 @@ defmodule Offgrid.Presence do
   Drops the person's cursor if the sequence number is still the one given - that is, if no
   newer position has arrived since the check was queued. Otherwise leaves it alone.
   """
-  @spec expire(map, String.t(), pos_integer) :: map
+  @spec expire(cursors, String.t(), pos_integer) :: cursors
   def expire(cursors, id, seq) do
     case cursors do
       %{^id => %{seq: ^seq}} -> Map.delete(cursors, id)
@@ -88,7 +103,7 @@ defmodule Offgrid.Presence do
   Drops the person's face and whatever they had open, but only if nothing newer has been heard
   from them since the check was queued.
   """
-  @spec depart(list(person), map, String.t(), integer) :: {list(person), map}
+  @spec depart(list(person), editing, String.t(), integer) :: {list(person), editing}
   def depart(present, editing, id, seq) do
     case editing do
       %{^id => %{seq: ^seq}} ->
@@ -102,7 +117,7 @@ defmodule Offgrid.Presence do
   @doc """
   Returns who has the given field of the given stop focused, in no particular order.
   """
-  @spec on_field(map, String.t(), atom) :: list(person)
+  @spec on_field(editing, String.t(), atom) :: list(person)
   def on_field(editing, stop_id, field) do
     for {id, %{field: ^field, initials: initials, stop_id: ^stop_id}} <- editing do
       %{id: id, initials: initials}
@@ -113,7 +128,7 @@ defmodule Offgrid.Presence do
   Returns who has the given stop open, with the field each of them is in, in no particular
   order.
   """
-  @spec on_stop(map, String.t()) ::
+  @spec on_stop(editing, String.t()) ::
           list(%{id: String.t(), initials: String.t(), field: atom | nil})
   def on_stop(editing, stop_id) do
     for {id, %{field: field, initials: initials, stop_id: ^stop_id}} <- editing do

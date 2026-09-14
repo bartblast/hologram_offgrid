@@ -12,7 +12,7 @@ defmodule Offgrid.Components.InkTools do
 
   import Offgrid.Classes
 
-  alias Offgrid.Box
+  alias Offgrid.Browser.Box
   alias Offgrid.Components.Ink
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip

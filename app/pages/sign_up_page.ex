@@ -19,7 +19,7 @@ defmodule Offgrid.Pages.SignUpPage do
 
   route "/sign-up"
 
-  layout Offgrid.DefaultLayout
+  layout Offgrid.Components.DefaultLayout
 
   middleware Offgrid.Middleware.GuestOnly
 

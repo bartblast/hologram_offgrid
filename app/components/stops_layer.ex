@@ -16,7 +16,7 @@ defmodule Offgrid.Components.StopsLayer do
 
   import Offgrid.Classes
 
-  alias Offgrid.Box
+  alias Offgrid.Browser.Box
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo

@@ -1,4 +1,4 @@
-defmodule Offgrid.Box do
+defmodule Offgrid.Browser.Box do
   @moduledoc """
   Where an element sits on screen and how big it is, asked of the DOM.
 
