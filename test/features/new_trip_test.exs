@@ -78,6 +78,51 @@ defmodule Offgrid.Features.NewTripTest do
     assert Auth.can?(anna.id, :read, alps)
   end
 
+  feature "drops a person whose chip is removed, and keeps the others",
+          %{session: session, trip: trip} do
+    anna = create_user("Anna Kim", "anna@offgrid.test")
+    tom = create_user("Tom Reyes", "tom@offgrid.test")
+
+    session =
+      session
+      |> sign_in(trip)
+      |> visit(NewTripPage)
+      |> fill_in(css("#trip_name"), with: "Alps, hut to hut")
+      |> fill_date("starts_on", "2026-08-02")
+      |> fill_date("ends_on", "2026-08-09")
+      |> click(css(".thumbs .thumb", at: 0))
+      |> fill_in(css("#member_email"), with: "anna@offgrid.test")
+      |> send_keys([:enter])
+      |> assert_text(css(".chips"), "anna@offgrid.test")
+      |> fill_in(css("#member_email"), with: "tom@offgrid.test")
+      |> send_keys([:enter])
+      |> assert_has(css(".chip", count: 2))
+
+    find(session, css(".chip", text: "anna@offgrid.test"), &click(&1, css("button")))
+
+    session
+    # Tom's chip left standing is what says the removal was handled.
+    |> assert_has(css(".chip", count: 1))
+    |> assert_text(css(".chips"), "tom@offgrid.test")
+    |> refute_has(css(".chip", text: "anna@offgrid.test"))
+    |> click(button("Create trip"))
+    |> assert_text(css(".lp-title"), "Alps, hut to hut")
+    |> click(css(".facepile"))
+    |> assert_text(css(".members"), "Tom Reyes")
+    |> refute_has(css(".mrow", text: "Anna Kim"))
+    |> await_pending_writes(0)
+
+    alps =
+      Trip
+      |> filter(name: "Alps, hut to hut")
+      |> one()
+      |> DB.read()
+
+    # Read from the server's grants, so the removal held beyond the screen.
+    assert Auth.can?(tom.id, :read, alps)
+    refute Auth.can?(anna.id, :read, alps)
+  end
+
   feature "refuses an address nobody here uses", %{session: session, trip: trip} do
     session
     |> sign_in(trip)
@@ -109,6 +154,30 @@ defmodule Offgrid.Features.NewTripTest do
     |> click(css(".thumbs .thumb", at: 0))
     |> click(button("Create trip"))
     |> assert_text(css(".card"), "Give the trip a name.")
+    |> assert_page(NewTripPage)
+  end
+
+  feature "refuses a trip with no start date", %{session: session, trip: trip} do
+    session
+    |> sign_in(trip)
+    |> visit(NewTripPage)
+    |> fill_in(css("#trip_name"), with: "Warsaw, long weekend")
+    |> fill_date("ends_on", "2026-05-18")
+    |> click(css(".thumbs .thumb", at: 0))
+    |> click(button("Create trip"))
+    |> assert_text(css(".card"), "Pick the day it starts.")
+    |> assert_page(NewTripPage)
+  end
+
+  feature "refuses a trip with no end date", %{session: session, trip: trip} do
+    session
+    |> sign_in(trip)
+    |> visit(NewTripPage)
+    |> fill_in(css("#trip_name"), with: "Warsaw, long weekend")
+    |> fill_date("starts_on", "2026-05-15")
+    |> click(css(".thumbs .thumb", at: 0))
+    |> click(button("Create trip"))
+    |> assert_text(css(".card"), "Pick the day it ends.")
     |> assert_page(NewTripPage)
   end
 

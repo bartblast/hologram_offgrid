@@ -84,6 +84,29 @@ defmodule Offgrid.Features.AuthTest do
     |> assert_page(TripsPage)
   end
 
+  feature "refuses an email somebody already signed up with", %{session: session, trip: trip} do
+    create_user("Nora Vale", "nora@offgrid.test")
+
+    session
+    |> sign_up("Tom Reyes", "nora@offgrid.test")
+    |> assert_text(css(".card"), "That email is already taken.")
+    |> assert_page(SignUpPage)
+    # With no session, the gate sends the trip screen back to the card.
+    |> visit("/trips/#{trip.id}")
+    |> assert_page(LogInPage)
+  end
+
+  feature "logs out from the trip screen and stays out", %{session: session, trip: trip} do
+    session
+    |> sign_in(trip)
+    |> assert_text(css(".faces"), "NV")
+    |> click(button("Log out"))
+    |> assert_page(LogInPage)
+    # The session went with it, so the trip it was on is behind the card again.
+    |> visit("/trips/#{trip.id}")
+    |> assert_page(LogInPage)
+  end
+
   feature "sends a signed-in visitor at the root to their trips", %{session: session} do
     create_user("Nora Vale", "nora@offgrid.test")
 
