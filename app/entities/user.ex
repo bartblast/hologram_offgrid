@@ -16,4 +16,17 @@ defmodule Offgrid.Entities.User do
   attribute :password_hash, :string, server_only: true
 
   allow :read
+
+  @doc """
+  Returns the first letter of each of the first two words of the user's name, upper case:
+  "Nora Vale" is "NV".
+  """
+  @spec initials(t) :: String.t()
+  def initials(user) do
+    user.name
+    |> String.split(" ", trim: true)
+    |> Enum.take(2)
+    |> Enum.map_join("", &String.first/1)
+    |> String.upcase()
+  end
 end

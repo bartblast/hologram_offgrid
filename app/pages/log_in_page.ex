@@ -15,6 +15,7 @@ defmodule Offgrid.Pages.LogInPage do
   alias Offgrid.Entities.User
   alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripsPage
+  alias Offgrid.Password
 
   route "/log-in"
 
@@ -96,24 +97,12 @@ defmodule Offgrid.Pages.LogInPage do
       |> one()
       |> DB.read()
 
-    if verified?(user, params.password) do
+    if Password.valid?(user, params.password) do
       server
       |> put_user_id(user.id)
       |> put_action(:logged_in)
     else
       put_action(server, :log_in_failed)
     end
-  end
-
-  # An unknown address still costs a hash comparison, so it takes as long as a wrong password
-  # and the timing does not reveal which addresses have accounts.
-  defp verified?(nil, _password) do
-    Bcrypt.no_user_verify()
-
-    false
-  end
-
-  defp verified?(user, password) do
-    Bcrypt.verify_pass(password, user.password_hash)
   end
 end

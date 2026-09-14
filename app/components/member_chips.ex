@@ -6,9 +6,9 @@ defmodule Offgrid.Components.MemberChips do
 
   use Hologram.Component
 
-  alias Offgrid.Cast
   alias Offgrid.Components.MemberInput
   alias Offgrid.Entities.User
+  alias Offgrid.MemberColor
 
   prop :invites, [User]
 
@@ -35,9 +35,5 @@ defmodule Offgrid.Components.MemberChips do
 
   # There is no trip yet to take a join order from, so invites are coloured in the order they
   # were added, which is the order they will join in.
-  defp chip_class(invites, invite) do
-    invites
-    |> Enum.map(& &1.id)
-    |> Cast.color(nil, invite.id)
-  end
+  defp chip_class(invites, invite), do: MemberColor.of(invites, nil, invite.id)
 end

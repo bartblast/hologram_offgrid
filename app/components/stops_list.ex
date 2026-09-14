@@ -11,9 +11,9 @@ defmodule Offgrid.Components.StopsList do
   import Offgrid.Classes
 
   alias Hologram.Auth.RoleGrant
-  alias Offgrid.Cast
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
+  alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
 
@@ -49,12 +49,10 @@ defmodule Offgrid.Components.StopsList do
   # Consecutive runs of stops sharing a date - the query already ordered them. Each stop comes
   # with everyone but you who has it open, drawn as a ring in their colour.
   defp days(stops, editing, grants, user_id) do
-    members = Cast.members(grants)
-
     stops
     |> Enum.chunk_by(& &1.date)
     |> Enum.map(fn day ->
-      Enum.map(day, &%{people: others_on(editing, &1.id, members, user_id), stop: &1})
+      Enum.map(day, &%{people: others_on(editing, &1.id, grants, user_id), stop: &1})
     end)
   end
 
@@ -62,9 +60,9 @@ defmodule Offgrid.Components.StopsList do
 
   defp members_query(trip_id), do: Queries.members(trip_id)
 
-  defp others_on(editing, stop_id, members, user_id) do
+  defp others_on(editing, stop_id, grants, user_id) do
     for person <- Presence.on_stop(editing, stop_id), person.id != user_id do
-      Map.put(person, :color, Cast.color(members, user_id, person.id))
+      Map.put(person, :color, MemberColor.of(grants, user_id, person.id))
     end
   end
 

@@ -14,11 +14,11 @@ defmodule Offgrid.Components.StopEditor do
   import Offgrid.Classes
 
   alias Hologram.Auth.RoleGrant
-  alias Offgrid.Cast
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
+  alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
 
@@ -192,20 +192,16 @@ defmodule Offgrid.Components.StopEditor do
 
   # Everyone but you with this field of this stop focused, each with their colour.
   defp others_in(editing, stop_id, field, grants, user_id) do
-    members = Cast.members(grants)
-
     for person <- Presence.on_field(editing, stop_id, field), person.id != user_id do
-      Map.put(person, :color, Cast.color(members, user_id, person.id))
+      Map.put(person, :color, MemberColor.of(grants, user_id, person.id))
     end
   end
 
-  # Each comment with its author's cast colour, or the neutral dot for somebody not on the trip.
+  # Each comment with its author's colour, or the neutral dot for somebody not on the trip.
   defp remarks(comments, grants, user_id) do
-    members = Cast.members(grants)
-
     for comment <- comments do
       color =
-        case Cast.color(members, user_id, comment.author_id) do
+        case MemberColor.of(grants, user_id, comment.author_id) do
           "" -> "off"
           color -> color
         end

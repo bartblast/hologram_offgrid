@@ -5,14 +5,14 @@ defmodule Offgrid.Components.Cursors do
 
   The positions are broadcasts the page keeps in its state, as percentages of the map so a
   cursor lands in the same place at any size, and drops once nothing newer arrives. This
-  component adds each person's `Offgrid.Cast` colour, which needs the trip's member list, and
+  component adds each person's `Offgrid.MemberColor`, which needs the trip's member list, and
   only a component can hold a query.
   """
 
   use Hologram.Component
 
   alias Hologram.Auth.RoleGrant
-  alias Offgrid.Cast
+  alias Offgrid.MemberColor
   alias Offgrid.Queries
 
   prop :cursors, :map
@@ -37,10 +37,8 @@ defmodule Offgrid.Components.Cursors do
 
   # Everyone but you, each with their id and colour.
   defp others(cursors, grants, user_id) do
-    members = Cast.members(grants)
-
     for {id, cursor} <- cursors, id != user_id do
-      Map.merge(cursor, %{color: Cast.color(members, user_id, id), id: id})
+      Map.merge(cursor, %{color: MemberColor.of(grants, user_id, id), id: id})
     end
   end
 end

@@ -1,7 +1,7 @@
 defmodule Offgrid.Entities.UserTest do
   use ExUnit.Case, async: true
 
-  import Offgrid.Entities.User, only: [new: 1]
+  import Offgrid.Entities.User, only: [initials: 1, new: 1]
 
   alias Hologram.Entity
   alias Offgrid.Entities.User
@@ -41,6 +41,20 @@ defmodule Offgrid.Entities.UserTest do
       user = new(email: "anna@example.com", name: :anna, password_hash: "$2b$12$hash")
 
       assert Entity.validate(user) == {:error, %{name: [{:type, :string}]}}
+    end
+  end
+
+  describe "initials/1" do
+    test "takes the first letter of the first two words" do
+      assert initials(new(name: "Nora Vale")) == "NV"
+    end
+
+    test "takes one letter from a one-word name" do
+      assert initials(new(name: "Bart")) == "B"
+    end
+
+    test "ignores a third word and extra spaces" do
+      assert initials(new(name: "  Anna  Maria Kim ")) == "AM"
     end
   end
 

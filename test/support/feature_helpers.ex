@@ -22,6 +22,7 @@ defmodule Offgrid.FeatureHelpers do
   alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripPage
   alias Offgrid.Pages.TripsPage
+  alias Offgrid.Password
   alias Wallaby.Browser
   alias Wallaby.Element
   alias Wallaby.Query
@@ -136,7 +137,7 @@ defmodule Offgrid.FeatureHelpers do
   """
   @spec create_user(String.t(), String.t(), String.t()) :: struct
   def create_user(name, email, password \\ password()) do
-    %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(password)}
+    %{email: email, name: name, password_hash: Password.hash(password)}
     |> User.new()
     |> DB.create!()
   end

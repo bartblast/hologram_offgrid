@@ -12,7 +12,6 @@ defmodule Offgrid.TripChannel do
   alias Hologram.Auth
   alias Hologram.Component
   alias Hologram.Server
-  alias Offgrid.Cast
   alias Offgrid.Device
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
@@ -28,7 +27,7 @@ defmodule Offgrid.TripChannel do
       |> one()
       |> DB.read()
 
-    if user, do: Cast.initials(user.name)
+    if user, do: User.initials(user)
   end
 
   @doc """

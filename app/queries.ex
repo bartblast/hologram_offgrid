@@ -34,7 +34,7 @@ defmodule Offgrid.Queries do
 
   @doc """
   Returns the query for the grants on the given trip, oldest first, which is the join order
-  `Offgrid.Cast` colours people by. A nil entity id is the type-wide "member of every trip"
+  `Offgrid.MemberColor` colours people by. A nil entity id is the type-wide "member of every trip"
   grant, which counts as membership too.
   """
   @spec members(String.t()) :: Query.t()

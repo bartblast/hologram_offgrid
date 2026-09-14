@@ -14,9 +14,9 @@ defmodule Offgrid.Components.MembersList do
 
   alias Hologram.Auth
   alias Hologram.Auth.RoleGrant
-  alias Offgrid.Cast
   alias Offgrid.Components.MemberInput
   alias Offgrid.Entities.Trip
+  alias Offgrid.MemberColor
   alias Offgrid.Queries
 
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -85,10 +85,9 @@ defmodule Offgrid.Components.MembersList do
 
   # One row per person, in join order, with the strongest role they hold: organizer, which
   # extends member - this only works because Offgrid's roles form a chain. You and anyone
-  # present right now carry your cast colour, and everyone else the hollow dot. Only somebody
-  # else's row can be removed, and only by someone who may revoke roles.
+  # present right now carry your colour, and everyone else the hollow dot. Only somebody else's
+  # row can be removed, and only by someone who may revoke roles.
   defp rows(grants, present, user_id, trip_id) do
-    members = Cast.members(grants)
     may_remove = Auth.can?(user_id, :revoke_role, trip(trip_id))
 
     strongest =
@@ -96,11 +95,11 @@ defmodule Offgrid.Components.MembersList do
         Map.update(acc, grant.user_id, grant, &stronger(&1, grant))
       end)
 
-    for id <- members do
+    for %{user_id: id} <- Enum.uniq_by(grants, & &1.user_id) do
       here = id == user_id or Enum.any?(present, &(&1.id == id))
 
       %{
-        color: if(here, do: Cast.color(members, user_id, id), else: "off"),
+        color: if(here, do: MemberColor.of(grants, user_id, id), else: "off"),
         grant: Map.fetch!(strongest, id),
         removable: may_remove and id != user_id
       }
