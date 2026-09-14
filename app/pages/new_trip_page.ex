@@ -142,7 +142,7 @@ defmodule Offgrid.Pages.NewTripPage do
   end
 
   defp start(component, state, starts_on, ends_on) do
-    {:ok, trip} =
+    trip =
       %{
         basemap_id: state.basemap_id,
         ends_on: ends_on,
@@ -150,11 +150,11 @@ defmodule Offgrid.Pages.NewTripPage do
         starts_on: starts_on
       }
       |> Trip.new()
-      |> DB.create()
+      |> DB.create!()
 
     # The create wrote the organizer grant these need into the same batch, so the browser
     # already knows whose trip it is.
-    Enum.each(state.invites, &(:ok = Auth.grant_role(&1, trip, :member)))
+    Enum.each(state.invites, &Auth.grant_role(&1, trip, :member))
 
     # The server may not have the trip yet, but the trip screen reads the same local rows, so
     # there is nothing to wait for.

@@ -128,14 +128,13 @@ defmodule Offgrid.Components.StopEditor do
     if String.trim(draft) == "" do
       component
     else
-      {:ok, _comment} =
-        %{
-          author_id: component.props.user_id,
-          body: draft,
-          stop_id: component.props.stop_id
-        }
-        |> Comment.new()
-        |> DB.create()
+      %{
+        author_id: component.props.user_id,
+        body: draft,
+        stop_id: component.props.stop_id
+      }
+      |> Comment.new()
+      |> DB.create!()
 
       put_state(component, :draft, "")
     end
@@ -143,7 +142,7 @@ defmodule Offgrid.Components.StopEditor do
 
   # Every keystroke is a write, to the client's own database first.
   def action(:edit, params, component) do
-    :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
+    DB.update!(Stop, component.props.stop_id, %{params.field => params.event.value})
 
     component
   end
@@ -154,7 +153,7 @@ defmodule Offgrid.Components.StopEditor do
 
   # Clearing the time is as valid as setting one - an untimed stop sinks to the end of its day.
   def action(:set_time, params, component) do
-    :ok = DB.update(Stop, component.props.stop_id, %{time: params.time})
+    DB.update!(Stop, component.props.stop_id, %{time: params.time})
 
     component
   end

@@ -70,13 +70,13 @@ defmodule Offgrid.Components.TripDetails do
   end
 
   def action(:delete, _params, component) do
-    :ok = Trips.delete_trip(component.props.trip_id)
+    Trips.delete_trip(component.props.trip_id)
 
     put_page(component, TripsPage)
   end
 
   def action(:edit, params, component) do
-    :ok = DB.update(Trip, component.props.trip_id, %{params.field => params.event.value})
+    DB.update!(Trip, component.props.trip_id, %{params.field => params.event.value})
 
     component
   end
@@ -99,8 +99,7 @@ defmodule Offgrid.Components.TripDetails do
   # A date moved past the other one takes it along, so a trip never runs backwards and nobody
   # has to edit the other field first.
   defp write_date(component, field, date) do
-    :ok =
-      DB.update(Trip, component.props.trip_id, date_changes(component.props.trip, field, date))
+    DB.update!(Trip, component.props.trip_id, date_changes(component.props.trip, field, date))
 
     component
   end

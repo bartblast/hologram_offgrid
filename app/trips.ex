@@ -22,9 +22,9 @@ defmodule Offgrid.Trips do
     Comment
     |> filter(stop_id: stop_id)
     |> DB.read()
-    |> Enum.each(&(:ok = DB.delete(Comment, &1.id)))
+    |> Enum.each(&DB.delete!(Comment, &1.id))
 
-    DB.delete(Stop, stop_id)
+    DB.delete!(Stop, stop_id)
   end
 
   @doc """
@@ -35,13 +35,13 @@ defmodule Offgrid.Trips do
     Stop
     |> filter(trip_id: trip_id)
     |> DB.read()
-    |> Enum.each(&(:ok = delete_stop(&1.id)))
+    |> Enum.each(&delete_stop(&1.id))
 
     Sketch
     |> filter(trip_id: trip_id)
     |> DB.read()
-    |> Enum.each(&(:ok = DB.delete(Sketch, &1.id)))
+    |> Enum.each(&DB.delete!(Sketch, &1.id))
 
-    DB.delete(Trip, trip_id)
+    DB.delete!(Trip, trip_id)
   end
 end

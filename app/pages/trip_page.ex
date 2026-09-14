@@ -246,7 +246,7 @@ defmodule Offgrid.Pages.TripPage do
   # The panel closes in this same action rather than a follow-up, so the editor is not left
   # open for a render on a row that is gone.
   def action(:delete_stop, params, component) do
-    :ok = Trips.delete_stop(params.id)
+    Trips.delete_stop(params.id)
 
     close_panel(component)
   end
@@ -483,10 +483,10 @@ defmodule Offgrid.Pages.TripPage do
   defp place(component, %{x: x, y: y}, trip) do
     {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
 
-    {:ok, stop} =
+    stop =
       %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
       |> Stop.new()
-      |> DB.create()
+      |> DB.create!()
 
     component
     |> put_state(:mode, :idle)

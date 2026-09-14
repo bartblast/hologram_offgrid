@@ -57,7 +57,7 @@ defmodule Offgrid.Components.MembersList do
   # Granting a role somebody already holds keeps the grant they have, so adding twice is not an
   # error.
   def action(:add, params, component) do
-    :ok = Auth.grant_role(params.user, trip(component.props.trip_id), :member)
+    Auth.grant_role(params.user, trip(component.props.trip_id), :member)
 
     component
   end
@@ -68,7 +68,7 @@ defmodule Offgrid.Components.MembersList do
 
     component.props.grants
     |> Enum.filter(&(&1.user_id == params.user_id))
-    |> Enum.each(&(:ok = Auth.revoke_role(params.user_id, trip, &1.role)))
+    |> Enum.each(&Auth.revoke_role(params.user_id, trip, &1.role))
 
     component
   end

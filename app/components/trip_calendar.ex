@@ -45,7 +45,7 @@ defmodule Offgrid.Components.TripCalendar do
   end
 
   def action(:pick, params, component) do
-    :ok = DB.update(Stop, component.props.stop_id, %{date: params.date})
+    DB.update!(Stop, component.props.stop_id, %{date: params.date})
 
     component
   end

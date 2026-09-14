@@ -27,7 +27,7 @@ defmodule Offgrid.Components.MapPicker do
   end
 
   def action(:pick, params, component) do
-    :ok = DB.update(Trip, component.props.trip_id, %{basemap_id: params.id})
+    DB.update!(Trip, component.props.trip_id, %{basemap_id: params.id})
 
     component
   end

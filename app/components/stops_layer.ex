@@ -83,7 +83,7 @@ defmodule Offgrid.Components.StopsLayer do
   defp drop(component, drag, trip) do
     {lat, lng} = Geo.from_offset(drag.x, drag.y, 100, 100, trip.basemap)
 
-    :ok = DB.update(Stop, drag.id, %{lat: lat, lng: lng})
+    DB.update!(Stop, drag.id, %{lat: lat, lng: lng})
 
     put_state(component, :drag, nil)
   end

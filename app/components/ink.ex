@@ -118,7 +118,7 @@ defmodule Offgrid.Components.Ink do
   end
 
   def action(:erase, params, component) do
-    :ok = DB.delete(Sketch, params.id)
+    DB.delete!(Sketch, params.id)
 
     component
   end
@@ -189,15 +189,14 @@ defmodule Offgrid.Components.Ink do
   end
 
   defp finish(component, points) do
-    {:ok, _sketch} =
-      %{
-        author_id: component.props.user_id,
-        color: component.state.ink_color,
-        path: sketch_path(points, component.props.trip),
-        trip_id: component.props.trip_id
-      }
-      |> Sketch.new()
-      |> DB.create()
+    %{
+      author_id: component.props.user_id,
+      color: component.state.ink_color,
+      path: sketch_path(points, component.props.trip),
+      trip_id: component.props.trip_id
+    }
+    |> Sketch.new()
+    |> DB.create!()
 
     put_state(component, :stroke, [])
   end
