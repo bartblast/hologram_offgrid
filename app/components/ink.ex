@@ -23,8 +23,8 @@ defmodule Offgrid.Components.Ink do
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip
   alias Offgrid.Queries
-  alias Offgrid.Stroke
   alias Offgrid.Utils.CSS
+  alias Offgrid.Utils.SVG
 
   # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
   @ink_colors ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
@@ -239,7 +239,7 @@ defmodule Offgrid.Components.Ink do
 
       {lng, -lat}
     end)
-    |> Stroke.path()
+    |> SVG.smooth_path()
   end
 
   defp sketches_query(trip_id) do
@@ -252,7 +252,7 @@ defmodule Offgrid.Components.Ink do
   defp stroke_path(stroke) do
     stroke
     |> Enum.reverse()
-    |> Stroke.path()
+    |> SVG.smooth_path()
   end
 
   defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)

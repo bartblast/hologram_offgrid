@@ -1,4 +1,4 @@
-defmodule Offgrid.Stroke do
+defmodule Offgrid.Utils.SVG do
   @moduledoc """
   The SVG path of a freehand line drawn through a run of points.
 
@@ -11,8 +11,8 @@ defmodule Offgrid.Stroke do
   control about the previous endpoint, and that reflection lands exactly on the next sample. It
   is the same curve, written with two numbers per point instead of four.
 
-  Coordinates are in the caller's units: the trip page passes hundredths of the map for the
-  stroke being drawn, and `{lng, -lat}` for the path a sketch is saved with.
+  Coordinates are in the caller's units: `Offgrid.Components.Ink` passes hundredths of the map
+  for the stroke being drawn, and `{lng, -lat}` for the path a sketch is saved with.
   """
 
   @typedoc "A place on the drawing, in the caller's own units."
@@ -24,14 +24,18 @@ defmodule Offgrid.Stroke do
   No points answer the empty string, and a single point answers a move with no line. Both
   render as nothing.
   """
-  @spec path(list(point)) :: String.t()
-  def path([]), do: ""
+  @spec smooth_path(list(point)) :: String.t()
+  def smooth_path([]), do: ""
 
-  def path([point]), do: "M#{spell(point)}"
+  def smooth_path([point]), do: "M#{spell(point)}"
 
-  def path([first | rest]) do
+  def smooth_path([first | rest]) do
     "M#{spell(first)} " <> segments(rest, true)
   end
+
+  defp lead(control, midpoint, true), do: "Q#{spell(control)} #{spell(midpoint)}"
+
+  defp lead(_control, midpoint, false), do: "T#{spell(midpoint)}"
 
   # Walked rather than chunked, because chunk_every would allocate a list of pairs the size of
   # the stroke, and the stroke being drawn is re-spelled on every render.
@@ -42,10 +46,6 @@ defmodule Offgrid.Stroke do
 
     lead(control, midpoint, first?) <> " " <> segments([next | rest], false)
   end
-
-  defp lead(control, midpoint, true), do: "Q#{spell(control)} #{spell(midpoint)}"
-
-  defp lead(_control, midpoint, false), do: "T#{spell(midpoint)}"
 
   defp spell({x, y}), do: "#{x},#{y}"
 end

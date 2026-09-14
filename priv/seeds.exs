@@ -19,7 +19,7 @@ alias Offgrid.Entities.Sketch
 alias Offgrid.Entities.Stop
 alias Offgrid.Entities.Trip
 alias Offgrid.Entities.User
-alias Offgrid.Stroke
+alias Offgrid.Utils.SVG
 
 # Reads the row matching `match`, or creates one from `attrs`. Tells the caller which happened,
 # because a trip only gets its contents when it is new.
@@ -228,7 +228,7 @@ case find_or_create.(Trip, [name: japan_attrs.name], japan_attrs, japan_attrs.na
       path =
         points
         |> Enum.map(fn {lat, lng} -> {Float.round(lng, 4), Float.round(-lat, 4)} end)
-        |> Stroke.path()
+        |> SVG.smooth_path()
 
       %{author_id: author.id, color: color, path: path, trip_id: japan.id}
       |> Sketch.new()
