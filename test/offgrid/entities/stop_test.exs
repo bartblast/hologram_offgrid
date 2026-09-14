@@ -1,12 +1,55 @@
 defmodule Offgrid.Entities.StopTest do
-  use ExUnit.Case, async: true
+  # Not async: the Auth.can?/3 checks empty the database, which other modules write too.
+  use ExUnit.Case, async: false
 
   import Offgrid.Entities.Stop, only: [new: 1]
+  import Offgrid.FeatureHelpers, only: [create_trip: 0, create_user: 2, reset_data: 0]
 
+  alias Hologram.Auth
   alias Hologram.Entity
   alias Offgrid.Entities.Stop
 
   @trip_id "01a05d38-ffc6-7db6-8bc1-152cf7dca119"
+
+  describe "Auth.can?/3" do
+    # The rules read grants from the database, which only the feature run boots.
+    @describetag :feature
+
+    setup do
+      reset_data()
+
+      [trip: create_trip(), user: create_user("Nora Vale", "nora@offgrid.test")]
+    end
+
+    test "lets a member do anything to a stop on their trip", %{trip: trip, user: user} do
+      :ok = Auth.grant_role(user, trip, :member)
+
+      stop = new(date: ~D[2026-03-30], name: "Ryokan", trip_id: trip.id)
+
+      assert Auth.can?(user, :create, stop)
+      assert Auth.can?(user, :read, stop)
+      assert Auth.can?(user, :update, stop)
+      assert Auth.can?(user, :delete, stop)
+    end
+
+    test "refuses somebody with no role on the trip", %{trip: trip, user: user} do
+      stop = new(date: ~D[2026-03-30], name: "Ryokan", trip_id: trip.id)
+
+      refute Auth.can?(user, :create, stop)
+    end
+
+    # An organizer's role extends the member's, so the member rules reach organizers too.
+    test "lets an organizer do anything to a stop on their trip", %{trip: trip, user: user} do
+      :ok = Auth.grant_role(user, trip, :organizer)
+
+      stop = new(date: ~D[2026-03-30], name: "Ryokan", trip_id: trip.id)
+
+      assert Auth.can?(user, :create, stop)
+      assert Auth.can?(user, :read, stop)
+      assert Auth.can?(user, :update, stop)
+      assert Auth.can?(user, :delete, stop)
+    end
+  end
 
   describe "Entity.validate/1" do
     test "accepts a complete stop" do
@@ -31,18 +74,6 @@ defmodule Offgrid.Entities.StopTest do
       stop = new(date: ~D[2026-03-30], name: "Ryokan")
 
       assert Entity.validate(stop) == {:error, %{trip_id: [:required]}}
-    end
-  end
-
-  describe "__policies__/0" do
-    # Taking on a policy gives the entity exactly the policy's four rules.
-    test "carries the trip members' rules, taken from the policy" do
-      assert Stop.__policies__() == [
-               {:create, {:trip, :member}, nil, []},
-               {:delete, {:trip, :member}, nil, []},
-               {:read, {:trip, :member}, nil, []},
-               {:update, {:trip, :member}, nil, []}
-             ]
     end
   end
 

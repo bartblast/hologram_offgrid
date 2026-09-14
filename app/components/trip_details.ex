@@ -33,7 +33,7 @@ defmodule Offgrid.Components.TripDetails do
         <p class="sub">Trip details</p>
 
         <label>Name</label>
-        <input class="inp" value={@trip.name} $change={:edit, field: :name} />
+        <input class="inp" id="details_name" value={@trip.name} $change={:edit, field: :name} />
 
         <div class="pair">
           <div>

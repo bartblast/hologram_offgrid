@@ -16,11 +16,11 @@ defmodule Offgrid.Features.NewTripTest do
 
   feature "starts a trip with no network and keeps it", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(TripsPage)
     |> click(link("New trip"))
     |> assert_page(NewTripPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Warsaw, long weekend")
+    |> fill_in(css("#trip_name"), with: "Warsaw, long weekend")
     |> fill_date("starts_on", "2026-05-15")
     |> fill_date("ends_on", "2026-05-18")
     |> click(css(".thumbs .thumb", at: 0))
@@ -45,16 +45,16 @@ defmodule Offgrid.Features.NewTripTest do
     anna = create_user("Anna Kim", "anna@offgrid.test")
 
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(NewTripPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Alps, hut to hut")
+    |> fill_in(css("#trip_name"), with: "Alps, hut to hut")
     |> fill_date("starts_on", "2026-08-02")
     |> fill_date("ends_on", "2026-08-09")
     |> click(css(".thumbs .thumb", at: 0))
     # Finding Anna by her address is a local query - every account syncs - so this works with
     # the network already held.
     |> hold_mutation_requests()
-    |> fill_in(css(".card .inp", at: 3), with: "anna@offgrid.test")
+    |> fill_in(css("#member_email"), with: "anna@offgrid.test")
     |> send_keys([:enter])
     |> assert_text(css(".chips"), "anna@offgrid.test")
     |> click(button("Create trip"))
@@ -80,18 +80,18 @@ defmodule Offgrid.Features.NewTripTest do
 
   feature "refuses an address nobody here uses", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(NewTripPage)
-    |> fill_in(css(".card .inp", at: 3), with: "stranger@offgrid.test")
+    |> fill_in(css("#member_email"), with: "stranger@offgrid.test")
     |> send_keys([:enter])
     |> assert_text(css(".card"), "Nobody here uses that address.")
   end
 
   feature "refuses a trip that ends before it starts", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(NewTripPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Warsaw, long weekend")
+    |> fill_in(css("#trip_name"), with: "Warsaw, long weekend")
     |> fill_date("starts_on", "2026-05-18")
     |> fill_date("ends_on", "2026-05-15")
     |> click(css(".thumbs .thumb", at: 0))
@@ -102,7 +102,7 @@ defmodule Offgrid.Features.NewTripTest do
 
   feature "refuses a trip with no name", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(NewTripPage)
     |> fill_date("starts_on", "2026-05-15")
     |> fill_date("ends_on", "2026-05-18")
@@ -114,9 +114,9 @@ defmodule Offgrid.Features.NewTripTest do
 
   feature "refuses a trip with no map", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> visit(NewTripPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Alps, hut to hut")
+    |> fill_in(css("#trip_name"), with: "Alps, hut to hut")
     |> fill_date("starts_on", "2026-08-02")
     |> fill_date("ends_on", "2026-08-09")
     |> click(button("Create trip"))

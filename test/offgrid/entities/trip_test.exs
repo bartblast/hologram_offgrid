@@ -1,12 +1,60 @@
 defmodule Offgrid.Entities.TripTest do
-  use ExUnit.Case, async: true
+  # Not async: the Auth.can?/3 checks empty the database, which other modules write too.
+  use ExUnit.Case, async: false
 
   import Offgrid.Entities.Trip, only: [new: 1]
+  import Offgrid.FeatureHelpers, only: [create_trip: 0, create_user: 2, reset_data: 0]
 
+  alias Hologram.Auth
   alias Hologram.Entity
   alias Offgrid.Entities.Trip
 
   @basemap_id "01a05d37-84be-7b66-b163-1da2ce773bcf"
+
+  describe "Auth.can?/3" do
+    # The rules read grants from the database, which only the feature run boots.
+    @describetag :feature
+
+    setup do
+      reset_data()
+
+      [trip: create_trip(), user: create_user("Nora Vale", "nora@offgrid.test")]
+    end
+
+    # A trip can be started by somebody on no trip at all, offline, with no command to ask.
+    test "lets anyone create a trip", %{trip: trip, user: user} do
+      new_trip =
+        new(
+          basemap_id: trip.basemap_id,
+          ends_on: ~D[2026-05-17],
+          name: "Warsaw, long weekend",
+          starts_on: ~D[2026-05-15]
+        )
+
+      assert Auth.can?(user, :create, new_trip)
+    end
+
+    test "lets a member read and update the trip, but not delete it or change who is on it",
+         %{trip: trip, user: user} do
+      :ok = Auth.grant_role(user, trip, :member)
+
+      assert Auth.can?(user, :read, trip)
+      assert Auth.can?(user, :update, trip)
+      refute Auth.can?(user, :delete, trip)
+      refute Auth.can?(user, :grant_role, trip)
+    end
+
+    # The organizer extends the member, so every member rule reaches an organizer without being
+    # written twice.
+    test "lets an organizer delete the trip and change who is on it", %{trip: trip, user: user} do
+      :ok = Auth.grant_role(user, trip, :organizer)
+
+      assert Auth.can?(user, :read, trip)
+      assert Auth.can?(user, :update, trip)
+      assert Auth.can?(user, :delete, trip)
+      assert Auth.can?(user, :grant_role, trip)
+    end
+  end
 
   describe "Entity.validate/1" do
     test "accepts a complete trip" do
@@ -37,18 +85,6 @@ defmodule Offgrid.Entities.TripTest do
         )
 
       assert Entity.validate(trip) == {:error, %{ends_on: [{:type, :date}]}}
-    end
-  end
-
-  describe "__roles__/0" do
-    # The organizer extending the member is what lets every member rule reach an organizer
-    # without being written twice, and granted_to: :creator is what makes whoever starts a
-    # trip its organizer without any code remembering to do it.
-    test "declares a member and an organizer who is also a member" do
-      assert Trip.__roles__() == [
-               member: [],
-               organizer: [extends: :member, granted_to: :creator]
-             ]
     end
   end
 

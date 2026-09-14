@@ -5,11 +5,8 @@ defmodule Offgrid.Features.TripsTest do
   alias Hologram.DB
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.NewTripPage
-  alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripPage
   alias Offgrid.Pages.TripsPage
-
-  @password "hakone-2026"
 
   setup do
     reset_data()
@@ -25,16 +22,23 @@ defmodule Offgrid.Features.TripsTest do
     # Anna first, so that her account is already on Bart's browser when he types her address.
     # Finding a person by email is a local query - every account syncs - and it can only find
     # somebody the browser has heard of.
-    anna = sign_up(anna, "Anna Kim", "anna@offgrid.test")
-    bart = sign_up(bart, "Bart Blast", "bart@offgrid.test")
+    anna =
+      anna
+      |> sign_up("Anna Kim", "anna@offgrid.test")
+      |> assert_page(TripsPage)
+
+    bart =
+      bart
+      |> sign_up("Bart Blast", "bart@offgrid.test")
+      |> assert_page(TripsPage)
 
     bart
     |> visit(NewTripPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Japan, blossom run")
+    |> fill_in(css("#trip_name"), with: "Japan, blossom run")
     |> fill_date("starts_on", "2026-03-28")
     |> fill_date("ends_on", "2026-04-06")
     |> click(css(".thumbs .thumb", at: 0))
-    |> fill_in(css(".card .inp", at: 3), with: "anna@offgrid.test")
+    |> fill_in(css("#member_email"), with: "anna@offgrid.test")
     |> send_keys([:enter])
     |> assert_text(css(".chips"), "anna@offgrid.test")
     |> click(button("Create trip"))
@@ -63,16 +67,6 @@ defmodule Offgrid.Features.TripsTest do
     anna
     |> visit(TripsPage)
     |> assert_text(css(".card"), "No trips yet")
-  end
-
-  defp sign_up(session, name, email) do
-    session
-    |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 0), with: name)
-    |> fill_in(css(".card .inp", at: 1), with: email)
-    |> fill_in(css(".card .inp", at: 2), with: @password)
-    |> click(button("Create account"))
-    |> assert_page(TripsPage)
   end
 
   # The one trip the test made. Read from the server rather than carried, because the browser

@@ -46,7 +46,7 @@ defmodule Offgrid.Pages.NewTripPage do
           <p class="sub">Name it, pick a map, bring your people.</p>
 
           <label>Name</label>
-          <input class="inp" value={@name} $change={:edit, field: :name} />
+          <input class="inp" id="trip_name" value={@name} $change={:edit, field: :name} />
 
           <div class="pair">
             <div>

@@ -25,6 +25,7 @@ defmodule Offgrid.Components.MemberInput do
     ~HOLO"""
     <input
       class="inp"
+      id="member_email"
       placeholder="Add a member by email…"
       value={@email}
       $change={:edit_email}

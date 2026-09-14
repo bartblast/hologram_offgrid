@@ -39,6 +39,7 @@ defmodule Offgrid.Pages.LogInPage do
           <label>Email</label>
           <input
             class="inp"
+            id="log_in_email"
             type="email"
             value={@email}
             $change={:edit, field: :email}
@@ -48,6 +49,7 @@ defmodule Offgrid.Pages.LogInPage do
           <label>Password</label>
           <input
             class="inp"
+            id="log_in_password"
             type="password"
             value={@password}
             $change={:edit, field: :password}

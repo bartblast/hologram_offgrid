@@ -110,43 +110,57 @@ defmodule Offgrid.PresenceTest do
       [editing: editing, present: present]
     end
 
-    test "lets somebody go when nothing newer has been heard", %{editing: e, present: p} do
-      assert depart(p, e, "anna", 3) == {[@tom], %{}}
+    test "lets somebody go when nothing newer has been heard", %{
+      editing: editing,
+      present: present
+    } do
+      assert depart(present, editing, "anna", 3) == {[@tom], %{}}
     end
 
-    test "keeps somebody who has spoken since the check was queued", %{editing: e, present: p} do
-      newer = edit(e, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 4})
+    test "keeps somebody who has spoken since the check was queued", %{
+      editing: editing,
+      present: present
+    } do
+      newer = edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 4})
 
-      assert depart(p, newer, "anna", 3) == {p, newer}
+      assert depart(present, newer, "anna", 3) == {present, newer}
     end
 
-    test "leaves somebody already gone alone", %{editing: e, present: p} do
-      assert depart(p, e, "mira", 1) == {p, e}
+    test "leaves somebody already gone alone", %{editing: editing, present: present} do
+      assert depart(present, editing, "mira", 1) == {present, editing}
     end
   end
 
-  describe "on_stop/2 and on_field/3" do
+  describe "on_field/3" do
     setup do
-      editing =
-        %{}
-        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 1})
-        |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
-        |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: :name, seq: 1})
-
-      [editing: editing]
+      [editing: editing_two_stops()]
     end
 
-    test "on_stop lists everyone on that stop, whatever field", %{editing: editing} do
+    test "lists only those in that field of that stop", %{editing: editing} do
+      assert on_field(editing, "ryokan", :name) == [%{id: "anna", initials: "AK"}]
+      assert on_field(editing, "ryokan", :description) == []
+      assert on_field(editing, "fushimi", :name) == [%{id: "mira", initials: "MV"}]
+    end
+  end
+
+  describe "on_stop/2" do
+    setup do
+      [editing: editing_two_stops()]
+    end
+
+    test "lists everyone on that stop, whatever field", %{editing: editing} do
       assert Enum.sort_by(on_stop(editing, "ryokan"), & &1.id) == [
                %{field: :name, id: "anna", initials: "AK"},
                %{field: nil, id: "tom", initials: "TR"}
              ]
     end
+  end
 
-    test "on_field lists only those in that field of that stop", %{editing: editing} do
-      assert on_field(editing, "ryokan", :name) == [%{id: "anna", initials: "AK"}]
-      assert on_field(editing, "ryokan", :description) == []
-      assert on_field(editing, "fushimi", :name) == [%{id: "mira", initials: "MV"}]
-    end
+  # Anna in the name of one stop, Tom on it with nothing focused, and Mira on another.
+  defp editing_two_stops do
+    %{}
+    |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 1})
+    |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
+    |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: :name, seq: 1})
   end
 end

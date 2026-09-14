@@ -6,8 +6,6 @@ defmodule Offgrid.Features.AuthTest do
   alias Offgrid.Pages.TripPage
   alias Offgrid.Pages.TripsPage
 
-  @password "hakone-2026"
-
   # A trip, because the trip screen is where a face proves a session was made.
   setup do
     reset_data()
@@ -17,11 +15,7 @@ defmodule Offgrid.Features.AuthTest do
 
   feature "signs up, logs out and comes back", %{session: session, trip: trip} do
     session
-    |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
-    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 2), with: @password)
-    |> click(button("Create account"))
+    |> sign_up("Nora Vale", "nora@offgrid.test")
     # Signing up leaves you signed in on your trips list, empty for a new account. The trip
     # screen shows the proof: the initials derived from the name.
     |> assert_page(TripsPage)
@@ -31,10 +25,7 @@ defmodule Offgrid.Features.AuthTest do
     |> visit(TripsPage)
     |> click(button("Log out"))
     |> assert_page(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: @password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
+    |> log_in("nora@offgrid.test")
     |> visit(TripPage, id: trip.id)
     |> assert_text(css(".faces"), "NV")
   end
@@ -42,9 +33,9 @@ defmodule Offgrid.Features.AuthTest do
   feature "signs up on Enter", %{session: session} do
     session
     |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
-    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> fill_in(css("#sign_up_name"), with: "Nora Vale")
+    |> fill_in(css("#sign_up_email"), with: "nora@offgrid.test")
+    |> fill_in(css("#sign_up_password"), with: password())
     |> send_keys([:enter])
     |> assert_page(TripsPage)
   end
@@ -54,8 +45,8 @@ defmodule Offgrid.Features.AuthTest do
 
     session
     |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: @password)
+    |> fill_in(css("#log_in_email"), with: "nora@offgrid.test")
+    |> fill_in(css("#log_in_password"), with: password())
     |> send_keys([:enter])
     |> assert_page(TripsPage)
   end
@@ -63,8 +54,8 @@ defmodule Offgrid.Features.AuthTest do
   feature "asks for a name on the sign-up card", %{session: session} do
     session
     |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> fill_in(css("#sign_up_email"), with: "nora@offgrid.test")
+    |> fill_in(css("#sign_up_password"), with: password())
     |> click(button("Create account"))
     |> assert_text(css(".card"), "Tell us your name.")
     |> assert_page(SignUpPage)
@@ -75,8 +66,8 @@ defmodule Offgrid.Features.AuthTest do
   feature "asks for an email on the sign-up card", %{session: session} do
     session
     |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
-    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> fill_in(css("#sign_up_name"), with: "Nora Vale")
+    |> fill_in(css("#sign_up_password"), with: password())
     |> click(button("Create account"))
     |> assert_text(css(".card"), "Enter your email.")
     |> assert_page(SignUpPage)
@@ -84,15 +75,11 @@ defmodule Offgrid.Features.AuthTest do
 
   feature "wants a real password", %{session: session} do
     session
-    |> visit(SignUpPage)
-    |> fill_in(css(".card .inp", at: 0), with: "Nora Vale")
-    |> fill_in(css(".card .inp", at: 1), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 2), with: "short")
-    |> click(button("Create account"))
+    |> sign_up("Nora Vale", "nora@offgrid.test", "short")
     |> assert_text(css(".card"), "Choose a password of at least 8 characters.")
     |> assert_page(SignUpPage)
     # Nothing was written for the short one: the same address goes through afterwards.
-    |> fill_in(css(".card .inp", at: 2), with: @password)
+    |> fill_in(css("#sign_up_password"), with: password())
     |> click(button("Create account"))
     |> assert_page(TripsPage)
   end
@@ -101,11 +88,7 @@ defmodule Offgrid.Features.AuthTest do
     create_user("Nora Vale", "nora@offgrid.test")
 
     session
-    |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: @password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
+    |> log_in("nora@offgrid.test")
     # The root is a door, not a page: it never renders, so what proves it is where you end up.
     |> visit("/")
     |> assert_page(TripsPage)
@@ -132,11 +115,7 @@ defmodule Offgrid.Features.AuthTest do
     create_user("Nora Vale", "nora@offgrid.test")
 
     session
-    |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: @password)
-    |> click(button("Log in"))
-    |> assert_page(TripsPage)
+    |> log_in("nora@offgrid.test")
     |> visit("/log-in")
     |> assert_page(TripsPage)
     |> visit("/sign-up")
@@ -148,8 +127,8 @@ defmodule Offgrid.Features.AuthTest do
 
     session
     |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "nora@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: "not-the-password")
+    |> fill_in(css("#log_in_email"), with: "nora@offgrid.test")
+    |> fill_in(css("#log_in_password"), with: "not-the-password")
     |> click(button("Log in"))
     |> assert_text(css(".card"), "Wrong email or password.")
     |> assert_page(LogInPage)
@@ -164,8 +143,8 @@ defmodule Offgrid.Features.AuthTest do
 
     session
     |> visit(LogInPage)
-    |> fill_in(css(".card .inp", at: 0), with: "stranger@offgrid.test")
-    |> fill_in(css(".card .inp", at: 1), with: @password)
+    |> fill_in(css("#log_in_email"), with: "stranger@offgrid.test")
+    |> fill_in(css("#log_in_password"), with: password())
     |> click(button("Log in"))
     # The same sentence the wrong-password case gets. Saying "no such account" here would
     # tell whoever is guessing which addresses are worth guessing at.

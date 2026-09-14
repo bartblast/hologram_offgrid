@@ -1,27 +1,16 @@
 defmodule Offgrid.Features.SocialTest do
   use Offgrid.FeatureCase, async: false
-  use Hologram.DB
 
-  alias Hologram.DB
-  alias Offgrid.Entities.Stop
+  alias Wallaby.Element
 
   setup do
     reset_data()
 
     trip = create_trip()
 
-    stop =
-      %{
-        date: ~D[2026-03-29],
-        lat: 35.0116,
-        lng: 135.7681,
-        name: "Fushimi Inari",
-        trip_id: trip.id
-      }
-      |> Stop.new()
-      |> DB.create!()
+    create_stop(trip, date: ~D[2026-03-29], lat: 35.0116, lng: 135.7681, name: "Fushimi Inari")
 
-    [stop: stop, trip: trip]
+    [trip: trip]
   end
 
   # Everything two people can say to each other on this screen, in one sitting. Each half is
@@ -29,8 +18,8 @@ defmodule Offgrid.Features.SocialTest do
   @sessions 2
   feature "carries a remark, a line, a ping and an arrival between two browsers",
           %{sessions: [nora, tom], trip: trip} do
-    nora = sign_in_as_member(nora, trip)
-    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+    nora = sign_in(nora, trip)
+    tom = sign_in(tom, trip, name: "Tom Reyes", email: "tom@offgrid.test")
 
     # Arriving is itself the first thing that crosses.
     assert_text(nora, css(".faces"), "TR")
@@ -39,7 +28,7 @@ defmodule Offgrid.Features.SocialTest do
     # A remark, written on one screen and read on the other.
     nora
     |> click(css(".stop", text: "Fushimi Inari"))
-    |> fill_in(css(".editor .inp", at: 2), with: "Before eight, the crowds come at nine")
+    |> fill_in(css("#stop_comment"), with: "Before eight, the crowds come at nine")
     |> send_keys([:enter])
 
     tom
@@ -56,7 +45,7 @@ defmodule Offgrid.Features.SocialTest do
     await_pending_writes(tom, 0)
     assert_has(nora, css(".ink-line", count: 1, visible: :any))
 
-    stroke = nora |> find(css(".ink-line", visible: :any)) |> Wallaby.Element.attr("stroke")
+    stroke = nora |> find(css(".ink-line", visible: :any)) |> Element.attr("stroke")
     assert stroke == "#30b0c7"
 
     # A ping, which is the one thing here that leaves nothing behind.

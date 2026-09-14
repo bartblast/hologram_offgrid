@@ -15,7 +15,7 @@ defmodule Offgrid.Features.InkTest do
 
   feature "draws a stroke that follows the pointer, once the pen is armed",
           %{session: session, trip: trip} do
-    session = sign_in_as_member(session, trip)
+    session = sign_in(session, trip)
 
     # Unarmed the layer takes no pointer at all, so a drag over the map leaves no ink. Arming
     # and disarming the + after it proves the drag was handled before the ink is looked for.
@@ -70,22 +70,11 @@ defmodule Offgrid.Features.InkTest do
 
   feature "rubs out a line with the pen out, and only one it may", %{session: session, trip: trip} do
     other = create_user("Tom Reyes", "tom@offgrid.test")
-
-    theirs =
-      %{
-        author_id: other.id,
-        color: "#30b0c7",
-        # A line in the map's own coordinates, the way one is stored: longitude across,
-        # latitude down.
-        points: "M135.7,-35.1 L135.9,-35.2",
-        trip_id: trip.id
-      }
-      |> Sketch.new()
-      |> DB.create!()
+    theirs = create_sketch(other, trip, color: "#30b0c7")
 
     session =
       session
-      |> sign_in_as_member(trip)
+      |> sign_in(trip)
       |> click(css(".pen"))
       # Straight, so the middle of the line is the middle of its box - what a click aims at.
       |> drag([{200, 150}, {240, 190}, {280, 230}])
@@ -107,7 +96,7 @@ defmodule Offgrid.Features.InkTest do
   feature "draws in the colour that was picked", %{session: session, trip: trip} do
     session =
       session
-      |> sign_in_as_member(trip)
+      |> sign_in(trip)
       # The row of colours belongs to the pen, so it is not there until the pen is out.
       |> refute_has(css(".cpop"))
       |> click(css(".pen"))
@@ -142,7 +131,7 @@ defmodule Offgrid.Features.InkTest do
 
   feature "a tap is not a line", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".pen"))
     |> drag([{200, 150}])
     # Putting the pen away proves the tap was handled, and any write it made has shipped by the
@@ -157,7 +146,7 @@ defmodule Offgrid.Features.InkTest do
 
   feature "the map can only be waiting for one thing", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".pen"))
     |> assert_has(css(".pen.on"))
     |> click(css(".addb"))

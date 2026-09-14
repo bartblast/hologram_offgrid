@@ -1,9 +1,6 @@
 defmodule Offgrid.Features.StopCrudTest do
   use Offgrid.FeatureCase, async: false
 
-  alias Hologram.DB
-  alias Offgrid.Entities.Stop
-
   setup do
     reset_data()
 
@@ -14,12 +11,10 @@ defmodule Offgrid.Features.StopCrudTest do
     session: session,
     trip: trip
   } do
-    %{date: ~D[2026-03-28], name: "Haneda arrival", time: ~T[09:00:00], trip_id: trip.id}
-    |> Stop.new()
-    |> DB.create!()
+    create_stop(trip, date: ~D[2026-03-28], name: "Haneda arrival", time: ~T[09:00:00])
 
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> assert_text(css(".lpanel"), "Haneda arrival")
     |> assert_has(css(".day", count: 1))
     |> refute_has(css(".pin"))
@@ -33,7 +28,7 @@ defmodule Offgrid.Features.StopCrudTest do
     |> assert_text(css(".ed-sub"), "Sat 28 Mar")
     |> assert_has(css(".pin.mine", count: 1))
     |> refute_has(css(".addb.on"))
-    |> fill_in(css(".editor .inp", at: 0), with: "Tsukiji breakfast")
+    |> fill_in(css("#stop_name"), with: "Tsukiji breakfast")
     # The title reads the same row the list does, so renaming shows up in both at once.
     |> assert_text(css(".ed-title"), "Tsukiji breakfast")
     |> assert_text(css(".stop.open"), "Tsukiji breakfast")
@@ -56,12 +51,10 @@ defmodule Offgrid.Features.StopCrudTest do
   @sessions 2
   feature "closes the editor when somebody else deletes the stop",
           %{sessions: [nora, tom], trip: trip} do
-    %{date: ~D[2026-03-29], name: "Ryokan", trip_id: trip.id}
-    |> Stop.new()
-    |> DB.create!()
+    create_stop(trip, date: ~D[2026-03-29], name: "Ryokan")
 
-    nora = sign_in_as_member(nora, trip)
-    tom = sign_in_as(tom, trip, "Tom Reyes", "tom@offgrid.test")
+    nora = sign_in(nora, trip)
+    tom = sign_in(tom, trip, name: "Tom Reyes", email: "tom@offgrid.test")
 
     nora
     |> click(css(".stop", text: "Ryokan"))
@@ -81,12 +74,10 @@ defmodule Offgrid.Features.StopCrudTest do
   end
 
   feature "closes the editor from its own button", %{session: session, trip: trip} do
-    %{date: ~D[2026-03-28], name: "Haneda arrival", trip_id: trip.id}
-    |> Stop.new()
-    |> DB.create!()
+    create_stop(trip, date: ~D[2026-03-28], name: "Haneda arrival")
 
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".stop", text: "Haneda arrival"))
     |> assert_text(css(".ed-title"), "Haneda arrival")
     |> click(css(".ed-close"))
@@ -97,7 +88,7 @@ defmodule Offgrid.Features.StopCrudTest do
 
   feature "places nothing until armed, and Escape disarms", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     # Unarmed, a click on the map is a ping - and the ping appearing is what proves the click
     # was handled before the editor is looked for.
     |> click(css("#canvas"))

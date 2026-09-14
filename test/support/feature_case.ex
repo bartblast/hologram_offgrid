@@ -9,8 +9,7 @@ defmodule Offgrid.FeatureCase do
           trip = create_trip()
 
           session
-          |> sign_in_as_member(trip)
-          |> visit(TripPage, id: trip.id)
+          |> sign_in(trip)
           |> click(css(".addb"))
           |> click(css("#canvas"))
           |> assert_text(css(".ed-title"), "New stop")

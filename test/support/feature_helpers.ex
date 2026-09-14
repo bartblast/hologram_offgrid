@@ -5,7 +5,7 @@ defmodule Offgrid.FeatureHelpers do
   """
 
   import Hologram.Test.FeatureHelpers, only: [assert_page: 2, visit: 3]
-  import Wallaby.Query, only: [button: 1, css: 2]
+  import Wallaby.Query, only: [button: 1, css: 1, css: 2]
 
   alias Hologram.Auth
   alias Hologram.Auth.RoleGrant
@@ -19,6 +19,7 @@ defmodule Offgrid.FeatureHelpers do
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
+  alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripPage
   alias Offgrid.Pages.TripsPage
   alias Wallaby.Browser
@@ -28,6 +29,31 @@ defmodule Offgrid.FeatureHelpers do
   alias Wallaby.StaleReferenceError
 
   @max_wait_time Application.compile_env(:wallaby, :max_wait_time, 3_000)
+
+  @typedoc """
+  One pointer event for `dispatch_pointer/3`: its kind, the element it is dispatched on, and
+  where it happens - an offset from the map's top left, or `:target` for just inside the
+  target's own top left.
+  """
+  @type pointer_event ::
+          {:down | :move | :up, pointer_target, {number, number} | :target}
+
+  @typedoc """
+  What a pointer event is dispatched on: the first element a CSS selector matches, the first
+  one it matches whose text includes the given string, or the document.
+  """
+  @type pointer_target :: String.t() | {String.t(), String.t()} | :document
+
+  @doc """
+  Asserts that the element `query` finds inside `parent` contains `text`, and returns
+  `parent` so it can sit in a pipe - Wallaby's version returns the element it found.
+  """
+  @spec assert_text(struct, Query.t(), String.t()) :: struct
+  def assert_text(parent, query, text) do
+    Browser.assert_text(parent, query, text)
+
+    parent
+  end
 
   @doc """
   Creates a basemap with the given name and slug and returns it.
@@ -50,6 +76,44 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
+  Creates a remark by the given author on the given stop and returns it.
+  """
+  @spec create_comment(struct, struct, String.t()) :: struct
+  def create_comment(author, stop, body) do
+    %{author_id: author.id, body: body, stop_id: stop.id}
+    |> Comment.new()
+    |> DB.create!()
+  end
+
+  @doc """
+  Creates a line by the given author on the given trip and returns it.
+
+  The colour and the points can be given. By default the line is red and short, stored the way
+  one is: an SVG path in the map's own coordinates, longitude across and latitude negated.
+  """
+  @spec create_sketch(struct, struct, keyword | map) :: struct
+  def create_sketch(author, trip, attrs \\ []) do
+    %{color: "#ff2d55", points: "M135.7,-35.1 L135.9,-35.2"}
+    |> Map.merge(Map.new(attrs))
+    |> Map.merge(%{author_id: author.id, trip_id: trip.id})
+    |> Sketch.new()
+    |> DB.create!()
+  end
+
+  @doc """
+  Creates a stop on the given trip and returns it. The attributes usually name it and give its
+  day; the rest are optional.
+  """
+  @spec create_stop(struct, keyword | map) :: struct
+  def create_stop(trip, attrs) do
+    attrs
+    |> Map.new()
+    |> Map.put(:trip_id, trip.id)
+    |> Stop.new()
+    |> DB.create!()
+  end
+
+  @doc """
   Creates a trip on a new Japan basemap and returns the trip.
   """
   @spec create_trip() :: struct
@@ -67,79 +131,51 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Creates a user with a real password hash and returns it. The password defaults to the one
-  the sign-in helpers type, so any user created here can log in.
+  Creates a user with a real password hash and returns it. The password defaults to
+  `password/0`, so any user created here can log in.
   """
   @spec create_user(String.t(), String.t(), String.t()) :: struct
-  def create_user(name, email, password \\ "hakone-2026") do
+  def create_user(name, email, password \\ password()) do
     %{email: email, name: name, password_hash: Bcrypt.hash_pwd_salt(password)}
     |> User.new()
     |> DB.create!()
   end
 
   @doc """
-  Signs the browser in as a new member of the given trip with the given name and email, and
-  returns the session on the trip screen. For the second browser in a two-browser feature.
+  Dispatches the given pointer events in order and returns the session. Offsets are measured
+  from the map's top left, which is where the ink layer starts too.
+
+  Dispatched by script, because a driver cannot hold a real drag half-way. With `delay:` (in
+  milliseconds) the events are spaced that far apart and the call returns before they finish.
   """
-  @spec sign_in_as(struct, struct, String.t(), String.t()) :: struct
-  def sign_in_as(session, trip, name, email) do
-    sign_in(session, trip, :member, name, email)
-  end
+  @spec dispatch_pointer(struct, [pointer_event], keyword) :: struct
+  def dispatch_pointer(session, events, opts \\ []) do
+    run =
+      case Keyword.get(opts, :delay) do
+        nil ->
+          "events.forEach(fire);"
 
-  @doc """
-  Signs the browser in as a new user with no role on the given trip, and returns the session
-  on the trip screen.
-  """
-  @spec sign_in_as_stranger(struct, struct, String.t(), String.t()) :: struct
-  def sign_in_as_stranger(session, trip, name, email) do
-    user = create_user(name, email)
+        delay ->
+          "events.forEach((event, index) => setTimeout(() => fire(event), index * #{delay}));"
+      end
 
-    log_in(session, trip, user.email)
-  end
+    Browser.execute_script(session, """
+    const box = document.getElementById('canvas').getBoundingClientRect();
+    const events = #{JSON.encode!(Enum.map(events, &encode_pointer_event/1))};
 
-  @doc """
-  Signs the browser in as a member of the given trip and returns the session on the trip
-  screen. The role is granted directly, and signing in goes through the log-in card.
-  """
-  @spec sign_in_as_member(struct, struct) :: struct
-  def sign_in_as_member(session, trip) do
-    sign_in(session, trip, :member, "Nora Vale", "member@offgrid.test")
-  end
+    const fire = ({type, selector, text, origin, x, y}) => {
+      const target = selector === null
+        ? document
+        : Array.from(document.querySelectorAll(selector)).find(element => text === null || element.textContent.includes(text));
+      const from = origin === 'target' ? target.getBoundingClientRect() : box;
 
-  @doc """
-  Signs the browser in as an organizer of the given trip and returns the session on the trip
-  screen. Organizers see the controls for adding and removing members.
-  """
-  @spec sign_in_as_organizer(struct, struct) :: struct
-  def sign_in_as_organizer(session, trip) do
-    sign_in(session, trip, :organizer, "Iris Kalm", "organizer@offgrid.test")
-  end
+      target.dispatchEvent(new PointerEvent(type, {bubbles: true, clientX: from.left + x, clientY: from.top + y}));
+    };
 
-  @doc """
-  Presses the pointer on the ink layer at the first offset (from its top left) and moves it
-  through the rest, leaving it down so a test can inspect a stroke mid-draw. Dispatched by
-  script, because a driver cannot hold a real drag half-way.
-  """
-  @spec press(struct, [{number, number}]) :: struct
-  def press(session, [{first_x, first_y} | rest]) do
-    moves =
-      Enum.map_join(rest, "\n", fn {x, y} ->
-        "layer.dispatchEvent(new PointerEvent('pointermove', at(#{x}, #{y})));"
-      end)
-
-    ink_script(session, """
-    layer.dispatchEvent(new PointerEvent('pointerdown', at(#{first_x}, #{first_y})));
-    #{moves}
+    #{run}
     """)
-  end
 
-  @doc """
-  Lifts the pointer from the ink layer at the given offset, which is what turns a stroke
-  into a row.
-  """
-  @spec release(struct, {number, number}) :: struct
-  def release(session, {x, y}) do
-    ink_script(session, "layer.dispatchEvent(new PointerEvent('pointerup', at(#{x}, #{y})));")
+    session
   end
 
   @doc """
@@ -172,34 +208,32 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Empties every table the app writes, in one statement - PostgreSQL refuses to truncate a
-  referenced table unless the tables referencing it go in the same statement.
+  Logs in through the log-in card with the given email and password, asserts it reached the
+  trips list, and returns the session.
   """
-  @spec reset_data() :: :ok
-  def reset_data do
-    tables =
-      Enum.map_join(
-        [Comment, Sketch, Stop, Trip, RoleGrant, User, Basemap],
-        ", ",
-        fn entity_type ->
-          ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
-        end
-      )
-
-    {:ok, _result} = Connection.query("TRUNCATE #{tables}", [])
-
-    :ok
+  @spec log_in(struct, String.t(), String.t()) :: struct
+  def log_in(session, email, password \\ password()) do
+    session
+    |> visit(LogInPage, [])
+    |> Browser.fill_in(css("#log_in_email"), with: email)
+    |> Browser.fill_in(css("#log_in_password"), with: password)
+    |> Browser.click(button("Log in"))
+    |> assert_page(TripsPage)
   end
 
   @doc """
-  Asserts that the element `query` finds inside `parent` contains `text`, and returns
-  `parent` so it can sit in a pipe - Wallaby's version returns the element it found.
+  The one password the suite's users have.
   """
-  @spec assert_text(struct, Query.t(), String.t()) :: struct
-  def assert_text(parent, query, text) do
-    Browser.assert_text(parent, query, text)
+  @spec password() :: String.t()
+  def password, do: "hakone-2026"
 
-    parent
+  @doc """
+  Presses the pointer on the ink layer at the first offset and moves it through the rest,
+  leaving it down so a test can inspect a stroke mid-draw.
+  """
+  @spec press(struct, [{number, number}]) :: struct
+  def press(session, [first | rest]) do
+    dispatch_pointer(session, [{:down, ".ink", first} | Enum.map(rest, &{:move, ".ink", &1})])
   end
 
   @doc """
@@ -222,36 +256,87 @@ defmodule Offgrid.FeatureHelpers do
     end
   end
 
-  defp ink_script(session, body) do
-    Browser.execute_script(session, """
-    const layer = document.querySelector('.ink');
-    const box = layer.getBoundingClientRect();
-    const at = (x, y) => ({bubbles: true, clientX: box.left + x, clientY: box.top + y});
-
-    #{body}
-    """)
-
-    session
+  @doc """
+  Lifts the pointer from the ink layer at the given offset, which is what turns a stroke
+  into a row.
+  """
+  @spec release(struct, {number, number}) :: struct
+  def release(session, at) do
+    dispatch_pointer(session, [{:up, ".ink", at}])
   end
 
-  # Through the log-in card, because only the server can mint a session cookie. Logging in
-  # lands on the trips list, so the helper then opens the trip.
-  defp log_in(session, trip, email) do
+  @doc """
+  Empties every table the app writes, in one statement - PostgreSQL refuses to truncate a
+  referenced table unless the tables referencing it go in the same statement.
+  """
+  @spec reset_data() :: :ok
+  def reset_data do
+    tables =
+      Enum.map_join(
+        [Comment, Sketch, Stop, Trip, RoleGrant, User, Basemap],
+        ", ",
+        fn entity_type ->
+          ~s("hologram_data"."#{Mapper.table_name(entity_type)}")
+        end
+      )
+
+    {:ok, _result} = Connection.query("TRUNCATE #{tables}", [])
+
+    :ok
+  end
+
+  @doc """
+  Returns every point of the route on the map, in route order, as `{x, y}` in hundredths of
+  the map.
+
+  Found with `visible: :any` because a browser calls a line through a single point invisible.
+  """
+  @spec route_points(struct) :: [{float, float}]
+  def route_points(session) do
     session
-    |> visit(LogInPage, [])
-    |> Browser.fill_in(css(".card .inp", at: 0), with: email)
-    |> Browser.fill_in(css(".card .inp", at: 1), with: "hakone-2026")
-    |> Browser.click(button("Log in"))
-    |> assert_page(TripsPage)
+    |> Browser.find(css(".lay polyline", visible: :any))
+    |> Element.attr("points")
+    |> String.split(" ", trim: true)
+    |> Enum.map(fn pair ->
+      [x, y] = String.split(pair, ",")
+
+      {String.to_float(x), String.to_float(y)}
+    end)
+  end
+
+  @doc """
+  Signs the browser in as a new user and returns the session on the given trip's screen.
+
+  `role:` is the role granted on the trip: `:member` (the default), `:organizer`, or nil for
+  somebody with no role on it. The name and email default per role, and a nil role needs both.
+  The role is granted directly, and signing in goes through the log-in card, because only the
+  server can mint a session cookie.
+  """
+  @spec sign_in(struct, struct, keyword) :: struct
+  def sign_in(session, trip, opts \\ []) do
+    role = Keyword.get(opts, :role, :member)
+    {name, email} = identity(role, opts)
+
+    user = create_user(name, email)
+    :ok = grant(user, trip, role)
+
+    session
+    |> log_in(user.email)
     |> visit(TripPage, id: trip.id)
   end
 
-  defp sign_in(session, trip, role, name, email) do
-    user = create_user(name, email)
-
-    :ok = Auth.grant_role(user, trip, role)
-
-    log_in(session, trip, user.email)
+  @doc """
+  Fills in the sign-up card and submits it, and returns the session. It does not assert where
+  that lands, so a feature can check a refusal too.
+  """
+  @spec sign_up(struct, String.t(), String.t(), String.t()) :: struct
+  def sign_up(session, name, email, password \\ password()) do
+    session
+    |> visit(SignUpPage, [])
+    |> Browser.fill_in(css("#sign_up_name"), with: name)
+    |> Browser.fill_in(css("#sign_up_email"), with: email)
+    |> Browser.fill_in(css("#sign_up_password"), with: password)
+    |> Browser.click(button("Create account"))
   end
 
   defp apply_at(query, elements) do
@@ -264,6 +349,19 @@ defmodule Offgrid.FeatureHelpers do
 
   defp current_time do
     :erlang.monotonic_time(:milli_seconds)
+  end
+
+  # Six pixels in from the target's own top left lands on it whatever its size.
+  defp encode_pointer_event({kind, target, at}) do
+    {selector, text} = pointer_selector(target)
+
+    {origin, x, y} =
+      case at do
+        :target -> {"target", 6, 6}
+        {x, y} -> {"canvas", x, y}
+      end
+
+    %{origin: origin, selector: selector, text: text, type: "pointer#{kind}", x: x, y: y}
   end
 
   defp filter_by_selected(query, elements) do
@@ -291,6 +389,26 @@ defmodule Offgrid.FeatureHelpers do
       false -> {:ok, Enum.reject(elements, &Element.visible?/1)}
     end
   end
+
+  defp grant(_user, _trip, nil), do: :ok
+
+  defp grant(user, trip, role), do: Auth.grant_role(user, trip, role)
+
+  defp identity(nil, opts), do: {Keyword.fetch!(opts, :name), Keyword.fetch!(opts, :email)}
+
+  defp identity(:member, opts) do
+    {Keyword.get(opts, :name, "Nora Vale"), Keyword.get(opts, :email, "member@offgrid.test")}
+  end
+
+  defp identity(:organizer, opts) do
+    {Keyword.get(opts, :name, "Iris Kalm"), Keyword.get(opts, :email, "organizer@offgrid.test")}
+  end
+
+  defp pointer_selector(:document), do: {nil, nil}
+
+  defp pointer_selector({selector, text}), do: {selector, text}
+
+  defp pointer_selector(selector), do: {selector, nil}
 
   defp query_once(%{driver: driver} = parent, query) do
     with {:ok, %Query{} = validated_query} <- Query.validate(query),

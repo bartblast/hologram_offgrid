@@ -40,11 +40,12 @@ defmodule Offgrid.Pages.SignUpPage do
           <p class="sub">Offgrid works wherever you do.</p>
 
           <label>Name</label>
-          <input class="inp" value={@name} $change={:edit, field: :name} $key_down.enter="sign_up" />
+          <input class="inp" id="sign_up_name" value={@name} $change={:edit, field: :name} $key_down.enter="sign_up" />
 
           <label>Email</label>
           <input
             class="inp"
+            id="sign_up_email"
             type="email"
             value={@email}
             $change={:edit, field: :email}
@@ -58,6 +59,7 @@ defmodule Offgrid.Pages.SignUpPage do
           <label>Password</label>
           <input
             class="inp"
+            id="sign_up_password"
             type="password"
             value={@password}
             $change={:edit, field: :password}

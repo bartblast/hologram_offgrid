@@ -1,5 +1,6 @@
 defmodule Offgrid.Entities.SketchTest do
-  use ExUnit.Case, async: true
+  # Not async: the Auth.can?/3 checks empty the database, which other modules write too.
+  use ExUnit.Case, async: false
 
   import Offgrid.Entities.Sketch, only: [new: 1]
   import Offgrid.FeatureHelpers, only: [create_trip: 0, create_user: 2, reset_data: 0]

@@ -13,7 +13,7 @@ defmodule Offgrid.Features.MembersTest do
     create_user("Anna Kim", "anna@offgrid.test")
 
     session
-    |> sign_in_as_organizer(trip)
+    |> sign_in(trip, role: :organizer)
     |> click(css(".facepile"))
     # Anna has an account and no role on this trip, so she is nowhere in the list yet.
     |> assert_has(css(".mrow", count: 1))
@@ -30,7 +30,7 @@ defmodule Offgrid.Features.MembersTest do
     :ok = Auth.grant_role(anna, trip, :member)
 
     session
-    |> sign_in_as_organizer(trip)
+    |> sign_in(trip, role: :organizer)
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     # The only cross on screen is Anna's - an organizer's own row carries none.
@@ -39,13 +39,11 @@ defmodule Offgrid.Features.MembersTest do
     |> assert_has(css(".mrow", count: 1))
     |> assert_text(css(".members"), "Iris Kalm")
     |> refute_has(css(".mrow .remove"))
-    |> assert_text(css(".members"), "Iris Kalm")
-    |> refute_has(css(".mrow .remove"))
   end
 
   feature "names an address nobody uses", %{session: session, trip: trip} do
     session
-    |> sign_in_as_organizer(trip)
+    |> sign_in(trip, role: :organizer)
     |> click(css(".facepile"))
     |> fill_in(css(".members .inp"), with: "nobody@offgrid.test")
     |> send_keys([:enter])
@@ -55,7 +53,7 @@ defmodule Offgrid.Features.MembersTest do
 
   feature "opens and closes the list from the faces", %{session: session, trip: trip} do
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> refute_has(css(".members"))
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Nora Vale")
@@ -73,7 +71,7 @@ defmodule Offgrid.Features.MembersTest do
 
     session
     # Signing in grants this browser's user :member on the trip.
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".facepile"))
     # Anna and Nora - not Anna twice and Nora, which is what the grant store holds.
     |> assert_has(css(".mrow", count: 2))
@@ -88,7 +86,7 @@ defmodule Offgrid.Features.MembersTest do
     :ok = Auth.grant_role(anna, trip, :member)
 
     session
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     # A member sees who is on the trip and cannot change it, which the browser decides for
@@ -104,7 +102,7 @@ defmodule Offgrid.Features.MembersTest do
 
     session
     # Signing in grants this browser's user :member on the trip.
-    |> sign_in_as_member(trip)
+    |> sign_in(trip)
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     |> assert_text(css(".members"), "Nora Vale")
@@ -116,7 +114,7 @@ defmodule Offgrid.Features.MembersTest do
 
   feature "shows nothing to somebody with no role on the trip", %{session: session, trip: trip} do
     session
-    |> sign_in_as_stranger(trip, "Mira Vale", "stranger@offgrid.test")
+    |> sign_in(trip, role: nil, name: "Mira Vale", email: "stranger@offgrid.test")
     # The trip's own rules answer the header too, so a stranger is not even told its name.
     |> refute_has(css(".lp-title"))
     # Opened, so that finding nothing is the policy answering and not the panel being shut.
