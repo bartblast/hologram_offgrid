@@ -16,7 +16,6 @@ defmodule Offgrid.Pages.SignUpPage do
   alias Offgrid.Entities.User
   alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.TripsPage
-  alias Offgrid.Password
 
   route "/sign-up"
 
@@ -112,7 +111,11 @@ defmodule Offgrid.Pages.SignUpPage do
 
   defp register(params, server) do
     result =
-      %{email: params.email, name: params.name, password_hash: Password.hash(params.password)}
+      %{
+        email: params.email,
+        name: params.name,
+        password_hash: User.hash_password(params.password)
+      }
       |> User.new()
       |> trust()
       |> DB.create()

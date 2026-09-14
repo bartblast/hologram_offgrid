@@ -19,9 +19,9 @@ defmodule Offgrid.Components.Ink do
 
   alias Hologram.Auth
   alias Offgrid.Device
+  alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip
-  alias Offgrid.Geo
   alias Offgrid.Queries
   alias Offgrid.Stroke
   alias Offgrid.Utils.CSS
@@ -235,7 +235,7 @@ defmodule Offgrid.Components.Ink do
   defp sketch_path(points, trip) do
     points
     |> Enum.map(fn {x, y} ->
-      {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
+      {lat, lng} = Basemap.from_offset(trip.basemap, x, y, 100, 100)
 
       {lng, -lat}
     end)
@@ -257,8 +257,9 @@ defmodule Offgrid.Components.Ink do
 
   defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)
 
-  # The trip's own bounds, so every saved path needs no arithmetic at all.
-  defp view_box(nil), do: Geo.view_box(nil)
+  # The trip's own bounds, so every saved path needs no arithmetic at all. Nothing is drawn
+  # until the trip is readable, and the unit box stands in until then.
+  defp view_box(nil), do: "0 0 100 100"
 
-  defp view_box(trip), do: Geo.view_box(trip.basemap)
+  defp view_box(trip), do: Basemap.view_box(trip.basemap)
 end

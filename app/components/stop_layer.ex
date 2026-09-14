@@ -15,9 +15,9 @@ defmodule Offgrid.Components.StopLayer do
   use Hologram.DB
 
   alias Offgrid.Device
+  alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
-  alias Offgrid.Geo
   alias Offgrid.Queries
   alias Offgrid.Utils.CSS
 
@@ -81,7 +81,7 @@ defmodule Offgrid.Components.StopLayer do
 
   # The hundredths are offsets in a box a hundred wide, so the projection needs no other size.
   defp drop(component, drag, trip) do
-    {lat, lng} = Geo.from_offset(drag.x, drag.y, 100, 100, trip.basemap)
+    {lat, lng} = Basemap.from_offset(trip.basemap, drag.x, drag.y, 100, 100)
 
     DB.update!(Stop, drag.id, %{lat: lat, lng: lng})
 
@@ -96,13 +96,13 @@ defmodule Offgrid.Components.StopLayer do
 
   defp placed(_stops, nil), do: []
 
-  defp placed(stops, trip), do: Enum.filter(stops, &Geo.placed?(&1, trip.basemap))
+  defp placed(stops, trip), do: Enum.filter(stops, &Basemap.placed?(trip.basemap, &1))
 
   # Under the pointer for the stop being dragged, once it has moved, and where its row says
   # otherwise.
   defp position(%{id: id}, _trip, %{id: id, x: x, y: y}) when x != nil, do: {x, y}
 
-  defp position(stop, trip, _drag), do: Geo.to_percent(stop.lat, stop.lng, trip.basemap)
+  defp position(stop, trip, _drag), do: Basemap.to_percent(trip.basemap, stop.lat, stop.lng)
 
   defp route(stops, trip, drag) do
     stops

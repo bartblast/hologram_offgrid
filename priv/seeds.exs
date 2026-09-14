@@ -19,7 +19,6 @@ alias Offgrid.Entities.Sketch
 alias Offgrid.Entities.Stop
 alias Offgrid.Entities.Trip
 alias Offgrid.Entities.User
-alias Offgrid.Password
 alias Offgrid.Stroke
 
 # Reads the row matching `match`, or creates one from `attrs`. Tells the caller which happened,
@@ -101,7 +100,7 @@ people =
       {:lara, "Lara Croft", "lara@offgrid.test"}
     ],
     fn {key, name, email} ->
-      attrs = %{email: email, name: name, password_hash: Password.hash(password)}
+      attrs = %{email: email, name: name, password_hash: User.hash_password(password)}
 
       {_status, user} = find_or_create.(User, [email: email], attrs, email)
 

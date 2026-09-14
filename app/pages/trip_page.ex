@@ -30,8 +30,8 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
   alias Offgrid.Device
+  alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Stop
-  alias Offgrid.Geo
   alias Offgrid.Presence
   alias Offgrid.Queries
   alias Offgrid.TripChannel
@@ -481,7 +481,7 @@ defmodule Offgrid.Pages.TripPage do
 
   # The hundredths are offsets in a box a hundred wide, so the projection needs no other size.
   defp place(component, %{x: x, y: y}, trip) do
-    {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
+    {lat, lng} = Basemap.from_offset(trip.basemap, x, y, 100, 100)
 
     stop =
       %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}

@@ -18,6 +18,15 @@ defmodule Offgrid.Entities.User do
   allow :read
 
   @doc """
+  Returns the salted hash to store for the given password.
+
+  Only server code calls it, so Bcrypt, a native library no browser can run, never reaches a
+  client bundle.
+  """
+  @spec hash_password(String.t()) :: String.t()
+  def hash_password(password), do: Bcrypt.hash_pwd_salt(password)
+
+  @doc """
   Returns the first letter of each of the first two words of the user's name, upper case:
   "Nora Vale" is "NV".
   """
@@ -29,4 +38,20 @@ defmodule Offgrid.Entities.User do
     |> Enum.map_join("", &String.first/1)
     |> String.upcase()
   end
+
+  @doc """
+  Returns whether the given password is the given user's.
+
+  With no user, as for an unknown email, it still spends a hash comparison before answering
+  false, so a log in takes as long either way and the timing does not reveal which emails have
+  accounts.
+  """
+  @spec valid_password?(t | nil, String.t()) :: boolean
+  def valid_password?(nil, _password) do
+    Bcrypt.no_user_verify()
+
+    false
+  end
+
+  def valid_password?(user, password), do: Bcrypt.verify_pass(password, user.password_hash)
 end

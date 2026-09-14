@@ -15,7 +15,6 @@ defmodule Offgrid.Pages.LogInPage do
   alias Offgrid.Entities.User
   alias Offgrid.Pages.SignUpPage
   alias Offgrid.Pages.TripsPage
-  alias Offgrid.Password
 
   route "/log-in"
 
@@ -97,7 +96,7 @@ defmodule Offgrid.Pages.LogInPage do
       |> one()
       |> DB.read()
 
-    if Password.valid?(user, params.password) do
+    if User.valid_password?(user, params.password) do
       server
       |> put_user_id(user.id)
       |> put_action(:logged_in)

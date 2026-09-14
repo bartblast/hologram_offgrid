@@ -1,7 +1,8 @@
 defmodule Offgrid.Entities.UserTest do
   use ExUnit.Case, async: true
 
-  import Offgrid.Entities.User, only: [initials: 1, new: 1]
+  import Offgrid.Entities.User,
+    only: [hash_password: 1, initials: 1, new: 1, valid_password?: 2]
 
   alias Hologram.Entity
   alias Offgrid.Entities.User
@@ -44,6 +45,12 @@ defmodule Offgrid.Entities.UserTest do
     end
   end
 
+  describe "hash_password/1" do
+    test "salts, so the same password hashes differently each time" do
+      assert hash_password("japan-2026") != hash_password("japan-2026")
+    end
+  end
+
   describe "initials/1" do
     test "takes the first letter of the first two words" do
       assert initials(new(name: "Nora Vale")) == "NV"
@@ -71,6 +78,24 @@ defmodule Offgrid.Entities.UserTest do
              } = user
 
       assert is_binary(user.id)
+    end
+  end
+
+  describe "valid_password?/2" do
+    setup do
+      [user: new(password_hash: hash_password("japan-2026"))]
+    end
+
+    test "accepts the user's password", %{user: user} do
+      assert valid_password?(user, "japan-2026")
+    end
+
+    test "refuses another password", %{user: user} do
+      refute valid_password?(user, "japan-2025")
+    end
+
+    test "refuses any password when there is no user" do
+      refute valid_password?(nil, "japan-2026")
     end
   end
 end
