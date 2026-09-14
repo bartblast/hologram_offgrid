@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    check_elixir_code_formatted:
+      run: mix format --check-formatted
+    check_javascript_json_and_yaml_formatted:
+      run: mix format.js.check

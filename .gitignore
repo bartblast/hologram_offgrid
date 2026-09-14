@@ -40,3 +40,7 @@ npm-debug.log
 
 # macOS folder metadata.
 .DS_Store
+
+# Dialyzer PLTs.
+/priv/plts/*.plt
+/priv/plts/*.plt.hash

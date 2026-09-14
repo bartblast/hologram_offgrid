@@ -1,0 +1,6 @@
+[
+  exit: "low",
+  ignore: ["Config.HTTPS"],
+  router: "lib/offgrid_web/router.ex",
+  skip: true
+]

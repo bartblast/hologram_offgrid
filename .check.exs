@@ -1,0 +1,27 @@
+opts = [enabled: true, env: %{"MIX_ENV" => "test"}]
+
+[
+  retry: false,
+  tools: [
+    {:compiler, opts},
+    {:credo, opts},
+    {:dialyzer, opts},
+    {:eslint, "mix eslint", opts},
+    {:ex_doc, enabled: false},
+    {:ex_formatter, "mix format", opts},
+    {:ex_migrations, "mix holo.check.migration", opts},
+    {:ex_test_file_names, "mix holo.check.test_file_names test", opts},
+    {:ex_tests, "mix test", opts},
+    # custom :ex_tests used instead of :ex_unit
+    {:ex_unit, enabled: false},
+    # custom :ex_formatter used instead of :formatter
+    {:formatter, enabled: false},
+    {:hex_audit, "mix hex.audit", opts},
+    {:js_formatter, "mix format.js.check", opts},
+    {:mix_audit, opts},
+    # the assets have no tests of their own
+    {:npm_test, enabled: false},
+    {:sobelow, "mix sobelow --config", opts},
+    {:unused_deps, opts}
+  ]
+]

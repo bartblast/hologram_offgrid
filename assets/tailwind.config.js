@@ -3,5 +3,5 @@
 
 module.exports = {
   content: ["../app/**/*.ex"],
-  plugins: [require("@tailwindcss/forms")]
-}
+  plugins: [require("@tailwindcss/forms")],
+};

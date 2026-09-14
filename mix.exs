@@ -7,10 +7,17 @@ defmodule Offgrid.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [warnings_as_errors: true],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: Mix.compilers() ++ [:hologram]
+      # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
+      compilers: Mix.compilers() ++ [:hologram],
+      dialyzer: [
+        plt_add_apps: [:ex_unit, :iex, :mix],
+        plt_core_path: Path.join(["priv", "plts", "core.plt"]),
+        plt_local_path: Path.join(["priv", "plts", "project.plt"])
+      ]
     ]
   end
 
@@ -41,7 +48,13 @@ defmodule Offgrid.MixProject do
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:wallaby, "~> 0.30", only: :test},
-      {:hologram, github: "bartblast/hologram", ref: "dcd4885cef91d5f98e715abd868376a68148a62f"}
+      {:hologram, github: "bartblast/hologram", ref: "dcd4885cef91d5f98e715abd868376a68148a62f"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_check, "~> 0.16", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:recode, "~> 0.8", only: :dev, runtime: false},
+      {:sobelow, "~> 0.15", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -60,9 +73,16 @@ defmodule Offgrid.MixProject do
       # assets.build, because feature tests serve the built stylesheet: without it a CSS change
       # is invisible to them and they fail describing something else entirely.
       test: ["assets.build", "test"],
-      "assets.setup": ["tailwind.install --if-missing"],
+      "assets.setup": ["tailwind.install --if-missing", "cmd --cd assets npm install"],
       "assets.build": ["tailwind offgrid"],
-      "assets.deploy": ["tailwind offgrid --minify", "phx.digest"]
+      "assets.deploy": ["tailwind offgrid --minify", "phx.digest"],
+      eslint:
+        "cmd assets/node_modules/.bin/eslint --color --config assets/eslint.config.mjs 'assets/*.js' 'assets/*.mjs' --no-error-on-unmatched-pattern",
+      f: ["format", "format.js"],
+      "format.js":
+        "cmd assets/node_modules/.bin/prettier '*.yml' '.github/**' 'assets/*.json' 'assets/*.js' 'assets/*.mjs' --config assets/.prettierrc.json --no-error-on-unmatched-pattern -u --write",
+      "format.js.check":
+        "cmd assets/node_modules/.bin/prettier '*.yml' '.github/**' 'assets/*.json' 'assets/*.js' 'assets/*.mjs' --check --config assets/.prettierrc.json --no-error-on-unmatched-pattern -u"
     ]
   end
 end
