@@ -1,5 +1,5 @@
 defmodule OffgridWeb.ErrorJSONTest do
-  use OffgridWeb.ConnCase, async: true
+  use ExUnit.Case, async: true
 
   test "renders 404" do
     assert OffgridWeb.ErrorJSON.render("404.json", %{}) == %{errors: %{detail: "Not Found"}}

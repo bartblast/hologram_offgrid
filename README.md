@@ -8,18 +8,19 @@ on a stop, freehand ink, and who else is looking at it right now - their pointer
 and a mark on the stop and the field they are editing. Everything but signing in works with
 the network off and syncs when it comes back.
 
-It runs alongside a stock Phoenix application rather than replacing one - the endpoint, the
-router and the layouts are Phoenix's, and every page is Hologram's.
+It runs inside a Phoenix endpoint, and every page, component and layout in it is Hologram's.
 
 ## Setup
 
-You need Elixir 1.19 or later, Erlang/OTP 28 or later, and PostgreSQL running locally.
+You need Elixir 1.19 or later, Erlang/OTP 28 or later, and PostgreSQL running locally with a
+`postgres` user whose password is `postgres`.
 
 ```bash
 git clone https://github.com/bartblast/offgrid.git
 cd offgrid
 mix setup
-HOLOGRAM_START=1 mix run priv/seeds.exs
+createdb -U postgres offgrid_dev
+mix seed
 ```
 
 The seeds add the three maps a trip can be drawn on, four accounts, and three trips to look at -
@@ -33,8 +34,7 @@ mix holo
 
 Then open [localhost:4000](http://localhost:4000) and sign in as `bart@offgrid.test` with the
 password `japan-2026`. `mix holo` is `mix phx.server` with Hologram switched on - in dev and
-test it stays off unless `HOLOGRAM_START=1` is set, which is why the seeds command above sets
-it too.
+test it stays off unless `HOLOGRAM_START=1` is set, which `mix holo` and `mix seed` both do.
 
 The other three accounts - `emilia@`, `indiana@` and `lara@offgrid.test`, same password - are
 on the Japan trip as well. Sign in as one of them in a second browser to see each other's

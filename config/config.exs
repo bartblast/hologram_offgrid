@@ -7,10 +7,6 @@
 # General application configuration
 import Config
 
-config :offgrid,
-  ecto_repos: [Offgrid.Repo],
-  generators: [timestamp_type: :utc_datetime]
-
 # Configures the endpoint
 config :offgrid, OffgridWeb.Endpoint,
   url: [host: "localhost"],
@@ -18,27 +14,6 @@ config :offgrid, OffgridWeb.Endpoint,
   render_errors: [
     formats: [html: OffgridWeb.ErrorHTML, json: OffgridWeb.ErrorJSON],
     layout: false
-  ],
-  pubsub_server: Offgrid.PubSub,
-  live_view: [signing_salt: "ANHfM8tL"]
-
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :offgrid, Offgrid.Mailer, adapter: Swoosh.Adapters.Local
-
-# Configure esbuild (the version is required)
-config :esbuild,
-  version: "0.17.11",
-  offgrid: [
-    args:
-      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
 # Configure tailwind (the version is required)

@@ -7,18 +7,7 @@ defmodule Offgrid.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      OffgridWeb.Telemetry,
-      # Offgrid.Repo,
-      {DNSCluster, query: Application.get_env(:offgrid, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Offgrid.PubSub},
-      # Start the Finch HTTP client for sending emails
-      {Finch, name: Offgrid.Finch},
-      # Start a worker by calling: Offgrid.Worker.start_link(arg)
-      # {Offgrid.Worker, arg},
-      # Start to serve requests, typically the last entry
-      OffgridWeb.Endpoint
-    ]
+    children = [OffgridWeb.Endpoint]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

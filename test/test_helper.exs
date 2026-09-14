@@ -4,7 +4,6 @@
 # schema, chromedriver - is booted below only when they are actually included, which keeps
 # the unit run as fast as it was before this file grew.
 ExUnit.start(exclude: [:feature])
-# Ecto.Adapters.SQL.Sandbox.mode(Offgrid.Repo, :manual)
 
 if :feature in ExUnit.configuration()[:include] do
   # Creates the test database when absent and drops the Hologram schemas, so every run

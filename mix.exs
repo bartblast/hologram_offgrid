@@ -34,30 +34,10 @@ defmodule Offgrid.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.7.20"},
-      {:phoenix_ecto, "~> 4.5"},
-      {:ecto_sql, "~> 3.10"},
-      {:postgrex, ">= 0.0.0"},
+      # Phoenix renders its HTML error pages through Phoenix.HTML's engine.
       {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 1.0.0"},
-      {:floki, ">= 0.30.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.1.1",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
-      {:swoosh, "~> 1.5"},
-      {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 1.0"},
-      {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:wallaby, "~> 0.30", only: :test},
@@ -73,22 +53,16 @@ defmodule Offgrid.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      # setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
-      # ecto.create rather than a repo that runs: Hologram keeps its rows in the same database
-      # and creates its own schema at boot, so this is only here to make the database exist.
-      setup: ["deps.get", "ecto.create", "assets.setup", "assets.build"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      setup: ["deps.get", "assets.setup", "assets.build"],
+      # Hologram stays off in dev and test unless HOLOGRAM_START is set, and the seeds write
+      # through it.
+      seed: [fn _args -> System.put_env("HOLOGRAM_START", "1") end, "run priv/seeds.exs"],
       # assets.build, because feature tests serve the built stylesheet: without it a CSS change
       # is invisible to them and they fail describing something else entirely.
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "assets.build", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind offgrid", "esbuild offgrid"],
-      "assets.deploy": [
-        "tailwind offgrid --minify",
-        "esbuild offgrid --minify",
-        "phx.digest"
-      ]
+      test: ["assets.build", "test"],
+      "assets.setup": ["tailwind.install --if-missing"],
+      "assets.build": ["tailwind offgrid"],
+      "assets.deploy": ["tailwind offgrid --minify", "phx.digest"]
     ]
   end
 end
