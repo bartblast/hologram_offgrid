@@ -22,7 +22,8 @@ mix setup
 HOLOGRAM_START=1 mix run priv/seeds.exs
 ```
 
-The seeds add the three maps a trip can be drawn on and one trip to look at.
+The seeds add the three maps a trip can be drawn on, four accounts, and three trips to look at -
+one of them with stops, ink and a remark on it. Running them again is safe.
 
 ## Running it
 
@@ -30,12 +31,14 @@ The seeds add the three maps a trip can be drawn on and one trip to look at.
 mix holo
 ```
 
-Then open [localhost:4000](http://localhost:4000) and create an account. `mix holo` is
-`mix phx.server` with Hologram switched on - in dev and test it stays off unless
-`HOLOGRAM_START=1` is set, which is why the seeds command above sets it too.
+Then open [localhost:4000](http://localhost:4000) and sign in as `bart@offgrid.test` with the
+password `japan-2026`. `mix holo` is `mix phx.server` with Hologram switched on - in dev and
+test it stays off unless `HOLOGRAM_START=1` is set, which is why the seeds command above sets
+it too.
 
-The trip the seeds create belongs to nobody, so a new account will not see it. Make your own
-from the trips screen.
+The other three accounts - `emilia@`, `indiana@` and `lara@offgrid.test`, same password - are
+on the Japan trip as well. Sign in as one of them in a second browser to see each other's
+pointers, edits and ink live.
 
 ## Tests
 
