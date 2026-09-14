@@ -18,9 +18,9 @@ permissions:
   contents: read
 
 jobs:
-  checks:
+  static_checks:
     runs-on: ubuntu-latest
-    name: Checks and Unit Tests
+    name: Static Checks
     steps:
       # Step: Checkout the code.
       # Checked out first, because the Elixir, Erlang/OTP and Node.js versions are read from
@@ -75,20 +75,12 @@ jobs:
           timeout_minutes: 3
           max_attempts: 10
 
-      # Step: Download JavaScript dependencies.
+      # Step: Download JavaScript dependencies (ESLint and Prettier).
       - name: Download JavaScript deps
         uses: nick-fields/retry@v4
         with:
           command: cd assets && npm clean-install
           shell: bash
-          timeout_minutes: 3
-          max_attempts: 10
-
-      # Step: Download the Tailwind CLI, which builds the stylesheet before the tests run.
-      - name: Download Tailwind CLI
-        uses: nick-fields/retry@v4
-        with:
-          command: mix tailwind.install --if-missing
           timeout_minutes: 3
           max_attempts: 10
 
@@ -176,6 +168,71 @@ jobs:
       # Step: Check that the migration history matches the entities.
       - name: Check migrations
         run: mix holo.check.migration
+
+  unit_tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    steps:
+      # Step: Checkout the code.
+      # Checked out first, because the Elixir, Erlang/OTP and Node.js versions are read from
+      # .tool-versions, for dev/prod/CI parity.
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Step: Setup Elixir + Erlang/OTP image as the base.
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          hexpm-mirrors: |
+            https://builds.hex.pm
+            https://cdn.jsdelivr.net/hex
+          version-file: .tool-versions
+          version-type: strict
+
+      # Step: Setup Node.js.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+
+      # Step: Define how to cache the Elixir dependencies.
+      - name: Cache Elixir deps
+        id: cache-elixir-deps
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: deps
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Define how to cache the Elixir build.
+      - name: Cache Elixir build
+        id: cache-elixir-build
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-build
+        with:
+          path: _build
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Download Elixir dependencies.
+      # If unchanged, uses the cached version.
+      - name: Download Elixir deps
+        uses: nick-fields/retry@v4
+        with:
+          command: mix deps.get
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Download the Tailwind CLI, which builds the stylesheet before the tests run.
+      - name: Download Tailwind CLI
+        uses: nick-fields/retry@v4
+        with:
+          command: mix tailwind.install --if-missing
+          timeout_minutes: 3
+          max_attempts: 10
 
       # Step: Execute Elixir unit tests.
       - name: Run Elixir unit tests
