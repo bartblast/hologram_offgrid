@@ -10,16 +10,8 @@ defmodule Offgrid.Queries do
 
   alias Hologram.Auth.RoleGrant
   alias Hologram.Query
-  alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
-  alias Offgrid.Entities.User
-
-  @doc """
-  Returns the query for every basemap, alphabetical by name.
-  """
-  @spec basemaps() :: Query.t()
-  def basemaps, do: order_by(Basemap, :name)
 
   @doc """
   Returns the query for the given trip's stops in itinerary order: day, then time, then
@@ -34,8 +26,8 @@ defmodule Offgrid.Queries do
 
   @doc """
   Returns the query for the grants on the given trip, oldest first, which is the join order
-  `Offgrid.MemberColor` colours people by. A nil entity id is the type-wide "member of every trip"
-  grant, which counts as membership too.
+  `Offgrid.MemberColor` colours people by. A nil entity id is the type-wide "member of every
+  trip" grant, which counts as membership too.
   """
   @spec members(String.t()) :: Query.t()
   def members(trip_id) do
@@ -43,12 +35,6 @@ defmodule Offgrid.Queries do
     |> filter(entity_id: [trip_id, nil], entity_type: Trip)
     |> order_by(:created_at)
   end
-
-  @doc """
-  Returns the query for the given trip's stops, in no particular order.
-  """
-  @spec stops(String.t()) :: Query.t()
-  def stops(trip_id), do: filter(Stop, trip_id: trip_id)
 
   @doc """
   Returns the query for the given trip.
@@ -70,10 +56,4 @@ defmodule Offgrid.Queries do
     |> include(:basemap)
     |> one()
   end
-
-  @doc """
-  Returns the query for every user, by email.
-  """
-  @spec users() :: Query.t()
-  def users, do: order_by(User, :email)
 end

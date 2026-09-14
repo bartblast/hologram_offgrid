@@ -8,9 +8,9 @@ defmodule Offgrid.Components.MemberInput do
   """
 
   use Hologram.Component
+  use Hologram.DB
 
   alias Offgrid.Entities.User
-  alias Offgrid.Queries
 
   prop :on_add, :atom, required: true
   prop :target, :string, required: true
@@ -60,5 +60,5 @@ defmodule Offgrid.Components.MemberInput do
 
   defp blank(component), do: put_state(component, email: "", error: nil)
 
-  defp users_query, do: Queries.users()
+  defp users_query, do: order_by(User, :email)
 end

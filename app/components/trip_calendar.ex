@@ -54,7 +54,7 @@ defmodule Offgrid.Components.TripCalendar do
     Enum.filter(stops, &(&1.date == day))
   end
 
-  defp stops_query(trip_id), do: Queries.stops(trip_id)
+  defp stops_query(trip_id), do: filter(Stop, trip_id: trip_id)
 
   defp trip_query(trip_id), do: Queries.trip(trip_id)
 

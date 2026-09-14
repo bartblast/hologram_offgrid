@@ -9,10 +9,10 @@ defmodule Offgrid.Components.BasemapPicker do
   """
 
   use Hologram.Component
+  use Hologram.DB
 
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
-  alias Offgrid.Queries
   alias Offgrid.Utils.CSS
 
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
@@ -40,5 +40,5 @@ defmodule Offgrid.Components.BasemapPicker do
     """
   end
 
-  defp basemaps_query, do: Queries.basemaps()
+  defp basemaps_query, do: order_by(Basemap, :name)
 end
