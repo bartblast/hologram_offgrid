@@ -10,8 +10,6 @@ defmodule Offgrid.Components.InkTools do
   use Hologram.Component
   use Hologram.DB
 
-  import Offgrid.Classes
-
   alias Offgrid.Components.Ink
   alias Offgrid.Device
   alias Offgrid.Entities.Sketch
@@ -19,6 +17,7 @@ defmodule Offgrid.Components.InkTools do
   alias Offgrid.Geo
   alias Offgrid.Queries
   alias Offgrid.Stroke
+  alias Offgrid.Utils.CSS
 
   # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
   @ink_colors ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
@@ -36,7 +35,7 @@ defmodule Offgrid.Components.InkTools do
   def template do
     ~HOLO"""
     <div
-      class={classes(["ink", on: @drawing])}
+      class={CSS.class(["ink", on: @drawing])}
       style={nib_cursor(@drawing, @ink_color)}
       $pointer_down="ink_start"
       $pointer_move="ink_extend"
@@ -57,7 +56,7 @@ defmodule Offgrid.Components.InkTools do
     </svg>
 
     <button
-      class={classes(["pen", on: @drawing, flush: !@panel_open])}
+      class={CSS.class(["pen", on: @drawing, flush: !@panel_open])}
       style={pen_style(@drawing, @ink_color)}
       type="button"
       aria-label="Draw"
@@ -70,10 +69,10 @@ defmodule Offgrid.Components.InkTools do
     </button>
 
     {%if @drawing}
-      <div class={classes(["cpop", flush: !@panel_open])}>
+      <div class={CSS.class(["cpop", flush: !@panel_open])}>
         {%for color <- ink_colors()}
           <button
-            class={classes(["cdot", on: color == @ink_color])}
+            class={CSS.class(["cdot", on: color == @ink_color])}
             type="button"
             style={"background:#{color}"}
             aria-label={color}

@@ -15,8 +15,6 @@ defmodule Offgrid.Pages.TripPage do
   use Hologram.Page
   use Hologram.DB
 
-  import Offgrid.Classes
-
   alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
   alias Offgrid.Components.InkTools
@@ -38,6 +36,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Queries
   alias Offgrid.TripChannel
   alias Offgrid.Trips
+  alias Offgrid.Utils.CSS
 
   # How often a browser says it is still here, and how long the others wait before letting it
   # go. The ratio is the safety margin: four beats fit in the window, so two late beats in a row
@@ -129,7 +128,7 @@ defmodule Offgrid.Pages.TripPage do
             <div class="lp-tools">
               <MapSwatch trip_id={@trip_id} />
               <button
-                class={classes(["addb", on: @mode == :placing])}
+                class={CSS.class(["addb", on: @mode == :placing])}
                 type="button"
                 aria-label="Add a stop"
                 $click="toggle_placing"
@@ -154,7 +153,7 @@ defmodule Offgrid.Pages.TripPage do
           />
         </div>
 
-        <div class={classes(["faces", open: @members_open, flush: !@panel_open])}>
+        <div class={CSS.class(["faces", open: @members_open, flush: !@panel_open])}>
           <button
             class="facepile"
             type="button"
@@ -169,7 +168,7 @@ defmodule Offgrid.Pages.TripPage do
         </div>
 
         {%if @members_open}
-          <div class={classes(["members", flush: !@panel_open])}>
+          <div class={CSS.class(["members", flush: !@panel_open])}>
             <MembersList
               cid="members_list"
               present={@present}

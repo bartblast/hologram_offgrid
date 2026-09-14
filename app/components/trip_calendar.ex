@@ -10,12 +10,11 @@ defmodule Offgrid.Components.TripCalendar do
   use Hologram.Component
   use Hologram.DB
 
-  import Offgrid.Classes
-
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Queries
+  alias Offgrid.Utils.CSS
 
   prop :date, :date
   prop :stop_id, :string
@@ -31,7 +30,7 @@ defmodule Offgrid.Components.TripCalendar do
     ~HOLO"""
     <div class="cal">
       {%for day <- trip_days(@trip)}
-        <button type="button" class={classes(on: day == @date)} $click={:pick, date: day}>
+        <button type="button" class={CSS.class(on: day == @date)} $click={:pick, date: day}>
           <span class="dw">{Dates.weekday(day)}</span>
           <span class="nm">{day.day}</span>
           <span class="dt">

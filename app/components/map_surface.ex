@@ -11,10 +11,9 @@ defmodule Offgrid.Components.MapSurface do
 
   use Hologram.Component
 
-  import Offgrid.Classes
-
   alias Offgrid.Device
   alias Offgrid.TripChannel
+  alias Offgrid.Utils.CSS
 
   # How often this browser sends its pointer position while it moves. It has its own timer
   # because a throttled event dispatches on both edges of its window, which sent positions in
@@ -36,7 +35,7 @@ defmodule Offgrid.Components.MapSurface do
     ~HOLO"""
     <div
       id="canvas"
-      class={classes(["canvas", placing: @placing])}
+      class={CSS.class(["canvas", placing: @placing])}
       $click="click"
       $pointer_move.throttle(50)="point"
     ></div>

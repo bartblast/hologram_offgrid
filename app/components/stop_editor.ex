@@ -11,8 +11,6 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
   use Hologram.DB
 
-  import Offgrid.Classes
-
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Dates
@@ -21,6 +19,7 @@ defmodule Offgrid.Components.StopEditor do
   alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
+  alias Offgrid.Utils.CSS
 
   # Half-hourly through the part of the day an itinerary actually uses.
   @times Enum.map(16..40, &Time.new!(div(&1, 2), rem(&1, 2) * 30, 0))
@@ -44,7 +43,7 @@ defmodule Offgrid.Components.StopEditor do
   def template do
     ~HOLO"""
     {%if @stop || @away}
-    <div class={classes(["editor", away: @away])}>
+    <div class={CSS.class(["editor", away: @away])}>
       {%if @stop}
       <div class="ed-head">
         <div>
@@ -68,7 +67,7 @@ defmodule Offgrid.Components.StopEditor do
         <label>{field_label(field)} {%for person <- others_in(@editing, @stop_id, field, @grants, @user_id)}<b class={"tag " <> person.color}>{person.initials}</b>{/for}</label>
         <input
           id={"stop_#{field}"}
-          class={classes(["inp", busy: busy?(@editing, @stop_id, field, @user_id)])}
+          class={CSS.class(["inp", busy: busy?(@editing, @stop_id, field, @user_id)])}
           value={Map.get(@stop, field)}
           $change={:edit, field: field}
           $focus={action: :field_focused, target: "page", params: %{field: field}}
@@ -81,10 +80,10 @@ defmodule Offgrid.Components.StopEditor do
 
       <label>Time</label>
       <div class="times">
-        <button type="button" class={classes(on: same_time?(nil, @stop.time))} $click={:set_time, time: nil}>—</button>
+        <button type="button" class={CSS.class(on: same_time?(nil, @stop.time))} $click={:set_time, time: nil}>—</button>
 
         {%for time <- times()}
-          <button type="button" class={classes(on: same_time?(time, @stop.time))} $click={:set_time, time: time}>
+          <button type="button" class={CSS.class(on: same_time?(time, @stop.time))} $click={:set_time, time: time}>
             {Dates.time_label(time)}
           </button>
         {/for}
@@ -99,7 +98,7 @@ defmodule Offgrid.Components.StopEditor do
       {/for}
       <input
         id="stop_comment"
-        class={classes(["inp", busy: busy?(@editing, @stop_id, :comment, @user_id)])}
+        class={CSS.class(["inp", busy: busy?(@editing, @stop_id, :comment, @user_id)])}
         placeholder="Add a comment…"
         value={draft_for(@draft, @draft_stop_id, @stop_id)}
         $change={:edit_draft}

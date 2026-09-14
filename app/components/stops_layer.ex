@@ -14,13 +14,12 @@ defmodule Offgrid.Components.StopsLayer do
   use Hologram.Component
   use Hologram.DB
 
-  import Offgrid.Classes
-
   alias Offgrid.Device
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
   alias Offgrid.Queries
+  alias Offgrid.Utils.CSS
 
   prop :open_stop_id, :string, default: nil
   prop :stops, [Stop], from_query: &stops_query/1
@@ -37,7 +36,7 @@ defmodule Offgrid.Components.StopsLayer do
 
     {%for stop <- placed(@stops, @trip)}
       <div
-        class={classes(["pin", mine: stop.id == @open_stop_id])}
+        class={CSS.class(["pin", mine: stop.id == @open_stop_id])}
         style={pin_style(stop, @trip, @drag)}
         $click={action: :open_stop, target: "page", params: %{id: stop.id}}
         $pointer_down={:drag_start, id: stop.id}

@@ -10,11 +10,10 @@ defmodule Offgrid.Components.BasemapPicker do
 
   use Hologram.Component
 
-  import Offgrid.Classes
-
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
   alias Offgrid.Queries
+  alias Offgrid.Utils.CSS
 
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
   prop :on_pick, :atom, required: true
@@ -29,7 +28,7 @@ defmodule Offgrid.Components.BasemapPicker do
     <div class="thumbs">
       {%for basemap <- @basemaps}
         <button
-          class={classes(["thumb", on: basemap.id == @selected_id])}
+          class={CSS.class(["thumb", on: basemap.id == @selected_id])}
           type="button"
           $click={action: @on_pick, target: @target, params: %{id: basemap.id}}
         >

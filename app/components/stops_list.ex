@@ -8,14 +8,13 @@ defmodule Offgrid.Components.StopsList do
 
   use Hologram.Component
 
-  import Offgrid.Classes
-
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
   alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
+  alias Offgrid.Utils.CSS
 
   prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -31,7 +30,7 @@ defmodule Offgrid.Components.StopsList do
 
       {%for row <- day}
         <button
-          class={classes(["stop", open: row.stop.id == @open_stop_id])}
+          class={CSS.class(["stop", open: row.stop.id == @open_stop_id])}
           type="button"
           $click={action: :open_stop, target: "page", params: %{id: row.stop.id}}
         >
