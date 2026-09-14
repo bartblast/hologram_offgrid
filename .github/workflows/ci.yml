@@ -1,0 +1,282 @@
+name: CI
+
+# Define workflow that runs when changes are pushed to any branch
+# or pushed to a PR branch.
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+# Sets the ENV `MIX_ENV` to `test` for running tests
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    name: Checks and Unit Tests
+    steps:
+      # Step: Checkout the code.
+      # Checked out first, because the Elixir, Erlang/OTP and Node.js versions are read from
+      # .tool-versions, for dev/prod/CI parity.
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Step: Setup Elixir + Erlang/OTP image as the base.
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          hexpm-mirrors: |
+            https://builds.hex.pm
+            https://cdn.jsdelivr.net/hex
+          version-file: .tool-versions
+          version-type: strict
+
+      # Step: Setup Node.js.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+
+      # Step: Define how to cache the Elixir dependencies.
+      - name: Cache Elixir deps
+        id: cache-elixir-deps
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: deps
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Define how to cache the Elixir build.
+      - name: Cache Elixir build
+        id: cache-elixir-build
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-build
+        with:
+          path: _build
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Download Elixir dependencies.
+      # If unchanged, uses the cached version.
+      - name: Download Elixir deps
+        uses: nick-fields/retry@v4
+        with:
+          command: mix deps.get
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Download JavaScript dependencies.
+      - name: Download JavaScript deps
+        uses: nick-fields/retry@v4
+        with:
+          command: cd assets && npm clean-install
+          shell: bash
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Download the Tailwind CLI, which builds the stylesheet before the tests run.
+      - name: Download Tailwind CLI
+        uses: nick-fields/retry@v4
+        with:
+          command: mix tailwind.install --if-missing
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Compile the project treating any warnings as errors.
+      - name: Check project compiles without warnings
+        run: mix compile --all-warnings --warnings-as-errors
+
+      # Step: Check if mix.lock has any unused dependencies.
+      - name: Check unused Elixir deps
+        run: mix deps.unlock --check-unused
+
+      # Step: Check if there are any Elixir dependencies which have been marked as retired.
+      - name: Check retired Elixir deps
+        run: mix hex.audit
+
+      # Step: Check if there are any security vulnerabilities in the Elixir dependencies.
+      - name: Check security vulnerabilities in Elixir deps
+        run: mix deps.audit
+
+      # Step: Check that the Elixir code has already been formatted.
+      - name: Check Elixir code formatted
+        run: mix format --check-formatted
+
+      # Step: Check that the JavaScript, JSON & YAML code has already been formatted.
+      - name: Check JavaScript, JSON & YAML code formatted
+        run: mix format.js.check
+
+      # Step: Run Elixir static code analysis with Credo.
+      - name: Run Elixir static code analysis with Credo
+        run: mix credo --strict
+
+      # Step: Run Elixir security-focused analysis with Sobelow.
+      - name: Run Elixir security-focused analysis with Sobelow
+        run: mix sobelow --config
+
+      # Step: Restore Dialyzer PLT cache.
+      # Cache key is based on Erlang/Elixir version and the mix.lock hash.
+      - name: Restore Dialyzer PLT cache
+        id: restore-dialyzer-plt-cache
+        uses: actions/cache/restore@v6
+        with:
+          key: |
+            dialyzer-plt-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+          path: |
+            priv/plts
+
+      # Step: Create Dialyzer PLTs if no cache was found.
+      - name: Create Dialyzer PLTs
+        if: ${{ steps.restore-dialyzer-plt-cache.outputs.cache-hit != 'true' }}
+        run: mix dialyzer --plt
+
+      # Step: Save Dialyzer PLT cache.
+      # By default, the GitHub Cache action will only save the cache if all steps in the job succeed,
+      # so we separate the cache restore and save steps in case running dialyzer fails.
+      - name: Save Dialyzer PLT cache
+        id: save-dialyzer-plt-cache
+        uses: actions/cache/save@v6
+        if: ${{ steps.restore-dialyzer-plt-cache.outputs.cache-hit != 'true' }}
+        with:
+          key: |
+            dialyzer-plt-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+          path: |
+            priv/plts
+
+      # Step: Run Elixir static code analysis with Dialyzer.
+      - name: Run Elixir static code analysis with Dialyzer
+        run: mix dialyzer --format github
+
+      # Step: Check that all test scripts have valid file names.
+      - name: Check test file names
+        run: mix holo.check.test_file_names test
+
+      # Step: Run JavaScript static code analysis with ESLint.
+      - name: Run JavaScript static code analysis with ESLint
+        run: mix eslint
+
+      # Step: Start the runner image's preinstalled Postgres server, aligned with the test
+      # config (localhost:5432, postgres/postgres) - the migration check replays the history
+      # on a scratch database.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+
+      # Step: Check that the migration history matches the entities.
+      - name: Check migrations
+        run: mix holo.check.migration
+
+      # Step: Execute Elixir unit tests.
+      - name: Run Elixir unit tests
+        run: mix test --warnings-as-errors
+
+  feature_tests:
+    runs-on: ubuntu-latest
+    name: Feature Tests
+    steps:
+      # Step: Checkout the code.
+      # Checked out first, because the Elixir, Erlang/OTP and Node.js versions are read from
+      # .tool-versions, for dev/prod/CI parity.
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Step: Setup Elixir + Erlang/OTP image as the base.
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          hexpm-mirrors: |
+            https://builds.hex.pm
+            https://cdn.jsdelivr.net/hex
+          version-file: .tool-versions
+          version-type: strict
+
+      # Step: Setup Node.js.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+
+      # Step: Define how to cache the Elixir dependencies.
+      - name: Cache Elixir deps
+        id: cache-elixir-deps
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: deps
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Define how to cache the Elixir build.
+      - name: Cache Elixir build
+        id: cache-elixir-build
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-elixir-build
+        with:
+          path: _build
+          key: ${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('.tool-versions') }}-${{ hashFiles('mix.lock') }}
+
+      # Step: Download Elixir dependencies.
+      # If unchanged, uses the cached version.
+      - name: Download Elixir deps
+        uses: nick-fields/retry@v4
+        with:
+          command: mix deps.get
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Download JavaScript dependencies.
+      - name: Download JavaScript deps
+        uses: nick-fields/retry@v4
+        with:
+          command: cd assets && npm clean-install
+          shell: bash
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Download the Tailwind CLI, which builds the stylesheet the browser is served.
+      - name: Download Tailwind CLI
+        uses: nick-fields/retry@v4
+        with:
+          command: mix tailwind.install --if-missing
+          timeout_minutes: 3
+          max_attempts: 10
+
+      # Step: Compile the project treating any warnings as errors.
+      - name: Check project compiles without warnings
+        run: mix compile --all-warnings --warnings-as-errors
+
+      # Step: Start the runner image's preinstalled Postgres server, aligned with the test
+      # config (localhost:5432, postgres/postgres) - the app declares entities, which
+      # activates the Hologram database.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+
+      # Step: Execute Elixir feature tests.
+      # Chrome and a matching ChromeDriver come preinstalled on the runner image.
+      - name: Run Elixir feature tests
+        run: mix test --warnings-as-errors --only feature
+
+      # Step: Archive the browser screenshots of tests that failed.
+      - name: Archive fail screenshots
+        # Execute the step even if the job has already failed, but don't execute it if the job has been canceled.
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fail-screenshots
+          path: tmp/screenshots
