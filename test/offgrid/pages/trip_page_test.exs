@@ -43,13 +43,6 @@ defmodule Offgrid.Pages.TripPageTest do
       assert sender(TripPage.command(:editing, params, context.server)) ==
                {context.user.id, "NV"}
     end
-
-    test "moves the signed-in member's cursor, not the one the params name", context do
-      params = %{id: "forged", initials: "XX", trip_id: context.trip.id, x: 10.0, y: 20.0}
-
-      assert sender(TripPage.command(:cursor, params, context.server)) ==
-               {context.user.id, "NV"}
-    end
   end
 
   defp sender(%Server{broadcasts: [%Broadcast{params: params}]}) do

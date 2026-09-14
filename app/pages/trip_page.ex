@@ -3,12 +3,13 @@ defmodule Offgrid.Pages.TripPage do
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
   Everything drawn here is a row in the browser's own database, except three gestures that are
-  not records: the stroke being drawn, the ping, and who is here. Those live in this page's
-  state and travel as broadcasts on the trip's channel.
+  not records: the stroke being drawn, the ping, and who is here. The stroke belongs to
+  `InkTools`. The ping and who is here live in this page's state and travel as broadcasts on
+  the trip's channel, because several components read them and state only flows down.
 
   The page holds the screen's mode (idle, placing a stop, or drawing) and the ids the panels
-  are open on. Each component under it reads its own rows through its own query. A page cannot
-  hold a query prop, which is why the header, the itinerary and the layers are components.
+  are open on. The map's parts are components: `MapSurface` takes clicks and the pointer,
+  `StopsLayer` draws the pins and the route, and `InkTools` handles drawing.
   """
 
   use Hologram.Page
@@ -16,33 +17,26 @@ defmodule Offgrid.Pages.TripPage do
 
   import Offgrid.Classes
 
-  alias Hologram.Auth
-  alias Offgrid.Box
-  alias Offgrid.Cast
   alias Offgrid.Clock
   alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
-  alias Offgrid.Components.Ink
+  alias Offgrid.Components.InkTools
   alias Offgrid.Components.LogOutButton
   alias Offgrid.Components.MapPicker
-  alias Offgrid.Components.MapPins
-  alias Offgrid.Components.MapRoute
+  alias Offgrid.Components.MapSurface
   alias Offgrid.Components.MapSwatch
   alias Offgrid.Components.MembersList
   alias Offgrid.Components.StopEditor
+  alias Offgrid.Components.StopsLayer
   alias Offgrid.Components.StopsList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
-  alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.Trip
-  alias Offgrid.Entities.User
   alias Offgrid.Geo
-  alias Offgrid.Link
   alias Offgrid.Presence
   alias Offgrid.Queries
-  alias Offgrid.Stroke
+  alias Offgrid.TripChannel
   alias Offgrid.Trips
 
   # How often a browser says it is still here, and how long the others wait before letting it
@@ -50,11 +44,6 @@ defmodule Offgrid.Pages.TripPage do
   # do not drop somebody. Each beat is a render on every other screen, so it cannot be shorter.
   @heartbeat_ms 500
   @forget_after_ms 2_000
-
-  # How often this browser sends its pointer position while it moves. It has its own timer
-  # because a throttled event dispatches on both edges of its window, which sent positions in
-  # bursts. The timer stops when a tick finds nothing new to send.
-  @cursor_ms 100
 
   # Somebody else's pointer is dropped when nothing newer has arrived in this long.
   @cursor_expiry_ms 2_500
@@ -68,9 +57,6 @@ defmodule Offgrid.Pages.TripPage do
   # A join the server refuses is asked again after a pause, up to this many joins in all.
   @join_attempts 2
   @rejoin_ms 3_000
-
-  # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
-  @ink_colors ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
 
   route "/trips/:id"
 
@@ -86,14 +72,11 @@ defmodule Offgrid.Pages.TripPage do
     initialized =
       component
       |> put_state(
-        box: nil,
         cursors: %{},
         details_open: false,
-        drag: nil,
         editing: %{},
         focused_field: nil,
-        initials: initials(server.user_id),
-        ink_color: hd(@ink_colors),
+        initials: TripChannel.initials(server.user_id),
         join_tries: 0,
         maps_open: false,
         members_open: false,
@@ -101,12 +84,8 @@ defmodule Offgrid.Pages.TripPage do
         open_stop_id: nil,
         panel_open: false,
         ping: nil,
-        pointer: nil,
-        pointer_sent: nil,
-        pointer_ticking: false,
         present: [],
         presence_seq: 0,
-        stroke: [],
         trip_id: params.id,
         tz_offset: 0,
         user_id: server.user_id
@@ -118,57 +97,25 @@ defmodule Offgrid.Pages.TripPage do
     {initialized, server}
   end
 
-  # The canvas is an empty element laid over the terrain rather than wrapped around it, because
-  # a click inside a child component does not reach a listener on the element around it.
-  #
-  # The canvas is measured on window resize: a window binding goes with the page, while a
-  # `$resize` on the canvas fires once more as the element goes and lands on the next page.
-  #
-  # A drag outlives the pin it began on, so its pointer is followed on the document.
   def template do
     ~HOLO"""
     <div class="app">
       <div class="map">
         <Terrain trip_id={@trip_id} />
 
-        <div
-          id="canvas"
-          class={classes(["canvas", placing: @mode == :placing])}
-          $click="place_stop"
-          $pointer_move.throttle(50)="point"
-        ></div>
+        <MapSurface cid="map_surface" placing={@mode == :placing} trip_id={@trip_id} />
 
-        <MapRoute cid="map_route" drag={@drag} trip_id={@trip_id} />
+        <StopsLayer cid="stops_layer" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
-        <div
-          class={classes(["ink", on: @mode == :drawing])}
-          style={nib_cursor(@mode == :drawing, @ink_color)}
-          $pointer_down="ink_start"
-          $pointer_move="ink_extend"
-          $pointer_up="ink_finish"
-        ></div>
-
-        <Ink cid="ink" drawing={@mode == :drawing} trip_id={@trip_id} user_id={@user_id} />
-
-        <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {%if @stroke != []}
-            <path
-              d={stroke_path(@stroke)}
-              stroke={@ink_color}
-              fill="none"
-              vector-effect="non-scaling-stroke"
-            />
-          {/if}
-        </svg>
-
-        <MapPins
-          cid="map_pins"
-          drag={@drag}
-          open_stop_id={@open_stop_id}
+        <InkTools
+          cid="ink_tools"
+          drawing={@mode == :drawing}
+          panel_open={@panel_open}
           trip_id={@trip_id}
+          user_id={@user_id}
         />
 
-        <Cursors cid="cursors" cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
+        <Cursors cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
 
         {%if @ping}
           <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}>
@@ -178,9 +125,9 @@ defmodule Offgrid.Pages.TripPage do
 
         <div class="lpanel">
           <div class="lp-head">
-            <TripHeader cid="trip_header" trip_id={@trip_id} />
+            <TripHeader trip_id={@trip_id} />
             <div class="lp-tools">
-              <MapSwatch cid="map_swatch" trip_id={@trip_id} />
+              <MapSwatch trip_id={@trip_id} />
               <button
                 class={classes(["addb", on: @mode == :placing])}
                 type="button"
@@ -214,13 +161,7 @@ defmodule Offgrid.Pages.TripPage do
             aria-label="Who is on this trip"
             $click="toggle_members"
           >
-            <Faces
-              cid="faces"
-              present={@present}
-              trip_id={@trip_id}
-              user_id={@user_id}
-              you={@initials}
-            />
+            <Faces present={@present} trip_id={@trip_id} user_id={@user_id} you={@initials} />
           </button>
 
           <span class="sep"></span>
@@ -236,39 +177,6 @@ defmodule Offgrid.Pages.TripPage do
               user_id={@user_id}
             />
           </div>
-        {/if}
-
-        <button
-          class={classes(["pen", on: @mode == :drawing, flush: !@panel_open])}
-          style={pen_style(@mode == :drawing, @ink_color)}
-          type="button"
-          aria-label="Draw"
-          $click="toggle_drawing"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4.5 19.5 L7.5 12 L15.5 4 L20 8.5 L12 16.5 Z" />
-            <path class="solid" d="M4.5 19.5 L8.6 18 L6 15.4 Z" />
-          </svg>
-        </button>
-
-        {%if @mode == :drawing}
-          <div class={classes(["cpop", flush: !@panel_open])}>
-            {%for color <- ink_colors()}
-              <button
-                class={classes(["cdot", on: color == @ink_color])}
-                type="button"
-                style={"background:#{color}"}
-                aria-label={color}
-                $click={:pick_color, color: color}
-              ></button>
-            {/for}
-          </div>
-        {/if}
-
-        <window $resize="measure" />
-
-        {%if @drag}
-          <document $pointer_move="drag_move" $pointer_up="drag_finish" />
         {/if}
 
         {%if @mode == :placing}
@@ -324,29 +232,6 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :open_stop_id, nil)
   end
 
-  # The row is written only when the pointer lifts, not on every move.
-  def action(:drag_start, params, component) do
-    put_state(component, :drag, %{id: params.id, x: nil, y: nil})
-  end
-
-  # In hundredths of the map, which is what the pin's style takes, whatever the map's size.
-  def action(:drag_move, params, component) do
-    {left, top, width, height} = component.state.box
-    event = params.event
-
-    put_state(component, :drag, %{
-      component.state.drag
-      | x: (event.client_x - left) / width * 100,
-        y: (event.client_y - top) / height * 100
-    })
-  end
-
-  # A press that never moved writes nothing. It is a click, and the pin's own binding opens the
-  # stop, as it also does when a drag ends over the pin.
-  def action(:drag_finish, _params, component) do
-    drop(component, component.state.drag)
-  end
-
   # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
   def action(:editing_changed, params, component) do
     component
@@ -371,39 +256,6 @@ defmodule Offgrid.Pages.TripPage do
     |> announce_editing()
   end
 
-  # While drawn, a stroke stays in screen space (hundredths of the map), so a move is one
-  # division. It becomes map coordinates when saved, the only moment the map's bounds matter.
-  def action(:ink_extend, params, component) do
-    case component.state.stroke do
-      [] ->
-        component
-
-      stroke ->
-        put_state(component, :stroke, extend(stroke, ink_point(component, params.event)))
-    end
-  end
-
-  # Lifting the pointer saves the stroke and drops the local copy, since the saved layer draws
-  # it from then on. A stroke of one point is a tap, not a line, and is not saved.
-  def action(:ink_finish, _params, component) do
-    finish(component, Enum.reverse(component.state.stroke))
-  end
-
-  # Whether the pen is armed is checked here rather than left to the layer's `pointer-events`,
-  # which only decides what the pointer hits.
-  def action(:ink_start, params, component) do
-    if component.state.mode == :drawing do
-      put_state(component, :stroke, [ink_point(component, params.event)])
-    else
-      component
-    end
-  end
-
-  # Runs on every window resize, so the box in state always matches the canvas.
-  def action(:measure, _params, component) do
-    put_state(component, :box, Box.rect("canvas"))
-  end
-
   # Keeps somebody's newest pointer position and queues a check that drops it unless a newer one
   # arrives first. `Offgrid.Presence` explains why this uses a sequence number.
   def action(:cursor_moved, params, component) do
@@ -426,49 +278,11 @@ defmodule Offgrid.Pages.TripPage do
     )
   end
 
-  # Only remembered here. `:send_pointer` sends it on its own timer.
-  #
-  # Only the empty canvas hears the pointer, so over a pin, the panel, the armed ink layer or
-  # off the map, the last position fades on the other screens.
-  def action(:point, params, component) do
-    case component.state.box do
-      nil ->
-        component
-
-      {_left, _top, width, height} ->
-        moved =
-          put_state(component, :pointer, %{
-            x: params.event.offset_x / width * 100,
-            y: params.event.offset_y / height * 100
-          })
-
-        if moved.state.pointer_ticking, do: moved, else: start_pointing(moved)
-    end
-  end
-
-  # A tick with nothing new to send is the last one until the pointer moves again.
-  def action(:send_pointer, _params, component) do
-    state = component.state
-
-    if state.pointer && state.pointer != state.pointer_sent do
-      component
-      |> put_state(:pointer_sent, state.pointer)
-      |> tell(:cursor,
-        trip_id: state.trip_id,
-        x: state.pointer.x,
-        y: state.pointer.y
-      )
-      |> put_action(name: :send_pointer, delay: @cursor_ms)
-    else
-      put_state(component, :pointer_ticking, false)
-    end
-  end
-
-  # Everything that needs the page on screen: the canvas to measure, the browser's clock offset,
-  # and joining the trip's channel.
+  # Everything that needs the page on screen: the browser's clock offset and joining the trip's
+  # channel.
   def action(:mounted, _params, component) do
     component
-    |> put_state(box: Box.rect("canvas"), tz_offset: Clock.offset_minutes())
+    |> put_state(:tz_offset, Clock.offset_minutes())
     |> join()
   end
 
@@ -478,7 +292,7 @@ defmodule Offgrid.Pages.TripPage do
     said = said_something(component)
 
     said
-    |> tell(:editing, whereabouts(said))
+    |> TripChannel.tell(:editing, whereabouts(said))
     |> put_action(name: :heartbeat, delay: @heartbeat_ms)
   end
 
@@ -520,6 +334,14 @@ defmodule Offgrid.Pages.TripPage do
     |> put_action(name: :heartbeat, delay: @heartbeat_ms)
   end
 
+  # A click on the map, in hundredths of it. It places a stop when + has armed it, and
+  # otherwise pings the place for everyone else on the trip.
+  def action(:map_clicked, params, component) do
+    if component.state.mode == :placing,
+      do: place(component, params, read_trip(component)),
+      else: ping(component, params)
+  end
+
   # Everyone answers an arrival, so a newcomer learns who is here without anybody keeping a
   # list. Both messages carry what the person has open.
   def action(:member_arrived, params, component) do
@@ -552,14 +374,6 @@ defmodule Offgrid.Pages.TripPage do
     open_panel(component, params.id)
   end
 
-  # A click on the map places a stop when + has armed it, and otherwise pings the place for
-  # everyone else on the trip.
-  def action(:place_stop, params, component) do
-    if component.state.mode == :placing,
-      do: place(component, params.event),
-      else: ping(component, params.event)
-  end
-
   # Somebody else's ping. The sender's own is shown by `ping/2`, without waiting for this.
   def action(:show_ping, params, component) do
     component
@@ -577,16 +391,12 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :maps_open, !component.state.maps_open)
   end
 
-  def action(:pick_color, params, component) do
-    put_state(component, :ink_color, params.color)
-  end
-
   def action(:toggle_members, _params, component) do
     put_state(component, :members_open, !component.state.members_open)
   end
 
   def action(:toggle_drawing, _params, component) do
-    put_state(component, mode: toggle(component.state.mode, :drawing), ping: nil, stroke: [])
+    put_state(component, mode: toggle(component.state.mode, :drawing), ping: nil)
   end
 
   # + arms placing rather than creating a stop, and a second press disarms it. The click on the
@@ -596,11 +406,8 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   # Called after mount, never from `init/3` - see `:joined`.
-  #
-  # Realtime channels do no authorization, and the trip's rules hide rows, not broadcasts. So
-  # every command that names the channel checks `on_trip?/2` first.
   def command(:join, params, server) do
-    if on_trip?(server, params.trip_id) do
+    if TripChannel.on_trip?(server, params.trip_id) do
       server
       |> put_subscription({:trip, params.trip_id})
       |> put_action(:joined)
@@ -609,100 +416,28 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
-  # Who a presence message is from comes from the session, never from the params - otherwise
-  # any member could speak as another.
   def command(:announce, params, server) do
-    relay(server, params.trip_id, :member_arrived, sender(server) ++ whereabouts_of(params))
+    relay_presence(server, params, :member_arrived)
   end
 
   def command(:answer, params, server) do
-    relay(server, params.trip_id, :member_here, sender(server) ++ whereabouts_of(params))
+    relay_presence(server, params, :member_here)
   end
 
   def command(:editing, params, server) do
-    relay(server, params.trip_id, :editing_changed, sender(server) ++ whereabouts_of(params))
-  end
-
-  def command(:cursor, params, server) do
-    relay(server, params.trip_id, :cursor_moved, sender(server) ++ [x: params.x, y: params.y])
+    relay_presence(server, params, :editing_changed)
   end
 
   def command(:ping, params, server) do
-    relay(server, params.trip_id, :show_ping, x: params.x, y: params.y)
+    TripChannel.relay(server, params.trip_id, :show_ping, x: params.x, y: params.y)
   end
 
-  # A pen nib in the loaded ink. The hotspot (`3 23`) sits on the nib's point rather than the
-  # image's corner, so the line starts where it was aimed.
-  #
-  # The colour's `#` is percent-encoded, since a raw `#` in a data URI starts a fragment and
-  # cuts the SVG short.
-  defp nib_cursor(false, _ink_color), do: nil
+  # Tells the others which stop and field this browser has open. Called last in every action
+  # that changes either, so the message carries the state the action left behind.
+  defp announce_editing(component) do
+    said = said_something(component)
 
-  defp nib_cursor(true, "#" <> rgb) do
-    svg =
-      "<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26'>" <>
-        "<path d='M3 23 L6.5 14.5 L17.5 3.5 L22.5 8.5 L11.5 19.5 Z' fill='%23#{rgb}'" <>
-        " stroke='white' stroke-width='1.6' stroke-linejoin='round'/>" <>
-        "<path d='M3 23 L7.5 21 L5 18.5 Z' fill='white'/></svg>"
-
-    "cursor: url(\"data:image/svg+xml;utf8,#{svg}\") 3 23, cell"
-  end
-
-  defp ink_colors, do: @ink_colors
-
-  # Skips a point within half a percent of the last one, since every kept point costs time on
-  # every render. Manhattan distance, because this runs on every pointer event.
-  defp extend([{last_x, last_y} | _rest] = stroke, {x, y} = point) do
-    if abs(x - last_x) + abs(y - last_y) < 0.5, do: stroke, else: [point | stroke]
-  end
-
-  defp ink_point(component, event) do
-    {_left, _top, width, height} = component.state.box
-
-    {event.offset_x / width * 100, event.offset_y / height * 100}
-  end
-
-  defp finish(component, [_single_point]), do: put_state(component, :stroke, [])
-
-  defp finish(component, []), do: component
-
-  defp finish(component, points) do
-    save_stroke(component, points, read_trip(component))
-  end
-
-  # No readable trip, as for a stranger, so the stroke is dropped the way a tap is.
-  defp save_stroke(component, _points, nil), do: put_state(component, :stroke, [])
-
-  defp save_stroke(component, points, trip) do
-    {:ok, _sketch} =
-      %{
-        author_id: component.state.user_id,
-        color: component.state.ink_color,
-        points: sketch_path(points, trip),
-        trip_id: trip.id
-      }
-      |> Sketch.new()
-      |> DB.create()
-
-    put_state(component, :stroke, [])
-  end
-
-  # Asks for the subscription and counts the asking, so a refusal knows when to stop.
-  defp join(component) do
-    component
-    |> put_state(:join_tries, component.state.join_tries + 1)
-    |> put_command(:join, trip_id: component.state.trip_id)
-  end
-
-  defp ping(component, event) do
-    {_left, _top, width, height} = component.state.box
-    x = event.offset_x / width * 100
-    y = event.offset_y / height * 100
-
-    component
-    |> put_state(:ping, %{x: x, y: y})
-    |> put_action(name: :clear_ping, delay: @ping_ms)
-    |> tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
+    TripChannel.tell(said, :editing, whereabouts(said))
   end
 
   # The panel closes now and the stop is let go after the slide, so the panel has something to
@@ -714,25 +449,74 @@ defmodule Offgrid.Pages.TripPage do
     |> put_action(name: :clear_stop, delay: @panel_slide_ms)
   end
 
+  # Asks for the subscription and counts the asking, so a refusal knows when to stop.
+  defp join(component) do
+    component
+    |> put_state(:join_tries, component.state.join_tries + 1)
+    |> put_command(:join, trip_id: component.state.trip_id)
+  end
+
   defp open_panel(component, stop_id) do
     component
     |> put_state(focused_field: nil, open_stop_id: stop_id, panel_open: true)
     |> announce_editing()
   end
 
-  # Tells the others which stop and field this browser has open. Called last in every action
-  # that changes either, so the message carries the state the action left behind.
-  defp announce_editing(component) do
-    said = said_something(component)
+  # What the panel shows, not what the page still holds, so the others see the stop close when
+  # the panel starts to slide out.
+  defp open_stop(%{panel_open: false}), do: nil
 
-    tell(said, :editing, whereabouts(said))
-  end
+  defp open_stop(state), do: state.open_stop_id
 
-  defp start_pointing(component) do
+  defp ping(component, %{x: x, y: y}) do
     component
-    |> put_state(:pointer_ticking, true)
-    |> put_action(name: :send_pointer, delay: @cursor_ms)
+    |> put_state(:ping, %{x: x, y: y})
+    |> put_action(name: :clear_ping, delay: @ping_ms)
+    |> TripChannel.tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
   end
+
+  # No readable trip, nowhere to put a stop, so the click only disarms +.
+  defp place(component, _place, nil), do: put_state(component, :mode, :idle)
+
+  # The hundredths are offsets in a box a hundred wide, so the projection needs no other size.
+  defp place(component, %{x: x, y: y}, trip) do
+    {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
+
+    {:ok, stop} =
+      %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
+      |> Stop.new()
+      |> DB.create()
+
+    component
+    |> put_state(:mode, :idle)
+    |> open_panel(stop.id)
+  end
+
+  defp read_trip(component) do
+    component.state.trip_id
+    |> Queries.trip_with_basemap()
+    |> DB.read()
+  end
+
+  defp relay_presence(server, params, action) do
+    TripChannel.relay(
+      server,
+      params.trip_id,
+      action,
+      TripChannel.sender(server) ++
+        [stop_id: params.stop_id, field: params.field, seq: params.seq]
+    )
+  end
+
+  # Numbers this browser's presence messages, so a stale one can be told from a newer one.
+  defp said_something(component) do
+    put_state(component, :presence_seq, component.state.presence_seq + 1)
+  end
+
+  # Arming the mode that is already on disarms it.
+  defp toggle(mode, mode), do: :idle
+
+  defp toggle(_mode, armed), do: armed
 
   # Every message from somebody queues a check carrying its number, which lets them go unless
   # they have said something newer by then.
@@ -742,11 +526,6 @@ defmodule Offgrid.Pages.TripPage do
       params: %{id: id, seq: seq},
       delay: @forget_after_ms
     )
-  end
-
-  # Numbers this browser's presence messages, so a stale one can be told from a newer one.
-  defp said_something(component) do
-    put_state(component, :presence_seq, component.state.presence_seq + 1)
   end
 
   # What this browser has open, for every presence message. The server adds who it is.
@@ -759,136 +538,5 @@ defmodule Offgrid.Pages.TripPage do
       field: state.focused_field,
       seq: state.presence_seq
     ]
-  end
-
-  # The same, as a command receives it.
-  defp whereabouts_of(params) do
-    [stop_id: params.stop_id, field: params.field, seq: params.seq]
-  end
-
-  # What the panel shows, not what the page still holds, so the others see the stop close when
-  # the panel starts to slide out.
-  defp open_stop(%{panel_open: false}), do: nil
-
-  defp open_stop(state), do: state.open_stop_id
-
-  # A gesture is sent only while online. A command that cannot reach the server raises, and a
-  # ping or a pointer position is not worth an error.
-  defp tell(component, command, params) do
-    if Link.online?(), do: put_command(component, command, params), else: component
-  end
-
-  # Broadcasts to everyone else on the trip's channel, and to nobody when the sender is not on
-  # the trip. The sender's own session has already drawn what it sends.
-  defp relay(server, trip_id, action, params) do
-    if on_trip?(server, trip_id) do
-      put_broadcast_except(
-        server,
-        {:session, server.session_id},
-        {:trip, trip_id},
-        action,
-        params
-      )
-    else
-      server
-    end
-  end
-
-  # The trip's own read rule, checked against the server's grants. A trip the server has not
-  # heard of answers no, which is what the retry in `:join_refused` is for.
-  defp on_trip?(server, trip_id) do
-    Auth.can?(server.user_id, :read, %Trip{id: trip_id})
-  end
-
-  defp sender(server) do
-    [id: server.user_id, initials: initials(server.user_id)]
-  end
-
-  # The armed pen takes the loaded ink. The ring, not the colour, says it is armed, because
-  # black is one of the inks and the resting button is already black.
-  defp pen_style(false, _ink_color), do: nil
-
-  defp pen_style(true, ink_color), do: "background:#{ink_color}"
-
-  # The SVG path a sketch is stored as, in map coordinates: longitude across, latitude negated
-  # to run down. The percentages are offsets in a box a hundred wide, so no other size is needed.
-  defp sketch_path(points, trip) do
-    points
-    |> Enum.map(fn {x, y} ->
-      {lat, lng} = Geo.from_offset(x, y, 100, 100, trip.basemap)
-
-      {lng, -lat}
-    end)
-    |> Stroke.path()
-  end
-
-  # The points are held newest first, because a stroke grows by prepending.
-  defp stroke_path(stroke) do
-    stroke
-    |> Enum.reverse()
-    |> Stroke.path()
-  end
-
-  # Arming the mode that is already on disarms it.
-  defp toggle(mode, mode), do: :idle
-
-  defp toggle(_mode, armed), do: armed
-
-  # The session names a user, but the account behind it may since have gone.
-  defp initials(user_id) do
-    user =
-      User
-      |> filter(id: user_id)
-      |> one()
-      |> DB.read()
-
-    if user, do: Cast.initials(user.name)
-  end
-
-  defp read_trip(component) do
-    component.state.trip_id
-    |> Queries.trip_with_basemap()
-    |> DB.read()
-  end
-
-  # A drag that went nowhere leaves the row alone.
-  defp drop(component, %{x: nil}), do: put_state(component, :drag, nil)
-
-  defp drop(component, drag) do
-    write_place(component, drag, read_trip(component))
-  end
-
-  # No readable trip, nothing to move.
-  defp write_place(component, _drag, nil), do: put_state(component, :drag, nil)
-
-  # The hundredths are offsets in a box a hundred wide, as in `sketch_path/2`.
-  defp write_place(component, drag, trip) do
-    {lat, lng} = Geo.from_offset(drag.x, drag.y, 100, 100, trip.basemap)
-
-    :ok = DB.update(Stop, drag.id, %{lat: lat, lng: lng})
-
-    put_state(component, :drag, nil)
-  end
-
-  defp place(component, event) do
-    place(component, event, read_trip(component))
-  end
-
-  # No readable trip, nowhere to put a stop, so the click only disarms +.
-  defp place(component, _event, nil), do: put_state(component, :mode, :idle)
-
-  defp place(component, event, trip) do
-    {_left, _top, width, height} = component.state.box
-
-    {lat, lng} = Geo.from_offset(event.offset_x, event.offset_y, width, height, trip.basemap)
-
-    {:ok, stop} =
-      %{date: trip.starts_on, lat: lat, lng: lng, name: "New stop", trip_id: trip.id}
-      |> Stop.new()
-      |> DB.create()
-
-    component
-    |> put_state(:mode, :idle)
-    |> open_panel(stop.id)
   end
 end

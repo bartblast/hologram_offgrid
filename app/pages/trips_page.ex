@@ -28,7 +28,7 @@ defmodule Offgrid.Pages.TripsPage do
           <h2>Your trips</h2>
           <p class="sub">Everything you are on, wherever you left it.</p>
 
-          <TripsList cid="trips_list" />
+          <TripsList />
 
           <Link class="btn" to={NewTripPage}>New trip</Link>
 
