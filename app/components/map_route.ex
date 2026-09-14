@@ -28,9 +28,6 @@ defmodule Offgrid.Components.MapRoute do
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
 
-  # init/2, because a Link from one trip to another mounts this on the client.
-  def init(_props, component), do: component
-
   def template do
     ~HOLO"""
     <svg class="lay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

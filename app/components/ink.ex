@@ -3,7 +3,6 @@ defmodule Offgrid.Components.Ink do
   use Hologram.DB
 
   alias Hologram.Auth
-  alias Hologram.DB
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
@@ -35,9 +34,6 @@ defmodule Offgrid.Components.Ink do
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
   prop :user_id, :string
-
-  # init/2, matching the other always-drawn layers on this map, which hold no state either.
-  def init(_props, component), do: component
 
   def template do
     ~HOLO"""

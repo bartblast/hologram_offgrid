@@ -3,7 +3,6 @@ defmodule Offgrid.Components.TripDetails do
   use Hologram.DB
 
   alias Hologram.Auth
-  alias Hologram.DB
   alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Sketch
@@ -35,7 +34,8 @@ defmodule Offgrid.Components.TripDetails do
   prop :trip_id, :string
   prop :user_id, :string
 
-  # init/2, because the card appears in a page that is already loaded.
+  # Mounts in a page that is already loaded, and a component initialized on the client needs
+  # init/2 even when it has nothing to set up.
   def init(_props, component), do: component
 
   def template do
@@ -57,7 +57,7 @@ defmodule Offgrid.Components.TripDetails do
               class="inp"
               id="details_starts_on"
               type="date"
-              value={date_value(@trip.starts_on)}
+              value={Dates.to_input(@trip.starts_on)}
               $change={:edit_date, field: :starts_on}
             />
           </div>
@@ -68,7 +68,7 @@ defmodule Offgrid.Components.TripDetails do
               class="inp"
               id="details_ends_on"
               type="date"
-              value={date_value(@trip.ends_on)}
+              value={Dates.to_input(@trip.ends_on)}
               $change={:edit_date, field: :ends_on}
             />
           </div>
@@ -121,8 +121,6 @@ defmodule Offgrid.Components.TripDetails do
   def action(:edit_date, params, component) do
     write_date(component, params.field, Dates.parse(params.event.value))
   end
-
-  defp date_value(date), do: Dates.to_input(date)
 
   # Organizers only, which the browser answers from the grants it holds - the same question the
   # server asks again when the batch lands.

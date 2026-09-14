@@ -55,10 +55,10 @@ defmodule Offgrid.PresenceTest do
 
   describe "edit/2" do
     test "records the stop and the field somebody has open" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 1})
 
       assert editing == %{
-               "anna" => %{field: "name", initials: "AK", seq: 1, stop_id: "ryokan"}
+               "anna" => %{field: :name, initials: "AK", seq: 1, stop_id: "ryokan"}
              }
     end
 
@@ -69,7 +69,7 @@ defmodule Offgrid.PresenceTest do
     end
 
     test "a stop of nil means nothing open" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 1})
       closed = edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 2})
 
       assert closed["anna"].stop_id == nil
@@ -79,14 +79,14 @@ defmodule Offgrid.PresenceTest do
     # Two messages sent a moment apart can arrive in the other order, so the one that lost the
     # race must not undo the one that won it.
     test "ignores a message older than one already heard from that person" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 2})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 2})
       stale = edit(editing, %{id: "anna", initials: "AK", stop_id: "ryokan", field: nil, seq: 1})
 
-      assert stale["anna"].field == "name"
+      assert stale["anna"].field == :name
     end
 
     test "ignores a repeat of a message already heard" do
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 2})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 2})
       again = edit(editing, %{id: "anna", initials: "AK", stop_id: nil, field: nil, seq: 2})
 
       assert again["anna"].stop_id == "ryokan"
@@ -95,7 +95,7 @@ defmodule Offgrid.PresenceTest do
     test "counts each person separately" do
       editing =
         %{}
-        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 5})
+        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 5})
         |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
 
       assert editing["tom"].stop_id == "ryokan"
@@ -105,7 +105,7 @@ defmodule Offgrid.PresenceTest do
   describe "depart/4" do
     setup do
       present = [@anna, @tom]
-      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 3})
+      editing = edit(%{}, %{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 3})
 
       [editing: editing, present: present]
     end
@@ -129,24 +129,24 @@ defmodule Offgrid.PresenceTest do
     setup do
       editing =
         %{}
-        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: "name", seq: 1})
+        |> edit(%{id: "anna", initials: "AK", stop_id: "ryokan", field: :name, seq: 1})
         |> edit(%{id: "tom", initials: "TR", stop_id: "ryokan", field: nil, seq: 1})
-        |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: "name", seq: 1})
+        |> edit(%{id: "mira", initials: "MV", stop_id: "fushimi", field: :name, seq: 1})
 
       [editing: editing]
     end
 
     test "on_stop lists everyone on that stop, whatever field", %{editing: editing} do
       assert Enum.sort_by(on_stop(editing, "ryokan"), & &1.id) == [
-               %{field: "name", id: "anna", initials: "AK"},
+               %{field: :name, id: "anna", initials: "AK"},
                %{field: nil, id: "tom", initials: "TR"}
              ]
     end
 
     test "on_field lists only those in that field of that stop", %{editing: editing} do
-      assert on_field(editing, "ryokan", "name") == [%{id: "anna", initials: "AK"}]
-      assert on_field(editing, "ryokan", "description") == []
-      assert on_field(editing, "fushimi", "name") == [%{id: "mira", initials: "MV"}]
+      assert on_field(editing, "ryokan", :name) == [%{id: "anna", initials: "AK"}]
+      assert on_field(editing, "ryokan", :description) == []
+      assert on_field(editing, "fushimi", :name) == [%{id: "mira", initials: "MV"}]
     end
   end
 end

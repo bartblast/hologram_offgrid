@@ -36,13 +36,14 @@ defmodule Offgrid.Pages.NewTripPage do
   middleware Offgrid.Middleware.RequireSession
 
   def init(_params, component, _server) do
-    component
-    |> put_state(:basemap_id, nil)
-    |> put_state(:ends_on, "")
-    |> put_state(:error, nil)
-    |> put_state(:invites, [])
-    |> put_state(:name, "")
-    |> put_state(:starts_on, "")
+    put_state(component,
+      basemap_id: nil,
+      ends_on: "",
+      error: nil,
+      invites: [],
+      name: "",
+      starts_on: ""
+    )
   end
 
   def template do

@@ -70,12 +70,7 @@ defmodule Offgrid.Dates do
   @spec to_input(Date.t() | nil) :: String.t()
   def to_input(nil), do: ""
 
-  def to_input(date) do
-    month = if date.month < 10, do: "0#{date.month}", else: "#{date.month}"
-    day = if date.day < 10, do: "0#{date.day}", else: "#{date.day}"
-
-    "#{date.year}-#{month}-#{day}"
-  end
+  def to_input(date), do: "#{date.year}-#{pad(date.month)}-#{pad(date.day)}"
 
   @doc """
   Returns the span between the two dates as one line: "28 Mar – 6 Apr", or "28 – 30 Mar" when

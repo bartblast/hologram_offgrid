@@ -42,11 +42,7 @@ defmodule Offgrid.Pages.SignUpPage do
   @password_min_length 8
 
   def init(_params, component, _server) do
-    component
-    |> put_state(:email, "")
-    |> put_state(:error, nil)
-    |> put_state(:name, "")
-    |> put_state(:password, "")
+    put_state(component, email: "", error: nil, name: "", password: "")
   end
 
   def template do

@@ -142,7 +142,7 @@ overflow: hidden;
 /* left panel */
 .lpanel { position: absolute; top: 16px; left: 16px; width: var(--panel-w); max-height: calc(100% - 32px); overflow: auto; background: color-mix(in srgb, var(--panel) 91%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: var(--rl); padding: 14px; z-index: 4; }
 .lp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
-.lp-title { font-family: var(--f-disp); font-size: 16.5px; font-weight: 600; }
+.lp-title { display: block; text-align: left; font-family: var(--f-disp); font-size: 16.5px; font-weight: 600; }
 .lp-dates { font-family: var(--f-label); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-top: 1px; }
 .lp-tools { display: flex; gap: 6px; }
 .swatch { width: 40px; height: 27px; padding: 0; border: 1px solid var(--line2); border-radius: calc(var(--r) - 1px); overflow: hidden; background: var(--panel); cursor: pointer; }
@@ -171,9 +171,9 @@ overflow: hidden;
    The halo is the one a chosen pin used to wear - the app's own word for "this one is on". */
 .pen.on { box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--panel) 55%, transparent), 0 0 0 5px color-mix(in srgb, var(--ink) 22%, transparent); }
 .day { font-family: var(--f-label); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 11px 3px 6px; }
-.stop { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 9px 12px; margin-bottom: 6px; }
-.stop h4 { font-family: var(--f-disp); font-size: 14.5px; font-weight: 600; margin: 0 0 2px; }
-.stop p { margin: 0; font-size: 12.5px; color: var(--ink2); }
+.stop { position: relative; display: block; width: 100%; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 9px 12px; margin-bottom: 6px; }
+.stop-name { display: block; font-family: var(--f-disp); font-size: 14.5px; font-weight: 600; margin: 0 0 2px; }
+.stop-summary { display: block; font-size: 12.5px; color: var(--ink2); }
 .stop.open { border-color: color-mix(in srgb, var(--you) 55%, var(--line)); background: color-mix(in srgb, var(--you) 5%, var(--panel)); }
 .sel { position: absolute; inset: -3px; border: 2px solid var(--muted); border-radius: calc(var(--r) + 2px); pointer-events: none; }
 .sel b { position: absolute; top: -10px; left: 9px; font-family: var(--f-label); font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #fff; background: var(--muted); border-radius: 4px; padding: 1px 7px; }
@@ -181,7 +181,7 @@ overflow: hidden;
 .sel.a b { background: var(--anna); }
 .sel.t { border-color: var(--tom); }
 .sel.t b { background: var(--tom); }
-.sel:nth-of-type(2) b { left: auto; right: 9px; }
+.sel + .sel b { left: auto; right: 9px; }
 label .tag { display: inline-block; margin-left: 6px; font-size: 9px; font-weight: 700; letter-spacing: .06em; line-height: 1.5; color: #fff; background: var(--muted); border-radius: 4px; padding: 0 5px; text-transform: uppercase; }
 label .tag.a { background: var(--anna); }
 label .tag.t { background: var(--tom); }
@@ -266,7 +266,7 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .chip i.a { background: var(--anna); }
  .chip i.t { background: var(--tom); }
-.chip b { font-weight: 400; color: var(--muted); }
+.chip button { font-weight: 400; color: var(--muted); }
 .note { margin: 7px 0 0; font-family: var(--f-label); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .members { position: absolute; top: 56px; right: var(--clear-editor); width: 260px; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--line); border-radius: var(--rl); box-shadow: var(--shadow); padding: 10px 13px; z-index: 4; }
 .mrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
@@ -276,10 +276,10 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
  .mrow i.y { background: var(--you); }
 .mrow i.off { background: transparent; border: 1.5px solid var(--line2); }
 .mrow em { font-style: normal; margin-left: auto; font-family: var(--f-label); font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.mrow u { display: grid; place-items: center; width: 16px; height: 16px; flex: none; margin-left: 5px; text-decoration: none; color: var(--muted); cursor: pointer; }
-.mrow u svg { display: block; width: 9px; height: 9px; }
-.mrow u path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
-.mrow u:hover { color: #b3564a; }
+.mrow .remove { display: grid; place-items: center; width: 16px; height: 16px; flex: none; margin-left: 5px; text-decoration: none; color: var(--muted); cursor: pointer; }
+.mrow .remove svg { display: block; width: 9px; height: 9px; }
+.mrow .remove path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
+.mrow .remove:hover { color: #b3564a; }
 .members .inp { margin-top: 9px; }
 /* ink color pop */
 .cpop { position: absolute; right: var(--clear-editor); bottom: 60px; display: flex; gap: 7px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 8px 11px; box-shadow: var(--shadow); z-index: 5; }
@@ -289,7 +289,7 @@ label { display: block; font-family: var(--f-label); font-size: 10px; font-weigh
 .btn { border-radius: 980px; font-weight: 500; letter-spacing: -.01em; }
 a.btn { text-align: center; text-decoration: none; box-sizing: border-box; }
 .btn:hover { background: #0071eb; }
-.card h2, .lp-title, .ed-title, .stop h4 { letter-spacing: -.018em; }
+.card h2, .lp-title, .ed-title, .stop-name { letter-spacing: -.018em; }
 label, .day, .ed-sub, .note { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; }
 .lpanel { background: color-mix(in srgb, var(--panel) 78%, transparent); backdrop-filter: blur(22px) saturate(180%); }
 .times button, .chip { border-radius: 980px; }

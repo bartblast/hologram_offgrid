@@ -28,10 +28,7 @@ defmodule Offgrid.Pages.LogInPage do
   middleware Offgrid.Middleware.GuestOnly
 
   def init(_params, component, _server) do
-    component
-    |> put_state(:email, "")
-    |> put_state(:error, nil)
-    |> put_state(:password, "")
+    put_state(component, email: "", error: nil, password: "")
   end
 
   def template do

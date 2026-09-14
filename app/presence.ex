@@ -71,7 +71,7 @@ defmodule Offgrid.Presence do
           id: String.t(),
           initials: String.t(),
           stop_id: String.t() | nil,
-          field: String.t() | nil,
+          field: atom | nil,
           seq: integer
         }) :: map
   def edit(editing, %{id: id, initials: initials, stop_id: stop_id, field: field, seq: seq}) do
@@ -117,7 +117,7 @@ defmodule Offgrid.Presence do
   @doc """
   Returns who has the given field of the given stop focused, in no particular order.
   """
-  @spec on_field(map, String.t(), String.t()) :: list(person)
+  @spec on_field(map, String.t(), atom) :: list(person)
   def on_field(editing, stop_id, field) do
     for {id, %{field: ^field, initials: initials, stop_id: ^stop_id}} <- editing do
       %{id: id, initials: initials}
@@ -129,7 +129,7 @@ defmodule Offgrid.Presence do
   order.
   """
   @spec on_stop(map, String.t()) ::
-          list(%{id: String.t(), initials: String.t(), field: String.t() | nil})
+          list(%{id: String.t(), initials: String.t(), field: atom | nil})
   def on_stop(editing, stop_id) do
     for {id, %{field: field, initials: initials, stop_id: ^stop_id}} <- editing do
       %{field: field, id: id, initials: initials}

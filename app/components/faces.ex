@@ -19,7 +19,7 @@ defmodule Offgrid.Components.Faces do
   prop :present, :list
   prop :trip_id, :string
   prop :user_id, :string
-  prop :you, :string, default: nil
+  prop :you, :string
 
   def template do
     ~HOLO"""
@@ -27,9 +27,7 @@ defmodule Offgrid.Components.Faces do
       <div class={face_class(@grants, @user_id, face)}>{face.initials}</div>
     {/for}
 
-    {%if @you}
-      <div class="face y">{@you}</div>
-    {/if}
+    <div class="face y">{@you}</div>
     """
   end
 

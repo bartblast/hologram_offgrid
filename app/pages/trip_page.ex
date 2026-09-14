@@ -68,6 +68,22 @@ defmodule Offgrid.Pages.TripPage do
   # stops, and the next movement starts it again, so an idle screen pays nothing.
   @cursor_ms 100
 
+  # Somebody else's pointer is dropped when nothing newer has arrived in this long.
+  @cursor_expiry_ms 2_500
+
+  # How long the stop panel takes to slide out, which is how long the page keeps the stop it
+  # was open on. The stylesheet's `.editor` transition runs for the same time.
+  @panel_slide_ms 250
+
+  @ping_ms 3_000
+
+  # A join the server refuses is asked again after a pause, up to this many joins in all.
+  @join_attempts 2
+  @rejoin_ms 3_000
+
+  # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
+  @ink_colors ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
+
   route "/trips/:id"
 
   param :id, :string
@@ -85,33 +101,35 @@ defmodule Offgrid.Pages.TripPage do
   def init(params, component, server) do
     initialized =
       component
-      |> put_state(:box, nil)
-      |> put_state(:cursors, %{})
-      |> put_state(:drag, nil)
-      |> put_state(:drag_rect, nil)
-      |> put_state(:details_open, false)
-      |> put_state(:drawing, false)
-      |> put_state(:editing, %{})
-      |> put_state(:editing_seq, 0)
-      |> put_state(:focused_field, nil)
-      |> put_state(:ink_color, "#ff2d55")
-      |> put_state(:join_tries, 0)
-      |> put_state(:maps_open, false)
-      |> put_state(:members_open, false)
-      |> put_state(:open_stop_id, nil)
-      |> put_state(:panel_open, false)
-      |> put_state(:ping, nil)
-      |> put_state(:present, [])
-      |> put_state(:placing, false)
-      |> put_state(:pointer, nil)
-      |> put_state(:pointer_sent, nil)
-      |> put_state(:pointer_ticking, false)
-      |> put_state(:stroke, [])
-      |> put_state(:stroke_box, nil)
-      |> put_state(:trip_id, params.id)
-      |> put_state(:tz_offset, 0)
-      |> put_state(:user_id, server.user_id)
-      |> put_state(:you, initials(server.user_id))
+      |> put_state(
+        box: nil,
+        cursors: %{},
+        details_open: false,
+        drag: nil,
+        drag_rect: nil,
+        drawing: false,
+        editing: %{},
+        editing_seq: 0,
+        focused_field: nil,
+        ink_color: hd(@ink_colors),
+        join_tries: 0,
+        maps_open: false,
+        members_open: false,
+        open_stop_id: nil,
+        panel_open: false,
+        ping: nil,
+        placing: false,
+        pointer: nil,
+        pointer_sent: nil,
+        pointer_ticking: false,
+        present: [],
+        stroke: [],
+        stroke_box: nil,
+        trip_id: params.id,
+        tz_offset: 0,
+        user_id: server.user_id,
+        you: initials(server.user_id)
+      )
       # Queued here and run on the client the moment the page is up, after its first render -
       # the framework's answer to "on mount". A component may queue one action, so the two
       # things that can only happen once the page is real share it.
@@ -120,15 +138,22 @@ defmodule Offgrid.Pages.TripPage do
     {initialized, server}
   end
 
+  # The canvas is a plain element with nothing inside, laid over the terrain rather than wrapped
+  # around it: a click whose target sits inside a child component does not reach a listener on
+  # the element around it.
+  #
+  # The canvas is measured when the window resizes rather than when the canvas does: a window
+  # binding is torn down with the page, where an observer on the canvas fires once more as the
+  # element goes and lands on whichever page comes next.
+  #
+  # A drag outlives the pin it began on, so its pointer is followed on the document, and only
+  # while a drag is under way.
   def template do
     ~HOLO"""
     <div class="app">
       <div class="map">
         <Terrain trip_id={@trip_id} />
 
-        <!-- The surface a click lands on, laid over the terrain rather than wrapped around it: a
-             click whose target sits inside a child component does not reach a listener on the
-             element around it, so the surface is a plain element with nothing inside. -->
         <div
           id="canvas"
           class={canvas_class(@placing)}
@@ -138,8 +163,6 @@ defmodule Offgrid.Pages.TripPage do
 
         <MapRoute cid="map_route" drag={@drag} trip_id={@trip_id} />
 
-        <!-- The pointer carries the nib, in the ink it is loaded with, so what the hand is
-             about to do is under the hand rather than described somewhere else. -->
         <div
           class={ink_class(@drawing)}
           style={nib_cursor(@drawing, @ink_color)}
@@ -152,12 +175,7 @@ defmodule Offgrid.Pages.TripPage do
 
         <svg class="ink-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {%if @stroke != []}
-            <!-- In the ink it is being drawn with, not the accent: the colour was fixed here
-                 while the mockup had one colour for your own ink, and the picker that arrived
-                 later never reached it - so a violet line was drawn red and turned violet the
-                 moment the pointer lifted. -->
             <path
-              class="ink-mine"
               d={stroke_path(@stroke)}
               stroke={@ink_color}
               fill="none"
@@ -175,8 +193,6 @@ defmodule Offgrid.Pages.TripPage do
 
         <Cursors cid="cursors" cursors={@cursors} trip_id={@trip_id} user_id={@user_id} />
 
-        <!-- Three parts, in the order they are drawn: the wash that spreads, the hairline
-             riding its edge, and the dot last so both pass behind it rather than tinting it. -->
         {%if @ping}
           <div class="ping" style={"left:#{@ping.x}%;top:#{@ping.y}%"}>
             <i class="wash"></i><i class="edge"></i><b></b>
@@ -206,9 +222,6 @@ defmodule Offgrid.Pages.TripPage do
                 aria-label="Add a stop"
                 $click="toggle_placing"
               >
-                <!-- Drawn rather than typed. A font's "+" sits on its own maths axis, which is
-                     not the middle of the circle around it, so the glyph reads a hair high
-                     however the text box is centred - two strokes cannot. -->
                 <svg viewBox="0 0 12 12" aria-hidden="true">
                   <path d="M6 2 V10 M2 6 H10" />
                 </svg>
@@ -245,10 +258,8 @@ defmodule Offgrid.Pages.TripPage do
             />
           </button>
 
-          {%if @you}
-            <span class="sep"></span>
-            <button class="signout" type="button" $click="log_out">Log out</button>
-          {/if}
+          <span class="sep"></span>
+          <button class="signout" type="button" $click="log_out">Log out</button>
         </div>
 
         {%if @members_open}
@@ -269,9 +280,6 @@ defmodule Offgrid.Pages.TripPage do
           aria-label="Draw"
           $click="toggle_drawing"
         >
-          <!-- The same nib the pointer carries while the pen is out, so the control and the
-               cursor are one object. Drawn rather than typed: the character it used to be is a
-               font's, thin wherever the font is thin, and it read as barely there. -->
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4.5 19.5 L7.5 12 L15.5 4 L20 8.5 L12 16.5 Z" />
             <path class="solid" d="M4.5 19.5 L8.6 18 L6 15.4 Z" />
@@ -292,15 +300,8 @@ defmodule Offgrid.Pages.TripPage do
           </div>
         {/if}
 
-        <!-- The canvas only ever resizes with the window, and a window binding is torn down with
-             the page, where an observer on the canvas fires once more as the element goes and
-             lands on whichever page comes next. -->
         <window $resize="measure" />
 
-        <!-- A drag outlives the pin it began on, so the pointer is followed on the document
-             rather than on the pin: the hand can wander over another pin, the panel or off the
-             map entirely and the stop still goes where it is let go. Listening only while a
-             drag is under way, so nothing is bound the rest of the time. -->
         {%if @drag}
           <document $pointer_move="drag_move" $pointer_up="drag_finish" />
         {/if}
@@ -357,10 +358,9 @@ defmodule Offgrid.Pages.TripPage do
     # empty - which is honest, since the thing it was about no longer exists - rather than
     # holding a copy of something deleted or blinking out where closing glides.
     component
-    |> put_state(:focused_field, nil)
-    |> put_state(:panel_open, false)
+    |> put_state(focused_field: nil, panel_open: false)
     |> announce_editing()
-    |> put_action(name: :clear_stop, delay: 250)
+    |> put_action(name: :clear_stop, delay: @panel_slide_ms)
   end
 
   def action(:close_details, _params, component) do
@@ -372,10 +372,9 @@ defmodule Offgrid.Pages.TripPage do
   # now: the field is no longer focused and the others are told so at once.
   def action(:close_stop, _params, component) do
     component
-    |> put_state(:focused_field, nil)
-    |> put_state(:panel_open, false)
+    |> put_state(focused_field: nil, panel_open: false)
     |> announce_editing()
-    |> put_action(name: :clear_stop, delay: 250)
+    |> put_action(name: :clear_stop, delay: @panel_slide_ms)
   end
 
   # What the slide was waiting for. Nothing renders the panel after this.
@@ -390,9 +389,10 @@ defmodule Offgrid.Pages.TripPage do
   # frame would be a hundred rows on the wire for one gesture, where the stop only ever
   # ends up in one place.
   def action(:drag_start, params, component) do
-    component
-    |> put_state(:drag, %{id: params.id, x: nil, y: nil})
-    |> put_state(:drag_rect, Box.rect("canvas"))
+    put_state(component,
+      drag: %{id: params.id, x: nil, y: nil},
+      drag_rect: Box.rect("canvas")
+    )
   end
 
   # The pin follows the pointer, in hundredths of the map, which is what the pin's own style
@@ -418,8 +418,10 @@ defmodule Offgrid.Pages.TripPage do
   # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
   def action(:editing_changed, params, component) do
     component
-    |> put_state(:present, Presence.arrive(component.state.present, params))
-    |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> put_state(
+      editing: Presence.edit(component.state.editing, params),
+      present: Presence.arrive(component.state.present, params)
+    )
     |> watch(params)
   end
 
@@ -499,7 +501,11 @@ defmodule Offgrid.Pages.TripPage do
 
     component
     |> put_state(:cursors, cursors)
-    |> put_action(name: :expire_cursor, params: %{id: params.id, seq: seq}, delay: 2_500)
+    |> put_action(
+      name: :expire_cursor,
+      params: %{id: params.id, seq: seq},
+      delay: @cursor_expiry_ms
+    )
   end
 
   def action(:expire_cursor, params, component) do
@@ -556,16 +562,9 @@ defmodule Offgrid.Pages.TripPage do
   # element to measure, the clock's offset needs a browser to ask, and joining the trip needs
   # a page that is listening.
   def action(:mounted, _params, component) do
-    measured =
-      component
-      |> put_state(:box, Box.size("canvas"))
-      |> put_state(:tz_offset, Clock.offset_minutes())
-
-    if component.state.you do
-      join(measured)
-    else
-      measured
-    end
+    component
+    |> put_state(box: Box.size("canvas"), tz_offset: Clock.offset_minutes())
+    |> join()
   end
 
   # Still here. Nothing tells anybody that a browser has gone - the framework notices and says
@@ -589,17 +588,15 @@ defmodule Offgrid.Pages.TripPage do
         params.seq
       )
 
-    component
-    |> put_state(:present, present)
-    |> put_state(:editing, editing)
+    put_state(component, editing: editing, present: present)
   end
 
   # The door said no. Once more, a little later, and then no more: the server refuses a trip it
   # cannot see, and a trip this browser made offline is exactly that until its batch lands -
   # which it will have, three seconds on, if it is ever going to.
   def action(:join_refused, _params, component) do
-    if component.state.join_tries < 2 do
-      put_action(component, name: :rejoin, delay: 3_000)
+    if component.state.join_tries < @join_attempts do
+      put_action(component, name: :rejoin, delay: @rejoin_ms)
     else
       component
     end
@@ -634,16 +631,20 @@ defmodule Offgrid.Pages.TripPage do
 
     said
     |> put_command(:answer, whereabouts(said))
-    |> put_state(:present, Presence.arrive(component.state.present, params))
-    |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> put_state(
+      editing: Presence.edit(component.state.editing, params),
+      present: Presence.arrive(component.state.present, params)
+    )
     |> watch(params)
   end
 
   # An answer to our own arrival. Only adds, so the round stops here.
   def action(:member_here, params, component) do
     component
-    |> put_state(:present, Presence.arrive(component.state.present, params))
-    |> put_state(:editing, Presence.edit(component.state.editing, params))
+    |> put_state(
+      editing: Presence.edit(component.state.editing, params),
+      present: Presence.arrive(component.state.present, params)
+    )
     |> watch(params)
   end
 
@@ -653,9 +654,7 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:open_stop, params, component) do
     component
-    |> put_state(:focused_field, nil)
-    |> put_state(:open_stop_id, params.id)
-    |> put_state(:panel_open, true)
+    |> put_state(focused_field: nil, open_stop_id: params.id, panel_open: true)
     |> announce_editing()
   end
 
@@ -677,7 +676,7 @@ defmodule Offgrid.Pages.TripPage do
   def action(:show_ping, params, component) do
     component
     |> put_state(:ping, %{x: params.x, y: params.y})
-    |> put_action(name: :clear_ping, delay: 3_000)
+    |> put_action(name: :clear_ping, delay: @ping_ms)
   end
 
   # A ping is a gesture, not a record: nothing stores it, and after three seconds it is gone
@@ -702,20 +701,19 @@ defmodule Offgrid.Pages.TripPage do
   # The two armed modes are exclusive: the map can be waiting for a place or waiting for ink,
   # and arming either is how you say which.
   def action(:toggle_drawing, _params, component) do
-    component
-    |> put_state(:drawing, !component.state.drawing)
-    |> put_state(:ping, nil)
-    |> put_state(:placing, false)
-    |> put_state(:stroke, [])
-    |> put_state(:stroke_box, nil)
+    put_state(component,
+      drawing: !component.state.drawing,
+      ping: nil,
+      placing: false,
+      stroke: [],
+      stroke_box: nil
+    )
   end
 
   # + arms placing rather than creating anything, and a second press disarms. Adding a stop
   # means pointing at a place, so the button has exactly one meaning and the map has the other.
   def action(:toggle_placing, _params, component) do
-    component
-    |> put_state(:drawing, false)
-    |> put_state(:placing, !component.state.placing)
+    put_state(component, drawing: false, placing: !component.state.placing)
   end
 
   # Subscribing happens here, from the client, after the page is mounted - never in `init/3`,
@@ -855,8 +853,7 @@ defmodule Offgrid.Pages.TripPage do
     "cursor: url(\"data:image/svg+xml;utf8,#{svg}\") 3 23, cell"
   end
 
-  # The theme's own five: the three the people on a trip are drawn in, the accent, and ink.
-  defp ink_colors, do: ["#ff2d55", "#af52de", "#30b0c7", "#007aff", "#1d1d1f"]
+  defp ink_colors, do: @ink_colors
 
   # A pointer reports far more places than a line needs, and every one of them is paid for
   # again on EVERY render for as long as the sketch exists - measured at about a fifth of a
@@ -919,9 +916,7 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   defp idle_stroke(component) do
-    component
-    |> put_state(:stroke, [])
-    |> put_state(:stroke_box, nil)
+    put_state(component, stroke: [], stroke_box: nil)
   end
 
   defp ping(component, event) do
@@ -931,7 +926,7 @@ defmodule Offgrid.Pages.TripPage do
 
     component
     |> put_state(:ping, %{x: x, y: y})
-    |> put_action(name: :clear_ping, delay: 3_000)
+    |> put_action(name: :clear_ping, delay: @ping_ms)
     |> tell(:ping, trip_id: component.state.trip_id, x: x, y: y)
   end
 
@@ -1062,9 +1057,7 @@ defmodule Offgrid.Pages.TripPage do
 
   defp ring(false), do: ""
 
-  # Nobody signed in has no face to show, which is a real state until the auth gates land.
-  defp initials(nil), do: nil
-
+  # The session names a user, but the account behind it may since have gone.
   defp initials(user_id) do
     user =
       User
@@ -1103,9 +1096,7 @@ defmodule Offgrid.Pages.TripPage do
   end
 
   defp idle_drag(component) do
-    component
-    |> put_state(:drag, nil)
-    |> put_state(:drag_rect, nil)
+    put_state(component, drag: nil, drag_rect: nil)
   end
 
   defp place(component, event) do
@@ -1134,10 +1125,7 @@ defmodule Offgrid.Pages.TripPage do
       |> DB.create()
 
     component
-    |> put_state(:focused_field, nil)
-    |> put_state(:open_stop_id, stop.id)
-    |> put_state(:panel_open, true)
-    |> put_state(:placing, false)
+    |> put_state(focused_field: nil, open_stop_id: stop.id, panel_open: true, placing: false)
     |> announce_editing()
   end
 end

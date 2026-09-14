@@ -17,8 +17,6 @@ defmodule Offgrid.Components.BasemapPicker do
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
   prop :selected_id, :string, default: nil
 
-  def init(_props, component), do: component
-
   def template do
     ~HOLO"""
     <div class="thumbs">

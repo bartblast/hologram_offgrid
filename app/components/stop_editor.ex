@@ -3,7 +3,6 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.DB
 
   alias Hologram.Auth.RoleGrant
-  alias Hologram.DB
   alias Offgrid.Cast
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Dates
@@ -53,9 +52,7 @@ defmodule Offgrid.Components.StopEditor do
   # The panel keeps its cid, and so its state, from one stop to the next, so the draft
   # remembers which stop it was typed under and reads as empty under any other.
   def init(_props, component) do
-    component
-    |> put_state(:draft, "")
-    |> put_state(:draft_stop_id, nil)
+    put_state(component, draft: "", draft_stop_id: nil)
   end
 
   def template do
@@ -63,11 +60,6 @@ defmodule Offgrid.Components.StopEditor do
     {%if @stop || @away}
     <div class={editor_class(@away)}>
       {%if @stop}
-      <!-- The header is the itinerary panel's, mirrored: what the panel is about on the left,
-           the one control it has on the right, in the same circle at the same size. Escape
-           closes this too and did before the button - but a keyboard shortcut nobody is told
-           about is not a way out of a panel this size. The page owns which stop is open, so
-           the button asks the page. -->
       <div class="ed-head">
         <div>
           <div class="ed-title">{@stop.name}</div>
@@ -80,31 +72,29 @@ defmodule Offgrid.Components.StopEditor do
           aria-label="Close"
           $click={action: :close_stop, target: "page"}
         >
-          <!-- Two strokes, for the reason the + beside it is two: a glyph is centred on its
-               own axis rather than on the circle it sits in. -->
           <svg viewBox="0 0 12 12" aria-hidden="true">
             <path d="M3.2 3.2 L8.8 8.8 M8.8 3.2 L3.2 8.8" />
           </svg>
         </button>
       </div>
 
-      <label>Name {%for person <- others_in(@editing, @stop_id, "name", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
+      <label>Name {%for person <- others_in(@editing, @stop_id, :name, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       <input
         id="stop_name"
-        class={field_class(@editing, @stop_id, "name", @user_id)}
+        class={field_class(@editing, @stop_id, :name, @user_id)}
         value={@stop.name}
         $change={:edit, field: :name}
-        $focus={action: :field_focused, target: "page", params: %{field: "name"}}
+        $focus={action: :field_focused, target: "page", params: %{field: :name}}
         $blur={action: :field_blurred, target: "page"}
       />
 
-      <label>Description {%for person <- others_in(@editing, @stop_id, "description", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
+      <label>Description {%for person <- others_in(@editing, @stop_id, :description, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       <input
         id="stop_description"
-        class={field_class(@editing, @stop_id, "description", @user_id)}
+        class={field_class(@editing, @stop_id, :description, @user_id)}
         value={@stop.description}
         $change={:edit, field: :description}
-        $focus={action: :field_focused, target: "page", params: %{field: "description"}}
+        $focus={action: :field_focused, target: "page", params: %{field: :description}}
         $blur={action: :field_blurred, target: "page"}
       />
 
@@ -122,7 +112,7 @@ defmodule Offgrid.Components.StopEditor do
         {/for}
       </div>
 
-      <label>Comments {%for person <- others_in(@editing, @stop_id, "comment", @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
+      <label>Comments {%for person <- others_in(@editing, @stop_id, :comment, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
       {%for comment <- @comments}
         <div class="cmt">
           <b><i class={dot_class(@grants, @user_id, comment)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
@@ -131,12 +121,12 @@ defmodule Offgrid.Components.StopEditor do
       {/for}
       <input
         id="stop_comment"
-        class={field_class(@editing, @stop_id, "comment", @user_id)}
+        class={field_class(@editing, @stop_id, :comment, @user_id)}
         placeholder="Add a comment…"
         value={draft_for(@draft, @draft_stop_id, @stop_id)}
         $change={:edit_draft}
         $key_down.enter="add_comment"
-        $focus={action: :field_focused, target: "page", params: %{field: "comment"}}
+        $focus={action: :field_focused, target: "page", params: %{field: :comment}}
         $blur={action: :field_blurred, target: "page"}
       />
 
@@ -178,9 +168,7 @@ defmodule Offgrid.Components.StopEditor do
   end
 
   def action(:edit_draft, params, component) do
-    component
-    |> put_state(:draft, params.event.value)
-    |> put_state(:draft_stop_id, component.props.stop_id)
+    put_state(component, draft: params.event.value, draft_stop_id: component.props.stop_id)
   end
 
   def action(:set_time, params, component) do

@@ -2,7 +2,6 @@ defmodule Offgrid.Components.MapPicker do
   use Hologram.Component
   use Hologram.DB
 
-  alias Hologram.DB
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
   alias Offgrid.Entities.Trip
@@ -23,8 +22,8 @@ defmodule Offgrid.Components.MapPicker do
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
 
-  # init/2, because the row appears in a page that is already loaded, the way every other
-  # thing behind an {%if} on this screen does.
+  # Mounts in a page that is already loaded, and a component initialized on the client needs
+  # init/2 even when it has nothing to set up.
   def init(_props, component), do: component
 
   def template do

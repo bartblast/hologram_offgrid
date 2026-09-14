@@ -34,13 +34,13 @@ defmodule Offgrid.Features.MembersTest do
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
     # The only cross on screen is Anna's - an organizer's own row carries none.
-    |> click(css(".mrow u"))
+    |> click(css(".mrow .remove"))
     # Gone from the panel without a round trip, and the organizer is who is left.
     |> assert_has(css(".mrow", count: 1))
     |> assert_text(css(".members"), "Iris Kalm")
-    |> refute_has(css(".mrow u"))
+    |> refute_has(css(".mrow .remove"))
     |> assert_text(css(".members"), "Iris Kalm")
-    |> refute_has(css(".mrow u"))
+    |> refute_has(css(".mrow .remove"))
   end
 
   feature "names an address nobody uses", %{session: session, trip: trip} do
@@ -93,7 +93,7 @@ defmodule Offgrid.Features.MembersTest do
     |> assert_text(css(".members"), "Anna Kim")
     # A member sees who is on the trip and cannot change it, which the browser decides for
     # itself from the grants it holds - neither the crosses nor the field to add by.
-    |> refute_has(css(".mrow u"))
+    |> refute_has(css(".mrow .remove"))
     |> refute_has(css(".members .inp"))
   end
 

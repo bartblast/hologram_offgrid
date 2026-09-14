@@ -27,6 +27,8 @@ defmodule Offgrid.Components.TripCalendar do
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
 
+  # Mounts in a page that is already loaded, and a component initialized on the client needs
+  # init/2 even when it has nothing to set up.
   def init(_props, component), do: component
 
   def template do

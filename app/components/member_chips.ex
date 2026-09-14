@@ -25,7 +25,7 @@ defmodule Offgrid.Components.MemberChips do
   # init/3, because every page comes from the server - a Link navigation fetches one too - so a
   # component the page always renders is always initialized there. init/2 is for a component
   # that appears in a page ALREADY loaded, the way the stop editor does when a stop is opened.
-  def init(_props, component, server), do: {blank(component), server}
+  def init(_props, component, _server), do: blank(component)
 
   def template do
     ~HOLO"""
@@ -33,7 +33,11 @@ defmodule Offgrid.Components.MemberChips do
       {%for invite <- @invites}
         <span class="chip">
           <i class={chip_class(@invites, invite)}></i>{invite.email}
-          <b $click={action: :remove_invite, target: "page", params: %{id: invite.id}}>×</b>
+          <button
+            type="button"
+            aria-label="Remove"
+            $click={action: :remove_invite, target: "page", params: %{id: invite.id}}
+          >×</button>
         </span>
       {/for}
     </div>
@@ -71,9 +75,7 @@ defmodule Offgrid.Components.MemberChips do
   end
 
   defp blank(component) do
-    component
-    |> put_state(:email, "")
-    |> put_state(:error, nil)
+    put_state(component, email: "", error: nil)
   end
 
   defp add(component, nil) do
@@ -82,8 +84,7 @@ defmodule Offgrid.Components.MemberChips do
 
   defp add(component, user) do
     component
-    |> put_state(:email, "")
-    |> put_state(:error, nil)
+    |> blank()
     |> put_action(name: :add_invite, target: "page", params: %{user: user})
   end
 

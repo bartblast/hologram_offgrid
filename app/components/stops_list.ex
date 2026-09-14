@@ -34,13 +34,17 @@ defmodule Offgrid.Components.StopsList do
       <div class="day">{day_label(day)}</div>
 
       {%for stop <- day}
-        <div class={row_class(stop, @open_stop_id)} $click={action: :open_stop, target: "page", params: %{id: stop.id}}>
-          <h4>{stop.name}</h4>
-          <p>{summary(stop)}</p>
+        <button
+          class={row_class(stop, @open_stop_id)}
+          type="button"
+          $click={action: :open_stop, target: "page", params: %{id: stop.id}}
+        >
+          <span class="stop-name">{stop.name}</span>
+          <span class="stop-summary">{summary(stop)}</span>
           {%for person <- others_on(@editing, stop.id, @user_id)}
-            <div class={sel_class(@grants, @user_id, person.id)}><b>{person.initials}</b></div>
+            <span class={sel_class(@grants, @user_id, person.id)}><b>{person.initials}</b></span>
           {/for}
-        </div>
+        </button>
       {/for}
     {/for}
     """

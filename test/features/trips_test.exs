@@ -54,7 +54,7 @@ defmodule Offgrid.Features.TripsTest do
     bart
     |> click(css(".facepile"))
     |> assert_text(css(".members"), "Anna Kim")
-    |> click(css(".mrow u"))
+    |> click(css(".mrow .remove"))
     |> await_pending_writes(0)
 
     # Anna is still standing on the trip's own page and loses it under her feet: the grant is

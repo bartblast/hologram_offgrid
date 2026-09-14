@@ -22,15 +22,13 @@ defmodule Offgrid.Components.TripHeader do
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
 
-  # init/2, because the header mounts on the client whenever a Link carries you from one trip
-  # to another without a page load.
-  def init(_props, component), do: component
-
   def template do
     ~HOLO"""
     <div>
       {%if @trip}
-        <div class="lp-title" $click={action: :open_details, target: "page"}>{@trip.name}</div>
+        <button class="lp-title" type="button" $click={action: :open_details, target: "page"}>
+          {@trip.name}
+        </button>
         <div class="lp-dates">{Dates.span(@trip.starts_on, @trip.ends_on)}</div>
       {/if}
     </div>
