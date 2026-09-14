@@ -13,7 +13,7 @@ router and the layouts are Phoenix's, and every page is Hologram's.
 
 ## Setup
 
-You need Elixir 1.19 or later, Erlang/OTP 27 or later, and PostgreSQL running locally.
+You need Elixir 1.19 or later, Erlang/OTP 28 or later, and PostgreSQL running locally.
 
 ```bash
 git clone https://github.com/bartblast/offgrid.git

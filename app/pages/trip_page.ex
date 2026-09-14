@@ -542,8 +542,6 @@ defmodule Offgrid.Pages.TripPage do
       component
       |> put_state(:pointer_sent, state.pointer)
       |> tell(:cursor,
-        id: state.user_id,
-        initials: state.you,
         trip_id: state.trip_id,
         x: state.pointer.x,
         y: state.pointer.y
@@ -739,6 +737,8 @@ defmodule Offgrid.Pages.TripPage do
     end
   end
 
+  # Who a presence message is from comes from the session, never from the params - otherwise
+  # any member could speak as another.
   def command(:announce, params, server) do
     if on_trip?(server, params.trip_id) do
       put_broadcast_except(
@@ -746,11 +746,7 @@ defmodule Offgrid.Pages.TripPage do
         {:session, server.session_id},
         {:trip, params.trip_id},
         :member_arrived,
-        id: params.id,
-        initials: params.initials,
-        stop_id: params.stop_id,
-        field: params.field,
-        seq: params.seq
+        sender(server) ++ [stop_id: params.stop_id, field: params.field, seq: params.seq]
       )
     else
       server
@@ -764,11 +760,7 @@ defmodule Offgrid.Pages.TripPage do
         {:session, server.session_id},
         {:trip, params.trip_id},
         :member_here,
-        id: params.id,
-        initials: params.initials,
-        stop_id: params.stop_id,
-        field: params.field,
-        seq: params.seq
+        sender(server) ++ [stop_id: params.stop_id, field: params.field, seq: params.seq]
       )
     else
       server
@@ -782,11 +774,7 @@ defmodule Offgrid.Pages.TripPage do
         {:session, server.session_id},
         {:trip, params.trip_id},
         :editing_changed,
-        id: params.id,
-        initials: params.initials,
-        stop_id: params.stop_id,
-        field: params.field,
-        seq: params.seq
+        sender(server) ++ [stop_id: params.stop_id, field: params.field, seq: params.seq]
       )
     else
       server
@@ -800,10 +788,7 @@ defmodule Offgrid.Pages.TripPage do
         {:session, server.session_id},
         {:trip, params.trip_id},
         :cursor_moved,
-        id: params.id,
-        initials: params.initials,
-        x: params.x,
-        y: params.y
+        sender(server) ++ [x: params.x, y: params.y]
       )
     else
       server
@@ -981,13 +966,11 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :editing_seq, component.state.editing_seq + 1)
   end
 
-  # Who this browser is and what it has open, as every presence message carries it.
+  # What this browser has open, as every presence message carries it. Who it is, the server adds.
   defp whereabouts(component) do
     state = component.state
 
     [
-      id: state.user_id,
-      initials: state.you,
       trip_id: state.trip_id,
       stop_id: open_stop(state),
       field: state.focused_field,
@@ -1014,6 +997,10 @@ defmodule Offgrid.Pages.TripPage do
   # has never heard of answers no, which is what the retry in `:join_refused` is for.
   defp on_trip?(server, trip_id) do
     Auth.can?(server.user_id, :read, %Trip{id: trip_id})
+  end
+
+  defp sender(server) do
+    [id: server.user_id, initials: initials(server.user_id)]
   end
 
   defp pen_class(drawing, panel_open), do: "pen" <> armed(drawing) <> mid(panel_open)
