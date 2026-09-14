@@ -6,7 +6,7 @@ defmodule Offgrid.Features.PingTest do
   alias Hologram.DB
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -34,7 +34,7 @@ defmodule Offgrid.Features.PingTest do
     assert_has(two, css(".ping"))
 
     # Nothing was written, and nothing is left after it fades.
-    assert await_pending_writes(one, 0)
+    await_pending_writes(one, 0)
     assert length(DB.read(Offgrid.Entities.Stop)) == 0
 
     one |> refute_has(css(".ping"))

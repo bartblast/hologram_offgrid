@@ -11,7 +11,7 @@ defmodule Offgrid.Features.AuthTest do
   # A trip, because the trip screen is where a face proves a session was made, and that screen
   # now needs one named in its address.
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end

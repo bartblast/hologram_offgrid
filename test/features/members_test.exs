@@ -4,7 +4,7 @@ defmodule Offgrid.Features.MembersTest do
   alias Hologram.Auth
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -121,13 +121,17 @@ defmodule Offgrid.Features.MembersTest do
     |> refute_has(css(".lp-title"))
     # Opened, so that finding nothing is the policy answering and not the panel being shut.
     |> click(css(".facepile"))
+    |> assert_has(css(".members"))
     # The list is read through the trip's own rules, so a stranger is told nothing about who
     # is on it - not even that anybody is.
     |> refute_has(css(".mrow"))
     # The tools have nothing to work on either, and say so by doing nothing: no stop is placed,
-    # nothing crashes, and the pen still arms.
+    # nothing crashes, and the pen still arms. With no trip to place on, the click only
+    # disarms the +, which is what says it was handled before the editor is looked for.
     |> click(css(".addb"))
+    |> assert_has(css(".addb.on"))
     |> click(css("#canvas"))
+    |> refute_has(css(".addb.on"))
     |> refute_has(css(".editor"))
     |> refute_has(css("#hologram-uncaught-error-overlay"))
     |> click(css(".pen"))

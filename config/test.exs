@@ -33,6 +33,9 @@ config :offgrid, Offgrid.Mailer, adapter: Swoosh.Adapters.Test
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
+# The cheapest hash bcrypt allows. The suite hashes a password for every account it creates.
+config :bcrypt_elixir, log_rounds: 1
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

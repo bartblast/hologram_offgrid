@@ -5,7 +5,7 @@ defmodule Offgrid.Features.StopCrudTest do
   alias Offgrid.Entities.Stop
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -98,14 +98,19 @@ defmodule Offgrid.Features.StopCrudTest do
   feature "places nothing until armed, and Escape disarms", %{session: session, trip: trip} do
     session
     |> sign_in_as_member(trip)
-    # Unarmed, the map is just a map.
+    # Unarmed, a click on the map is a ping - and the ping appearing is what proves the click
+    # was handled before the editor is looked for.
     |> click(css("#canvas"))
+    |> assert_has(css(".ping"))
     |> refute_has(css(".editor"))
+    # Faded, so the next ping is a new one.
+    |> refute_has(css(".ping"))
     |> click(css(".addb"))
     |> assert_has(css(".addb.on"))
     |> send_keys([:escape])
     |> refute_has(css(".addb.on"))
     |> click(css("#canvas"))
+    |> assert_has(css(".ping"))
     |> refute_has(css(".editor"))
     |> refute_has(css(".pin"))
   end

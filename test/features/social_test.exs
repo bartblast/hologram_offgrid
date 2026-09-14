@@ -6,7 +6,7 @@ defmodule Offgrid.Features.SocialTest do
   alias Offgrid.Entities.Stop
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     trip = create_trip()
 
@@ -53,7 +53,7 @@ defmodule Offgrid.Features.SocialTest do
     |> click(css(".cdot", at: 2))
     |> drag([{220, 160}, {260, 200}, {300, 240}])
 
-    assert await_pending_writes(tom, 0)
+    await_pending_writes(tom, 0)
     assert_has(nora, css(".ink-line", count: 1, visible: :any))
 
     stroke = nora |> find(css(".ink-line", visible: :any)) |> Wallaby.Element.attr("stroke")

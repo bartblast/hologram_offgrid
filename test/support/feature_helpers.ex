@@ -195,15 +195,15 @@ defmodule Offgrid.FeatureHelpers do
   end
 
   @doc """
-  Empties every table a trip's data lives in, in one statement.
+  Empties every table the app writes, in one statement.
 
   One statement because PostgreSQL refuses to truncate a table something references unless
   the referencing one goes with it, and these form a chain: a comment names its stop and its
   author, a sketch names its trip and its author, a stop names its trip, a trip names its
   basemap, and a grant names both a user and the entity it is held on.
   """
-  @spec truncate_trip_data() :: :ok
-  def truncate_trip_data do
+  @spec reset_data() :: :ok
+  def reset_data do
     tables =
       Enum.map_join(
         [Comment, Sketch, Stop, Trip, RoleGrant, User, Basemap],

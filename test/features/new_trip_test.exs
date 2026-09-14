@@ -9,7 +9,7 @@ defmodule Offgrid.Features.NewTripTest do
   alias Offgrid.Pages.TripsPage
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end

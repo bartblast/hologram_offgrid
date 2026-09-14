@@ -12,7 +12,7 @@ defmodule Offgrid.Features.TripsTest do
   @password "hakone-2026"
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [basemap: create_basemap("Japan", "japan")]
   end

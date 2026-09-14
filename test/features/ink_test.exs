@@ -8,7 +8,7 @@ defmodule Offgrid.Features.InkTest do
   alias Wallaby.Element
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -17,10 +17,16 @@ defmodule Offgrid.Features.InkTest do
           %{session: session, trip: trip} do
     session = sign_in_as_member(session, trip)
 
-    # Unarmed the layer takes no pointer at all, so a drag over the map leaves no ink.
+    # Unarmed the layer takes no pointer at all, so a drag over the map leaves no ink. Arming
+    # and disarming the + after it proves the drag was handled before the ink is looked for.
     session
     |> drag([{200, 150}, {260, 190}])
+    |> click(css(".addb"))
+    |> assert_has(css(".addb.on"))
+    |> click(css(".addb"))
+    |> refute_has(css(".addb.on"))
     |> refute_has(css(".ink-paper path", visible: :any))
+    |> refute_has(css(".ink-line", visible: :any))
 
     session
     |> click(css(".pen"))
@@ -42,11 +48,11 @@ defmodule Offgrid.Features.InkTest do
     assert DB.read(Sketch) == []
 
     # Lifting the pointer is what writes it. The live layer hands over to the saved one.
-    session = release(session, {320, 200})
-
-    assert await_pending_writes(session, 0)
-           |> refute_has(css(".ink-paper path", visible: :any))
-           |> assert_has(css(".ink-line", count: 1, visible: :any))
+    session
+    |> release({320, 200})
+    |> await_pending_writes(0)
+    |> refute_has(css(".ink-paper path", visible: :any))
+    |> assert_has(css(".ink-line", count: 1, visible: :any))
 
     [sketch] = Sketch |> include(:author) |> DB.read()
     assert sketch.author.email == "member@offgrid.test"
@@ -86,15 +92,16 @@ defmodule Offgrid.Features.InkTest do
       # Straight, so the middle of the line is the middle of its box - what a click aims at.
       |> drag([{200, 150}, {240, 190}, {280, 230}])
 
-    assert await_pending_writes(session, 0)
-           |> assert_has(css(".ink-line", count: 2, visible: :any))
-           # A member may rub out their own line and not somebody else's, which the browser decides
-           # for itself - so only one of the two takes the pointer at all.
-           |> assert_has(css(".ink-hit", count: 1, visible: :any))
-           |> click(css(".ink-hit"))
-           |> assert_has(css(".ink-line", count: 1, visible: :any))
+    session
+    |> await_pending_writes(0)
+    |> assert_has(css(".ink-line", count: 2, visible: :any))
+    # A member may rub out their own line and not somebody else's, which the browser decides
+    # for itself - so only one of the two takes the pointer at all.
+    |> assert_has(css(".ink-hit", count: 1, visible: :any))
+    |> click(css(".ink-hit"))
+    |> assert_has(css(".ink-line", count: 1, visible: :any))
+    |> await_pending_writes(0)
 
-    assert await_pending_writes(session, 0)
     assert [remaining] = DB.read(Sketch)
     assert remaining.id == theirs.id
   end
@@ -122,7 +129,7 @@ defmodule Offgrid.Features.InkTest do
       |> assert_has(css(".ink-paper path[stroke=\"#af52de\"]", visible: :any))
       |> release({280, 230})
 
-    assert await_pending_writes(session, 0)
+    await_pending_writes(session, 0)
 
     [sketch] = DB.read(Sketch)
     assert sketch.color == "#af52de"
@@ -141,6 +148,11 @@ defmodule Offgrid.Features.InkTest do
     |> sign_in_as_member(trip)
     |> click(css(".pen"))
     |> drag([{200, 150}])
+    # Putting the pen away proves the tap was handled, and any write it made has shipped by the
+    # time nothing is pending.
+    |> click(css(".pen"))
+    |> refute_has(css(".pen.on"))
+    |> await_pending_writes(0)
     |> refute_has(css(".ink-saved path", visible: :any))
 
     assert DB.read(Sketch) == []

@@ -8,7 +8,7 @@ defmodule Offgrid.Features.PinsTest do
   alias Wallaby.Element
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -87,7 +87,7 @@ defmodule Offgrid.Features.PinsTest do
     [{after_x, _after_y}] = pin_positions(session)
     assert after_x > before_x
 
-    assert await_pending_writes(session, 0)
+    await_pending_writes(session, 0)
 
     moved = Stop |> filter(id: stop.id) |> one() |> DB.read()
     assert moved.lng > stop.lng
@@ -167,7 +167,7 @@ defmodule Offgrid.Features.PinsTest do
 
     # Letting go is what writes it, and the line stays where the hand left it.
     session = release_pointer(session, {820, 300})
-    assert await_pending_writes(session, 0)
+    await_pending_writes(session, 0)
 
     [first_after, ^second] = route_xs(session)
     assert first_after > second

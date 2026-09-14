@@ -8,7 +8,7 @@ defmodule Offgrid.Features.CommentsTest do
   alias Offgrid.Entities.Stop
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     trip = create_trip()
 

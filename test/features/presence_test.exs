@@ -5,7 +5,7 @@ defmodule Offgrid.Features.PresenceTest do
   alias Offgrid.Entities.Stop
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     [trip: create_trip()]
   end
@@ -22,19 +22,21 @@ defmodule Offgrid.Features.PresenceTest do
     assert_text(nora, css(".faces"), "TR")
     assert_text(tom, css(".faces"), "NV")
 
-    # Nora's pointer crosses her map. She sees no cursor of her own.
-    nora
-    |> move_pointer([{300, 200}, {320, 210}, {340, 220}])
-    |> refute_has(css(".cursor"))
+    # Nora's pointer crosses her map.
+    move_pointer(nora, [{300, 200}, {320, 210}, {340, 220}])
 
     # Tom sees her, by her letters and in her colour - the first other member is violet.
     tom
     |> assert_has(css(".cursor"))
     |> assert_text(css(".cursor"), "NV")
     |> assert_has(css(".cursor.a"))
+
+    # She sees no cursor of her own, looked for only once her position has reached Tom.
+    refute_has(nora, css(".cursor"))
+
     # And once she stops, the cursor fades on its own. This waits while it is still there, so
     # it is the fade being asserted rather than an absence that was never a presence.
-    |> refute_has(css(".cursor"))
+    refute_has(tom, css(".cursor"))
   end
 
   # What somebody else has open travels the same way as their pointer, and shows twice: a

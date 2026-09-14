@@ -12,7 +12,7 @@ defmodule Offgrid.Pages.TripPageTest do
   @moduletag :feature
 
   setup do
-    truncate_trip_data()
+    reset_data()
 
     trip = create_trip()
     user = create_user("Nora Vale", "nora@offgrid.test")
