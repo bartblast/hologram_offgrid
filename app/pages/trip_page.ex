@@ -404,17 +404,6 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, :mode, toggle(component.state.mode, :placing))
   end
 
-  # Called after mount, never from `init/3` - see `:joined`.
-  def command(:join, params, server) do
-    if TripChannel.on_trip?(server, params.trip_id) do
-      server
-      |> put_subscription({:trip, params.trip_id})
-      |> put_action(:joined)
-    else
-      put_action(server, :join_refused)
-    end
-  end
-
   def command(:announce, params, server) do
     relay_presence(server, params, :member_arrived)
   end
@@ -425,6 +414,17 @@ defmodule Offgrid.Pages.TripPage do
 
   def command(:editing, params, server) do
     relay_presence(server, params, :editing_changed)
+  end
+
+  # Called after mount, never from `init/3` - see `:joined`.
+  def command(:join, params, server) do
+    if TripChannel.on_trip?(server, params.trip_id) do
+      server
+      |> put_subscription({:trip, params.trip_id})
+      |> put_action(:joined)
+    else
+      put_action(server, :join_refused)
+    end
   end
 
   def command(:ping, params, server) do
