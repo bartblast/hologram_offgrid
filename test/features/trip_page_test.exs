@@ -129,6 +129,26 @@ defmodule Offgrid.Features.TripPageTest do
       |> assert_text(css(".lp-dates"), "10 – 10 APR")
     end
 
+    feature "moves a trip's end from its own card", %{session: session, trip: trip} do
+      create_stop(trip, date: ~D[2026-03-28], name: "Fushimi Inari")
+
+      session
+      |> sign_in(trip)
+      |> assert_text(css(".lp-dates"), "28 MAR – 6 APR")
+      |> click(css(".lp-title"))
+      |> fill_date("details_ends_on", "2026-04-02")
+      |> assert_text(css(".lp-dates"), "28 MAR – 2 APR")
+      |> send_keys([:escape])
+      |> refute_has(css(".card"))
+      # The calendar reads the same row, so it offers the shorter trip: 28 Mar to 2 Apr.
+      |> click(css(".stop", text: "Fushimi Inari"))
+      |> assert_has(css(".cal button", count: 6))
+      |> assert_text(css(".cal button:last-child .nm"), "2")
+      |> await_pending_writes(0)
+      |> visit(TripPage, id: trip.id)
+      |> assert_text(css(".lp-dates"), "28 MAR – 2 APR")
+    end
+
     feature "an organizer deletes a trip that has an itinerary, remarks and ink",
             %{session: session, trip: trip} do
       stop = create_stop(trip, date: ~D[2026-03-28], name: "Fushimi Inari")

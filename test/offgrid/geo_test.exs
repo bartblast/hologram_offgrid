@@ -27,6 +27,19 @@ defmodule Offgrid.GeoTest do
     end
   end
 
+  describe "view_box/1" do
+    test "answers the unit box with no basemap to read" do
+      assert view_box(nil) == "0 0 100 100"
+    end
+
+    test "spans the basemap in its own units, with latitude negated" do
+      # Bounds whose differences are exact in binary, so the string is not a float's last digits.
+      basemap = %Basemap{max_lat: 45.5, max_lng: 146.0, min_lat: 31.0, min_lng: 128.0}
+
+      assert view_box(basemap) == "128.0 -45.5 18.0 14.5"
+    end
+  end
+
   describe "placed?/2" do
     test "admits a stop with a place on the map" do
       assert placed?(%{lat: 35.0116, lng: 135.7681}, @japan)

@@ -1,6 +1,8 @@
 defmodule Offgrid.Features.StopCrudTest do
   use Offgrid.FeatureCase, async: false
 
+  alias Offgrid.Pages.TripPage
+
   setup do
     reset_data()
 
@@ -46,6 +48,22 @@ defmodule Offgrid.Features.StopCrudTest do
     |> assert_has(css(".day", count: 1))
     |> refute_has(css(".lpanel", text: "Tsukiji breakfast"))
     |> assert_text(css(".lpanel"), "Haneda arrival")
+  end
+
+  feature "shows a stop's description on its itinerary row", %{session: session, trip: trip} do
+    create_stop(trip, date: ~D[2026-03-28], name: "Haneda arrival", time: ~T[09:00:00])
+
+    session
+    |> sign_in(trip)
+    |> click(css(".stop", text: "Haneda arrival"))
+    |> assert_text(css(".stop.open .stop-summary"), "09:00")
+    |> fill_in(css("#stop_description"), with: "Train to Shinagawa")
+    # The row reads the same row the editor writes, so the summary follows the typing.
+    |> assert_text(css(".stop.open .stop-summary"), "09:00 · Train to Shinagawa")
+    |> await_pending_writes(0)
+    # Read back from the server, so the description was a row and not only a screen.
+    |> visit(TripPage, id: trip.id)
+    |> assert_text(css(".stop .stop-summary"), "09:00 · Train to Shinagawa")
   end
 
   @sessions 2
