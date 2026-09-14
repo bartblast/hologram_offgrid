@@ -25,7 +25,7 @@ defmodule Offgrid.Entities.Sketch do
   relationship :author, User
   relationship :trip, Trip
 
-  allow :create, author_id: user_id(), via: :trip
+  allow :create, author_id: user_id(), to: {:trip, :member}
   allow :delete, author_id: user_id()
   allow :delete, to: {:trip, :organizer}
   allow :read, via: :trip
