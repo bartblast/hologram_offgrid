@@ -1,4 +1,4 @@
-defmodule Offgrid.Components.MembersList do
+defmodule Offgrid.Components.MemberList do
   @moduledoc """
   Who is on this trip, read from the role grants themselves - there is no members table. The
   query is filtered by `allow :read_roles` on Trip, and one person can hold several grants, so

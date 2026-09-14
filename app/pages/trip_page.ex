@@ -9,7 +9,7 @@ defmodule Offgrid.Pages.TripPage do
 
   The page holds the screen's mode (idle, placing a stop, or drawing) and the ids the panels
   are open on. The map's parts are components: `MapSurface` takes clicks and the pointer,
-  `StopsLayer` draws the pins and the route, and `Ink` handles drawing.
+  `StopLayer` draws the pins and the route, and `Ink` handles drawing.
   """
 
   use Hologram.Page
@@ -22,10 +22,10 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapSurface
   alias Offgrid.Components.MapSwatch
-  alias Offgrid.Components.MembersList
+  alias Offgrid.Components.MemberList
   alias Offgrid.Components.StopEditor
-  alias Offgrid.Components.StopsLayer
-  alias Offgrid.Components.StopsList
+  alias Offgrid.Components.StopLayer
+  alias Offgrid.Components.StopList
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
@@ -104,7 +104,7 @@ defmodule Offgrid.Pages.TripPage do
 
         <MapSurface cid="map_surface" placing={@mode == :placing} trip_id={@trip_id} />
 
-        <StopsLayer cid="stops_layer" open_stop_id={@open_stop_id} trip_id={@trip_id} />
+        <StopLayer cid="stop_layer" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
         <Ink
           cid="ink"
@@ -144,8 +144,8 @@ defmodule Offgrid.Pages.TripPage do
             <MapPicker cid="map_picker" trip_id={@trip_id} />
           {/if}
 
-          <StopsList
-            cid="stops_list"
+          <StopList
+            cid="stop_list"
             editing={@editing}
             open_stop_id={@open_stop_id}
             trip_id={@trip_id}
@@ -169,8 +169,8 @@ defmodule Offgrid.Pages.TripPage do
 
         {%if @members_open}
           <div class={CSS.class(["members", flush: !@panel_open])}>
-            <MembersList
-              cid="members_list"
+            <MemberList
+              cid="member_list"
               present={@present}
               trip_id={@trip_id}
               user_id={@user_id}

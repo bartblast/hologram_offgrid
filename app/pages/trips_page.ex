@@ -9,7 +9,7 @@ defmodule Offgrid.Pages.TripsPage do
   alias Hologram.UI.Link
   alias Offgrid.Components.LogOutButton
   alias Offgrid.Components.Terrain
-  alias Offgrid.Components.TripsList
+  alias Offgrid.Components.TripList
   alias Offgrid.Pages.NewTripPage
 
   route "/trips"
@@ -28,7 +28,7 @@ defmodule Offgrid.Pages.TripsPage do
           <h2>Your trips</h2>
           <p class="sub">Everything you are on, wherever you left it.</p>
 
-          <TripsList />
+          <TripList />
 
           <Link class="btn" to={NewTripPage}>New trip</Link>
 

@@ -1,4 +1,4 @@
-defmodule Offgrid.Components.TripsList do
+defmodule Offgrid.Components.TripList do
   @moduledoc """
   Every trip the person is on, newest first, because the trip you just made is usually the one
   you want.

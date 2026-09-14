@@ -1,4 +1,4 @@
-defmodule Offgrid.Components.StopsLayer do
+defmodule Offgrid.Components.StopLayer do
   @moduledoc """
   The trip's stops on the map: the route through them in itinerary order, and a pin for each.
 

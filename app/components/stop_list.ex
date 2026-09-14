@@ -1,4 +1,4 @@
-defmodule Offgrid.Components.StopsList do
+defmodule Offgrid.Components.StopList do
   @moduledoc """
   The itinerary: every stop of the trip, under the day it happens on.
 
