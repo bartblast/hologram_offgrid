@@ -11,14 +11,19 @@ defmodule Offgrid.Components.StopEditor do
   use Hologram.Component
   use Hologram.DB
 
+  import Offgrid.Classes
+
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Cast
   alias Offgrid.Components.TripCalendar
   alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.Trip
   alias Offgrid.Presence
+  alias Offgrid.Queries
+
+  # Half-hourly through the part of the day an itinerary actually uses.
+  @times Enum.map(16..40, &Time.new!(div(&1, 2), rem(&1, 2) * 30, 0))
 
   prop :away, :boolean, default: false
   prop :comments, [Comment], from_query: &comments_query/1
@@ -39,7 +44,7 @@ defmodule Offgrid.Components.StopEditor do
   def template do
     ~HOLO"""
     {%if @stop || @away}
-    <div class={editor_class(@away)}>
+    <div class={classes(["editor", away: @away])}>
       {%if @stop}
       <div class="ed-head">
         <div>
@@ -59,50 +64,42 @@ defmodule Offgrid.Components.StopEditor do
         </button>
       </div>
 
-      <label>Name {%for person <- others_in(@editing, @stop_id, :name, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
-      <input
-        id="stop_name"
-        class={field_class(@editing, @stop_id, :name, @user_id)}
-        value={@stop.name}
-        $change={:edit, field: :name}
-        $focus={action: :field_focused, target: "page", params: %{field: :name}}
-        $blur={action: :field_blurred, target: "page"}
-      />
-
-      <label>Description {%for person <- others_in(@editing, @stop_id, :description, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
-      <input
-        id="stop_description"
-        class={field_class(@editing, @stop_id, :description, @user_id)}
-        value={@stop.description}
-        $change={:edit, field: :description}
-        $focus={action: :field_focused, target: "page", params: %{field: :description}}
-        $blur={action: :field_blurred, target: "page"}
-      />
+      {%for field <- [:name, :description]}
+        <label>{field_label(field)} {%for person <- others_in(@editing, @stop_id, field, @grants, @user_id)}<b class={"tag " <> person.colour}>{person.initials}</b>{/for}</label>
+        <input
+          id={"stop_#{field}"}
+          class={classes(["inp", busy: busy?(@editing, @stop_id, field, @user_id)])}
+          value={Map.get(@stop, field)}
+          $change={:edit, field: field}
+          $focus={action: :field_focused, target: "page", params: %{field: field}}
+          $blur={action: :field_blurred, target: "page"}
+        />
+      {/for}
 
       <label>Day</label>
       <TripCalendar cid="trip_calendar" date={@stop.date} stop_id={@stop_id} trip_id={@trip_id} />
 
       <label>Time</label>
       <div class="times">
-        <button type="button" class={time_class(nil, @stop.time)} $click={:set_time, time: nil}>—</button>
+        <button type="button" class={classes(on: same_time?(nil, @stop.time))} $click={:set_time, time: nil}>—</button>
 
         {%for time <- times()}
-          <button type="button" class={time_class(time, @stop.time)} $click={:set_time, time: time}>
+          <button type="button" class={classes(on: same_time?(time, @stop.time))} $click={:set_time, time: time}>
             {Dates.time_label(time)}
           </button>
         {/for}
       </div>
 
-      <label>Comments {%for person <- others_in(@editing, @stop_id, :comment, @user_id)}<b class={tag_class(@grants, @user_id, person.id)}>{person.initials}</b>{/for}</label>
-      {%for comment <- @comments}
+      <label>{field_label(:comment)} {%for person <- others_in(@editing, @stop_id, :comment, @grants, @user_id)}<b class={"tag " <> person.colour}>{person.initials}</b>{/for}</label>
+      {%for remark <- remarks(@comments, @grants, @user_id)}
         <div class="cmt">
-          <b><i class={dot_class(@grants, @user_id, comment)}></i>{comment.author.name} · {clock(comment.created_at, @tz_offset)}</b>
-          <p>{comment.body}</p>
+          <b><i class={remark.colour}></i>{remark.comment.author.name} · {Dates.clock(remark.comment.created_at, @tz_offset)}</b>
+          <p>{remark.comment.body}</p>
         </div>
       {/for}
       <input
         id="stop_comment"
-        class={field_class(@editing, @stop_id, :comment, @user_id)}
+        class={classes(["inp", busy: busy?(@editing, @stop_id, :comment, @user_id)])}
         placeholder="Add a comment…"
         value={draft_for(@draft, @draft_stop_id, @stop_id)}
         $change={:edit_draft}
@@ -163,13 +160,12 @@ defmodule Offgrid.Components.StopEditor do
     component
   end
 
-  # A clock reading rather than "2h ago", because this browser's clock against a stamp from
-  # another device is not reliable. The row holds UTC and the page passes the browser's offset
-  # in minutes, applied with integer arithmetic rather than a `DateTime` shift.
-  defp clock(at, offset) do
-    minutes = Integer.mod(at.hour * 60 + at.minute - offset, 1_440)
-
-    "#{Dates.pad(div(minutes, 60))}:#{Dates.pad(rem(minutes, 60))}"
+  # The input takes a quieter border while somebody else is in it - the tag beside the label
+  # says who.
+  defp busy?(editing, stop_id, field, user_id) do
+    editing
+    |> Presence.on_field(stop_id, field)
+    |> Enum.any?(&(&1.id != user_id))
   end
 
   # Ids are time-ordered too, so they break a tie between comments left in the same
@@ -181,47 +177,52 @@ defmodule Offgrid.Components.StopEditor do
     |> order_by([:created_at, :id])
   end
 
-  # The author's cast colour, or the neutral dot for somebody not on the trip.
-  defp dot_class(grants, user_id, comment) do
-    case Cast.colour(Cast.members(grants), user_id, comment.author_id) do
-      "" -> "off"
-      colour -> colour
-    end
-  end
-
-  # The trip's members in join order, for the cast - the same rows the members list reads.
-  defp members_query(trip_id) do
-    RoleGrant
-    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
-    |> order_by(:created_at)
-  end
-
-  # The input takes a quieter border while somebody else is in it - the tag beside the label
-  # says who.
-  defp field_class(editing, stop_id, field, user_id) do
-    if others_in(editing, stop_id, field, user_id) == [], do: "inp", else: "inp busy"
-  end
-
-  # Everyone but you with this field of this stop focused.
-  defp others_in(editing, stop_id, field, user_id) do
-    editing
-    |> Presence.on_field(stop_id, field)
-    |> Enum.reject(&(&1.id == user_id))
-  end
-
-  defp tag_class(grants, user_id, id) do
-    "tag " <> Cast.colour(Cast.members(grants), user_id, id)
-  end
-
-  # Slides off to the right while leaving. The page keeps the stop until the slide ends.
-  defp editor_class(true), do: "editor away"
-
-  defp editor_class(false), do: "editor"
-
   # A draft typed under another stop is not this stop's.
   defp draft_for(draft, stop_id, stop_id), do: draft
 
   defp draft_for(_draft, _draft_stop_id, _stop_id), do: ""
+
+  defp field_label(:comment), do: "Comments"
+
+  defp field_label(:description), do: "Description"
+
+  defp field_label(:name), do: "Name"
+
+  defp members_query(trip_id), do: Queries.members(trip_id)
+
+  # Everyone but you with this field of this stop focused, each with their colour.
+  defp others_in(editing, stop_id, field, grants, user_id) do
+    members = Cast.members(grants)
+
+    for person <- Presence.on_field(editing, stop_id, field), person.id != user_id do
+      Map.put(person, :colour, Cast.colour(members, user_id, person.id))
+    end
+  end
+
+  # Each comment with its author's cast colour, or the neutral dot for somebody not on the trip.
+  defp remarks(comments, grants, user_id) do
+    members = Cast.members(grants)
+
+    for comment <- comments do
+      colour =
+        case Cast.colour(members, user_id, comment.author_id) do
+          "" -> "off"
+          colour -> colour
+        end
+
+      %{colour: colour, comment: comment}
+    end
+  end
+
+  # Time.compare/2 rather than ==: a time read from the database carries microseconds
+  # (~T[09:00:00.000000]) and one built here does not, so the structs differ for one moment.
+  defp same_time?(nil, nil), do: true
+
+  defp same_time?(nil, _selected), do: false
+
+  defp same_time?(_time, nil), do: false
+
+  defp same_time?(time, selected), do: Time.compare(time, selected) == :eq
 
   defp stop_query(stop_id) do
     Stop
@@ -229,22 +230,5 @@ defmodule Offgrid.Components.StopEditor do
     |> one()
   end
 
-  # Time.compare/2 rather than ==: a time read from the database carries microseconds
-  # (~T[09:00:00.000000]) and one built here does not, so the structs differ for one moment.
-  defp time_class(nil, nil), do: "on"
-
-  defp time_class(nil, _selected), do: nil
-
-  defp time_class(_time, nil), do: nil
-
-  defp time_class(time, selected) do
-    if Time.compare(time, selected) == :eq, do: "on"
-  end
-
-  # Half-hourly through the part of the day an itinerary actually uses.
-  defp times do
-    Enum.map(16..40, fn half_hours ->
-      Time.new!(div(half_hours, 2), rem(half_hours, 2) * 30, 0)
-    end)
-  end
+  defp times, do: @times
 end

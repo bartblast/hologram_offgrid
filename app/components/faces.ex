@@ -8,11 +8,10 @@ defmodule Offgrid.Components.Faces do
   """
 
   use Hologram.Component
-  use Hologram.DB
 
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Cast
-  alias Offgrid.Entities.Trip
+  alias Offgrid.Queries
 
   prop :grants, [RoleGrant], from_query: &members_query/1
   prop :present, :list
@@ -22,22 +21,19 @@ defmodule Offgrid.Components.Faces do
 
   def template do
     ~HOLO"""
-    {%for face <- @present}
-      <div class={face_class(@grants, @user_id, face)}>{face.initials}</div>
+    {%for face <- faces(@present, @grants, @user_id)}
+      <div class={"face " <> face.colour}>{face.initials}</div>
     {/for}
 
     <div class="face y">{@you}</div>
     """
   end
 
-  defp face_class(grants, user_id, face) do
-    "face " <> Cast.colour(Cast.members(grants), user_id, face.id)
+  defp faces(present, grants, user_id) do
+    members = Cast.members(grants)
+
+    Enum.map(present, &Map.put(&1, :colour, Cast.colour(members, user_id, &1.id)))
   end
 
-  # The same grants the members list reads, in the same order.
-  defp members_query(trip_id) do
-    RoleGrant
-    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
-    |> order_by(:created_at)
-  end
+  defp members_query(trip_id), do: Queries.members(trip_id)
 end

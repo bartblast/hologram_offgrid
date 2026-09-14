@@ -2,10 +2,7 @@ defmodule Offgrid.Components.TripDetails do
   @moduledoc """
   The trip's own card: its name and dates, and the button that deletes it. Every keystroke is
   a write to the client's database, so the panel header behind the card renames itself at once.
-
-  Deleting removes everything on the trip in one batch, innermost first: comments, ink, stops,
-  then the trip. Foreign keys restrict rather than cascade, so the server would refuse a trip
-  with anything still on it, and the browser would quietly roll the delete back.
+  Deleting removes everything on the trip too, through `Offgrid.Trips.delete_trip/1`.
   """
 
   use Hologram.Component
@@ -13,13 +10,11 @@ defmodule Offgrid.Components.TripDetails do
 
   alias Hologram.Auth
   alias Offgrid.Dates
-  alias Offgrid.Entities.Comment
-  alias Offgrid.Entities.Sketch
-  alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
+  alias Offgrid.Queries
+  alias Offgrid.Trips
 
-  prop :stops, [Stop], from_query: &stops_query/1
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
   prop :user_id, :string
@@ -74,26 +69,8 @@ defmodule Offgrid.Components.TripDetails do
     """
   end
 
-  # Comments and ink are read here rather than held as props, because they are needed only
-  # once.
   def action(:delete, _params, component) do
-    trip_id = component.props.trip_id
-
-    Enum.each(component.props.stops, fn stop ->
-      Comment
-      |> filter(stop_id: stop.id)
-      |> DB.read()
-      |> Enum.each(&(:ok = DB.delete(Comment, &1.id)))
-    end)
-
-    Sketch
-    |> filter(trip_id: trip_id)
-    |> DB.read()
-    |> Enum.each(&(:ok = DB.delete(Sketch, &1.id)))
-
-    Enum.each(component.props.stops, &(:ok = DB.delete(Stop, &1.id)))
-
-    :ok = DB.delete(Trip, trip_id)
+    :ok = Trips.delete_trip(component.props.trip_id)
 
     put_page(component, TripsPage)
   end
@@ -115,15 +92,7 @@ defmodule Offgrid.Components.TripDetails do
     Auth.can?(user_id, :delete, %Trip{id: trip_id})
   end
 
-  defp stops_query(trip_id) do
-    filter(Stop, trip_id: trip_id)
-  end
-
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip(trip_id)
 
   defp write_date(component, _field, nil), do: component
 

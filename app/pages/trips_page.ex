@@ -7,9 +7,9 @@ defmodule Offgrid.Pages.TripsPage do
   use Hologram.Page
 
   alias Hologram.UI.Link
+  alias Offgrid.Components.LogOutButton
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripsList
-  alias Offgrid.Pages.LogInPage
   alias Offgrid.Pages.NewTripPage
 
   route "/trips"
@@ -32,25 +32,10 @@ defmodule Offgrid.Pages.TripsPage do
 
           <Link class="btn" to={NewTripPage}>New trip</Link>
 
-          <p class="alt"><button class="signout" type="button" $click="log_out">Log out</button></p>
+          <p class="alt"><LogOutButton cid="log_out" /></p>
         </div>
       </div>
     </div>
     """
-  end
-
-  def action(:log_out, _params, component) do
-    put_command(component, :log_out)
-  end
-
-  def action(:logged_out, _params, component) do
-    put_page(component, LogInPage)
-  end
-
-  # A command, because only the server can write the session.
-  def command(:log_out, _params, server) do
-    server
-    |> delete_user_id()
-    |> put_action(:logged_out)
   end
 end

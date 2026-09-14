@@ -1,29 +1,37 @@
 defmodule Offgrid.Components.BasemapPicker do
   @moduledoc """
-  The maps a new trip can be drawn on, as a row of thumbnails to choose from.
+  The maps a trip can be drawn on, as a row of thumbnails to choose from.
 
-  The maps come from a query, so adding one is a row in the seeds. The choice belongs to the
-  new trip form: it comes down as a prop and goes back up as an action. An existing trip
-  changes its map through `MapPicker`, which writes to the trip directly.
+  The maps come from a query, so adding one is a row in the seeds. The choice is not kept here:
+  it comes down as `selected_id`, and each pick goes to the `on_pick` action on `target` as
+  `%{id: basemap_id}`. The new trip form keeps it in page state, and `MapPicker` writes it to
+  the trip.
   """
 
   use Hologram.Component
-  use Hologram.DB
+
+  import Offgrid.Classes
 
   alias Offgrid.Components.BasemapThumb
   alias Offgrid.Entities.Basemap
+  alias Offgrid.Queries
 
   prop :basemaps, [Basemap], from_query: &basemaps_query/0
+  prop :on_pick, :atom, required: true
   prop :selected_id, :string, default: nil
+  prop :target, :string, required: true
+
+  # Mounts inside `MapPicker` in a page that is already loaded, so it needs init/2.
+  def init(_props, component), do: component
 
   def template do
     ~HOLO"""
     <div class="thumbs">
       {%for basemap <- @basemaps}
         <button
-          class={thumb_class(basemap.id, @selected_id)}
+          class={classes(["thumb", on: basemap.id == @selected_id])}
           type="button"
-          $click={action: :pick_basemap, target: "page", params: %{id: basemap.id}}
+          $click={action: @on_pick, target: @target, params: %{id: basemap.id}}
         >
           <BasemapThumb slug={basemap.slug} />
           <b>{basemap.name}</b>
@@ -33,12 +41,5 @@ defmodule Offgrid.Components.BasemapPicker do
     """
   end
 
-  # Alphabetical by name, so the row is stable however the rows were seeded.
-  defp basemaps_query do
-    order_by(Basemap, :name)
-  end
-
-  defp thumb_class(id, id), do: "thumb on"
-
-  defp thumb_class(_id, _selected_id), do: "thumb"
+  defp basemaps_query, do: Queries.basemaps()
 end

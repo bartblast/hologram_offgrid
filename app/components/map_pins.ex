@@ -9,11 +9,13 @@ defmodule Offgrid.Components.MapPins do
   """
 
   use Hologram.Component
-  use Hologram.DB
+
+  import Offgrid.Classes
 
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
+  alias Offgrid.Queries
 
   prop :drag, :map, default: nil
   prop :open_stop_id, :string, default: nil
@@ -25,7 +27,7 @@ defmodule Offgrid.Components.MapPins do
     ~HOLO"""
     {%for stop <- pinned(@stops, @trip)}
       <div
-        class={pin_class(stop, @open_stop_id)}
+        class={classes(["pin", mine: stop.id == @open_stop_id])}
         style={position(stop, @trip, @drag)}
         $click={action: :open_stop, target: "page", params: %{id: stop.id}}
         $pointer_down={action: :drag_start, target: "page", params: %{id: stop.id}}
@@ -34,10 +36,6 @@ defmodule Offgrid.Components.MapPins do
       </div>
     {/for}
     """
-  end
-
-  defp pin_class(stop, open_stop_id) do
-    if stop.id == open_stop_id, do: "pin mine", else: "pin"
   end
 
   defp pinned(stops, trip) do
@@ -60,14 +58,7 @@ defmodule Offgrid.Components.MapPins do
     "left:#{x}%;top:#{y}%"
   end
 
-  defp stops_query(trip_id) do
-    filter(Stop, trip_id: trip_id)
-  end
+  defp stops_query(trip_id), do: Queries.stops(trip_id)
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> include(:basemap)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)
 end

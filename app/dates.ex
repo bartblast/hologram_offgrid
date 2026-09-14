@@ -7,6 +7,20 @@ defmodule Offgrid.Dates do
   """
 
   @doc """
+  Returns the time of day of the given UTC timestamp as a clock reading in the browser's zone,
+  given the minutes the browser is behind UTC: "14:05".
+
+  Integer arithmetic wrapped at midnight rather than a `DateTime` shift, so it needs nothing
+  beyond what the client runtime has.
+  """
+  @spec clock(DateTime.t() | NaiveDateTime.t(), integer) :: String.t()
+  def clock(at, offset_minutes) do
+    minutes = Integer.mod(at.hour * 60 + at.minute - offset_minutes, 1_440)
+
+    "#{pad(div(minutes, 60))}:#{pad(rem(minutes, 60))}"
+  end
+
+  @doc """
   Returns the date as the itinerary and the editor label a day: "Sat 28 Mar".
   """
   @spec day_label(Date.t()) :: String.t()

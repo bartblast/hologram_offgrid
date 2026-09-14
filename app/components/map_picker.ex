@@ -9,11 +9,10 @@ defmodule Offgrid.Components.MapPicker do
   use Hologram.Component
   use Hologram.DB
 
-  alias Offgrid.Components.BasemapThumb
-  alias Offgrid.Entities.Basemap
+  alias Offgrid.Components.BasemapPicker
   alias Offgrid.Entities.Trip
+  alias Offgrid.Queries
 
-  prop :basemaps, [Basemap], from_query: &basemaps_query/0
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
 
@@ -23,14 +22,7 @@ defmodule Offgrid.Components.MapPicker do
 
   def template do
     ~HOLO"""
-    <div class="thumbs">
-      {%for basemap <- @basemaps}
-        <button class={thumb_class(basemap, @trip)} type="button" $click={:pick, id: basemap.id}>
-          <BasemapThumb slug={basemap.slug} />
-          <b>{basemap.name}</b>
-        </button>
-      {/for}
-    </div>
+    <BasemapPicker cid="map_basemaps" on_pick={:pick} selected_id={basemap_id(@trip)} target={@cid} />
     """
   end
 
@@ -40,18 +32,10 @@ defmodule Offgrid.Components.MapPicker do
     component
   end
 
-  defp basemaps_query, do: order_by(Basemap, :name)
-
   # Nothing is marked while the trip is unreadable.
-  defp thumb_class(_basemap, nil), do: "thumb"
+  defp basemap_id(nil), do: nil
 
-  defp thumb_class(basemap, trip) do
-    if basemap.id == trip.basemap_id, do: "thumb on", else: "thumb"
-  end
+  defp basemap_id(trip), do: trip.basemap_id
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip(trip_id)
 end

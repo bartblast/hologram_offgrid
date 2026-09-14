@@ -16,6 +16,7 @@ defmodule Offgrid.Components.Ink do
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
+  alias Offgrid.Queries
 
   prop :drawing, :boolean
   prop :sketches, [Sketch], from_query: &sketches_query/1
@@ -82,10 +83,5 @@ defmodule Offgrid.Components.Ink do
 
   defp view_box(trip), do: Geo.view_box(trip.basemap)
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> include(:basemap)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)
 end

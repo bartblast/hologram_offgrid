@@ -72,7 +72,12 @@ defmodule Offgrid.Pages.NewTripPage do
           </div>
 
           <label>Map</label>
-          <BasemapPicker cid="basemap_picker" selected_id={@basemap_id} />
+          <BasemapPicker
+            cid="basemap_picker"
+            on_pick={:pick_basemap}
+            selected_id={@basemap_id}
+            target="page"
+          />
 
           <label>Members</label>
           <MemberChips cid="member_chips" invites={@invites} />
@@ -89,12 +94,10 @@ defmodule Offgrid.Pages.NewTripPage do
   end
 
   def action(:create, _params, component) do
-    state = component.state
-
-    ends_on = Dates.parse(state.ends_on)
-    starts_on = Dates.parse(state.starts_on)
-
-    create(component, state, starts_on, ends_on)
+    case validate(component.state) do
+      {:ok, starts_on, ends_on} -> start(component, component.state, starts_on, ends_on)
+      {:error, message} -> put_state(component, :error, message)
+    end
   end
 
   def action(:add_invite, params, component) do
@@ -122,28 +125,17 @@ defmodule Offgrid.Pages.NewTripPage do
   end
 
   # Checked in the order the form asks for the fields, so the message names the next one to fix.
-  defp create(component, %{name: ""}, _starts_on, _ends_on) do
-    put_state(component, :error, "Give the trip a name.")
-  end
+  defp validate(state) do
+    starts_on = Dates.parse(state.starts_on)
+    ends_on = Dates.parse(state.ends_on)
 
-  defp create(component, _state, nil, _ends_on) do
-    put_state(component, :error, "Pick the day it starts.")
-  end
-
-  defp create(component, _state, _starts_on, nil) do
-    put_state(component, :error, "Pick the day it ends.")
-  end
-
-  defp create(component, %{basemap_id: nil}, _starts_on, _ends_on) do
-    put_state(component, :error, "Pick a map.")
-  end
-
-  # `Date.compare/2` cannot sit in a guard, so the date order is checked in a body.
-  defp create(component, state, starts_on, ends_on) do
-    if Date.compare(ends_on, starts_on) == :lt do
-      put_state(component, :error, "It cannot end before it starts.")
-    else
-      start(component, state, starts_on, ends_on)
+    cond do
+      state.name == "" -> {:error, "Give the trip a name."}
+      is_nil(starts_on) -> {:error, "Pick the day it starts."}
+      is_nil(ends_on) -> {:error, "Pick the day it ends."}
+      is_nil(state.basemap_id) -> {:error, "Pick a map."}
+      Date.compare(ends_on, starts_on) == :lt -> {:error, "It cannot end before it starts."}
+      true -> {:ok, starts_on, ends_on}
     end
   end
 

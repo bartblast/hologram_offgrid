@@ -92,7 +92,7 @@ overflow: hidden;
 .pen svg { display: block; width: 17px; height: 17px; }
 .pen path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 .pen path.solid { fill: currentColor; stroke: none; }
-.pen.mid, .faces.mid, .members.mid, .cpop.mid { right: 16px; }
+.pen.flush, .faces.flush, .members.flush, .cpop.flush { right: 16px; }
 /* The editor's duration, so the panel arriving and the controls making room move as one. */
 .pen, .faces, .members, .cpop { transition: right .22s ease; }
 .faces { position: absolute; top: 16px; right: var(--clear-editor); display: flex; background: color-mix(in srgb, var(--panel) 90%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; z-index: 4; }
@@ -114,7 +114,7 @@ overflow: hidden;
 .lp-dates { font-family: var(--f-label); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-top: 1px; }
 .lp-tools { display: flex; gap: 6px; }
 .swatch { width: 40px; height: 27px; padding: 0; border: 1px solid var(--line2); border-radius: calc(var(--r) - 1px); overflow: hidden; background: var(--panel); cursor: pointer; }
-.swatch svg { display: block; width: 100%; height: 100%; }
+.swatch .thumb-svg { display: block; width: 100%; height: 100%; border: 0; border-radius: 0; }
 .addb { width: 27px; height: 27px; display: grid; place-items: center; color: var(--ink2); background: var(--panel); border: 1px solid var(--line2); border-radius: 50%; cursor: pointer; }
 /* Strokes rather than a character, so the mark sits in the middle of the circle. currentColor
    follows the button's inversion on hover. */

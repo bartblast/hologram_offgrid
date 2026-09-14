@@ -10,11 +10,10 @@ defmodule Offgrid.Components.Cursors do
   """
 
   use Hologram.Component
-  use Hologram.DB
 
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Cast
-  alias Offgrid.Entities.Trip
+  alias Offgrid.Queries
 
   prop :cursors, :map
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -23,8 +22,8 @@ defmodule Offgrid.Components.Cursors do
 
   def template do
     ~HOLO"""
-    {%for cursor <- others(@cursors, @user_id)}
-      <div class={cursor_class(@grants, @user_id, cursor.id)} style={"left:#{cursor.x}%;top:#{cursor.y}%"}>
+    {%for cursor <- others(@cursors, @grants, @user_id)}
+      <div class={"cursor " <> cursor.colour} style={"left:#{cursor.x}%;top:#{cursor.y}%"}>
         <svg class="cur" viewBox="0 0 12 18" aria-hidden="true">
           <path d="M1 1 L1 15.2 L4.6 11.7 L7 16.9 L9.5 15.8 L7.1 10.7 L11.6 10.4 Z" />
         </svg>
@@ -34,21 +33,14 @@ defmodule Offgrid.Components.Cursors do
     """
   end
 
-  defp cursor_class(grants, user_id, id) do
-    "cursor " <> Cast.colour(Cast.members(grants), user_id, id)
-  end
+  defp members_query(trip_id), do: Queries.members(trip_id)
 
-  # The same grants the members list reads, in the same order.
-  defp members_query(trip_id) do
-    RoleGrant
-    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
-    |> order_by(:created_at)
-  end
+  # Everyone but you, each with their id and colour.
+  defp others(cursors, grants, user_id) do
+    members = Cast.members(grants)
 
-  # Everyone but you, as a list the template can walk, each entry carrying its id.
-  defp others(cursors, user_id) do
     for {id, cursor} <- cursors, id != user_id do
-      Map.put(cursor, :id, id)
+      Map.merge(cursor, %{colour: Cast.colour(members, user_id, id), id: id})
     end
   end
 end

@@ -3,19 +3,19 @@ defmodule Offgrid.Components.StopsList do
   The itinerary: every stop of the trip, under the day it happens on.
 
   The query runs against the client's own database, so a stop written by an action shows up in
-  the same frame. Order is never stored: day, then time, then creation. Postgres and the client
-  both sort nulls last, so an untimed stop ends its day on either side.
+  the same frame. Order is never stored, it comes from `Offgrid.Queries.itinerary/1`.
   """
 
   use Hologram.Component
-  use Hologram.DB
+
+  import Offgrid.Classes
 
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Cast
   alias Offgrid.Dates
   alias Offgrid.Entities.Stop
-  alias Offgrid.Entities.Trip
   alias Offgrid.Presence
+  alias Offgrid.Queries
 
   prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -26,19 +26,19 @@ defmodule Offgrid.Components.StopsList do
 
   def template do
     ~HOLO"""
-    {%for day <- days(@stops)}
+    {%for day <- days(@stops, @editing, @grants, @user_id)}
       <div class="day">{day_label(day)}</div>
 
-      {%for stop <- day}
+      {%for row <- day}
         <button
-          class={row_class(stop, @open_stop_id)}
+          class={classes(["stop", open: row.stop.id == @open_stop_id])}
           type="button"
-          $click={action: :open_stop, target: "page", params: %{id: stop.id}}
+          $click={action: :open_stop, target: "page", params: %{id: row.stop.id}}
         >
-          <span class="stop-name">{stop.name}</span>
-          <span class="stop-summary">{summary(stop)}</span>
-          {%for person <- others_on(@editing, stop.id, @user_id)}
-            <span class={sel_class(@grants, @user_id, person.id)}><b>{person.initials}</b></span>
+          <span class="stop-name">{row.stop.name}</span>
+          <span class="stop-summary">{summary(row.stop)}</span>
+          {%for person <- row.people}
+            <span class={"sel " <> person.colour}><b>{person.initials}</b></span>
           {/for}
         </button>
       {/for}
@@ -46,42 +46,30 @@ defmodule Offgrid.Components.StopsList do
     """
   end
 
-  # Consecutive runs of stops sharing a date. The query already ordered them, so chunking
-  # preserves that order and never re-sorts.
-  defp days(stops) do
-    Enum.chunk_by(stops, & &1.date)
+  # Consecutive runs of stops sharing a date - the query already ordered them. Each stop comes
+  # with everyone but you who has it open, drawn as a ring in their colour.
+  defp days(stops, editing, grants, user_id) do
+    members = Cast.members(grants)
+
+    stops
+    |> Enum.chunk_by(& &1.date)
+    |> Enum.map(fn day ->
+      Enum.map(day, &%{people: others_on(editing, &1.id, members, user_id), stop: &1})
+    end)
   end
 
-  defp day_label([stop | _rest]), do: Dates.day_label(stop.date)
+  defp day_label([row | _rest]), do: Dates.day_label(row.stop.date)
 
-  defp row_class(%Stop{id: id}, id), do: "stop open"
+  defp members_query(trip_id), do: Queries.members(trip_id)
 
-  defp row_class(_stop, _open_stop_id), do: "stop"
-
-  # The trip's members in join order, for the cast.
-  defp members_query(trip_id) do
-    RoleGrant
-    |> filter(entity_id: [trip_id, nil], entity_type: Trip)
-    |> order_by(:created_at)
-  end
-
-  # Everyone but you who has this stop open, drawn as a ring in their colour.
-  defp others_on(editing, stop_id, user_id) do
-    editing
-    |> Presence.on_stop(stop_id)
-    |> Enum.reject(&(&1.id == user_id))
-  end
-
-  defp sel_class(grants, user_id, id) do
-    "sel " <> Cast.colour(Cast.members(grants), user_id, id)
+  defp others_on(editing, stop_id, members, user_id) do
+    for person <- Presence.on_stop(editing, stop_id), person.id != user_id do
+      Map.put(person, :colour, Cast.colour(members, user_id, person.id))
+    end
   end
 
   # Scoped by trip. The policy keeps out trips you are not on, but not your other trips.
-  defp stops_query(trip_id) do
-    Stop
-    |> filter(trip_id: trip_id)
-    |> order_by([:date, :time, :created_at])
-  end
+  defp stops_query(trip_id), do: Queries.itinerary(trip_id)
 
   # The second line of a row: the time when there is one, then whatever the stop says
   # about itself.

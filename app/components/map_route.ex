@@ -9,11 +9,11 @@ defmodule Offgrid.Components.MapRoute do
   """
 
   use Hologram.Component
-  use Hologram.DB
 
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
+  alias Offgrid.Queries
 
   prop :drag, :map, default: nil
   prop :stops, [Stop], from_query: &stops_query/1
@@ -51,16 +51,7 @@ defmodule Offgrid.Components.MapRoute do
     "#{x},#{y}"
   end
 
-  defp stops_query(trip_id) do
-    Stop
-    |> filter(trip_id: trip_id)
-    |> order_by([:date, :time, :created_at])
-  end
+  defp stops_query(trip_id), do: Queries.itinerary(trip_id)
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> include(:basemap)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)
 end

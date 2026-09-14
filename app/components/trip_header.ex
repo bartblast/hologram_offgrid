@@ -8,10 +8,10 @@ defmodule Offgrid.Components.TripHeader do
   """
 
   use Hologram.Component
-  use Hologram.DB
 
   alias Offgrid.Dates
   alias Offgrid.Entities.Trip
+  alias Offgrid.Queries
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
@@ -29,9 +29,5 @@ defmodule Offgrid.Components.TripHeader do
     """
   end
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip(trip_id)
 end

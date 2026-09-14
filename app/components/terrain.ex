@@ -8,9 +8,9 @@ defmodule Offgrid.Components.Terrain do
   """
 
   use Hologram.Component
-  use Hologram.DB
 
   alias Offgrid.Entities.Trip
+  alias Offgrid.Queries
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string, default: nil
@@ -80,10 +80,5 @@ defmodule Offgrid.Components.Terrain do
 
   defp slug(trip), do: trip.basemap.slug
 
-  defp trip_query(trip_id) do
-    Trip
-    |> filter(id: trip_id)
-    |> include(:basemap)
-    |> one()
-  end
+  defp trip_query(trip_id), do: Queries.trip_with_basemap(trip_id)
 end
