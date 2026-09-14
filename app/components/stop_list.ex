@@ -9,12 +9,12 @@ defmodule Offgrid.Components.StopList do
   use Hologram.Component
 
   alias Hologram.Auth.RoleGrant
-  alias Offgrid.Dates
   alias Offgrid.Entities.Stop
   alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
   alias Offgrid.Utils.CSS
+  alias Offgrid.Utils.DateFormat
 
   prop :editing, :map, default: %{}
   prop :grants, [RoleGrant], from_query: &members_query/1
@@ -55,7 +55,7 @@ defmodule Offgrid.Components.StopList do
     end)
   end
 
-  defp day_label([row | _rest]), do: Dates.day_label(row.stop.date)
+  defp day_label([row | _rest]), do: DateFormat.day_label(row.stop.date)
 
   defp members_query(trip_id), do: Queries.members(trip_id)
 
@@ -74,9 +74,9 @@ defmodule Offgrid.Components.StopList do
 
   defp summary(%Stop{description: description, time: nil}), do: description
 
-  defp summary(%Stop{description: nil, time: time}), do: Dates.time_label(time)
+  defp summary(%Stop{description: nil, time: time}), do: DateFormat.time_label(time)
 
   defp summary(%Stop{description: description, time: time}) do
-    "#{Dates.time_label(time)} · #{description}"
+    "#{DateFormat.time_label(time)} · #{description}"
   end
 end

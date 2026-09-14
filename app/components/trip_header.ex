@@ -9,9 +9,9 @@ defmodule Offgrid.Components.TripHeader do
 
   use Hologram.Component
 
-  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Queries
+  alias Offgrid.Utils.DateFormat
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
@@ -23,7 +23,7 @@ defmodule Offgrid.Components.TripHeader do
         <button class="lp-title" type="button" $click={action: :open_details, target: "page"}>
           {@trip.name}
         </button>
-        <div class="lp-dates">{Dates.span(@trip.starts_on, @trip.ends_on)}</div>
+        <div class="lp-dates">{DateFormat.span(@trip.starts_on, @trip.ends_on)}</div>
       {/if}
     </div>
     """

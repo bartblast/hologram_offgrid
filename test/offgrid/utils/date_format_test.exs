@@ -1,7 +1,22 @@
-defmodule Offgrid.DatesTest do
+defmodule Offgrid.Utils.DateFormatTest do
   use ExUnit.Case, async: true
 
-  import Offgrid.Dates
+  import Offgrid.Utils.DateFormat
+
+  describe "clock/2" do
+    test "shifts a UTC timestamp into the browser's zone" do
+      # Warsaw in winter answers -60: an hour ahead of UTC.
+      assert clock(~U[2026-03-28 13:05:00Z], -60) == "14:05"
+    end
+
+    test "wraps forward past midnight" do
+      assert clock(~U[2026-03-28 23:30:00Z], -120) == "01:30"
+    end
+
+    test "wraps back past midnight" do
+      assert clock(~U[2026-03-28 00:15:00Z], 300) == "19:15"
+    end
+  end
 
   describe "day_label/1" do
     test "spells the weekday, the day and the month" do
@@ -10,21 +25,6 @@ defmodule Offgrid.DatesTest do
 
     test "does not pad a single-digit day" do
       assert day_label(~D[2026-04-06]) == "Mon 6 Apr"
-    end
-  end
-
-  describe "month/1" do
-    test "names the first and the last month" do
-      assert month(1) == "Jan"
-      assert month(12) == "Dec"
-    end
-  end
-
-  describe "pad/1" do
-    test "pads below ten and leaves the rest alone" do
-      assert pad(5) == "05"
-      assert pad(10) == "10"
-      assert pad(0) == "00"
     end
   end
 
@@ -77,15 +77,12 @@ defmodule Offgrid.DatesTest do
       assert time_label(~T[09:05:00]) == "09:05"
     end
 
+    test "leaves two-digit parts alone" do
+      assert time_label(~T[14:20:00]) == "14:20"
+    end
+
     test "reads a time that came back from the database with microseconds" do
       assert time_label(~T[14:20:00.000000]) == "14:20"
-    end
-  end
-
-  describe "weekday/1" do
-    test "names the days at both ends of the week" do
-      assert weekday(~D[2026-03-30]) == "Mon"
-      assert weekday(~D[2026-04-05]) == "Sun"
     end
   end
 
@@ -100,6 +97,13 @@ defmodule Offgrid.DatesTest do
 
     test "answers the empty string for no date" do
       assert to_input(nil) == ""
+    end
+  end
+
+  describe "weekday/1" do
+    test "names the days at both ends of the week" do
+      assert weekday(~D[2026-03-30]) == "Mon"
+      assert weekday(~D[2026-04-05]) == "Sun"
     end
   end
 end

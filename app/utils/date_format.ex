@@ -1,6 +1,6 @@
-defmodule Offgrid.Dates do
+defmodule Offgrid.Utils.DateFormat do
   @moduledoc """
-  How dates and times are spelled on screen.
+  How dates and times are spelled on screen, and how a date input's spelling is read back.
 
   One place for every spelling, so the screens that show dates cannot drift apart. Each
   function takes a date or a time rather than an entity.
@@ -29,32 +29,6 @@ defmodule Offgrid.Dates do
   end
 
   @doc """
-  Returns the month's three-letter name, by its number.
-  """
-  @spec month(1..12) :: String.t()
-  def month(1), do: "Jan"
-  def month(2), do: "Feb"
-  def month(3), do: "Mar"
-  def month(4), do: "Apr"
-  def month(5), do: "May"
-  def month(6), do: "Jun"
-  def month(7), do: "Jul"
-  def month(8), do: "Aug"
-  def month(9), do: "Sep"
-  def month(10), do: "Oct"
-  def month(11), do: "Nov"
-  def month(12), do: "Dec"
-
-  @doc """
-  Returns the number with a leading zero below ten, which is what every clock reading here
-  wants of its hours and minutes.
-  """
-  @spec pad(non_neg_integer) :: String.t()
-  def pad(number) when number < 10, do: "0#{number}"
-
-  def pad(number), do: "#{number}"
-
-  @doc """
   Returns the date a `type="date"` input spells as `value`, or nil when it spells nothing yet
   or something that is not a date at all.
 
@@ -73,15 +47,6 @@ defmodule Offgrid.Dates do
       _other -> nil
     end
   end
-
-  @doc """
-  Returns the date spelled the way a `type="date"` input wants its `value`, and the empty
-  string for no date at all.
-  """
-  @spec to_input(Date.t() | nil) :: String.t()
-  def to_input(nil), do: ""
-
-  def to_input(date), do: "#{date.year}-#{pad(date.month)}-#{pad(date.day)}"
 
   @doc """
   Returns the span between the two dates as one line: "28 Mar – 6 Apr", or "28 – 30 Mar" when
@@ -103,10 +68,38 @@ defmodule Offgrid.Dates do
   def time_label(time), do: "#{pad(time.hour)}:#{pad(time.minute)}"
 
   @doc """
+  Returns the date spelled the way a `type="date"` input wants its `value`, and the empty
+  string for no date at all.
+  """
+  @spec to_input(Date.t() | nil) :: String.t()
+  def to_input(nil), do: ""
+
+  def to_input(date), do: "#{date.year}-#{pad(date.month)}-#{pad(date.day)}"
+
+  @doc """
   Returns the date's weekday as its three-letter name.
   """
   @spec weekday(Date.t()) :: String.t()
   def weekday(date), do: weekday_name(Date.day_of_week(date))
+
+  defp month(1), do: "Jan"
+  defp month(2), do: "Feb"
+  defp month(3), do: "Mar"
+  defp month(4), do: "Apr"
+  defp month(5), do: "May"
+  defp month(6), do: "Jun"
+  defp month(7), do: "Jul"
+  defp month(8), do: "Aug"
+  defp month(9), do: "Sep"
+  defp month(10), do: "Oct"
+  defp month(11), do: "Nov"
+  defp month(12), do: "Dec"
+
+  # A leading zero below ten, which is what every clock reading here wants of its hours and
+  # minutes.
+  defp pad(number) when number < 10, do: "0#{number}"
+
+  defp pad(number), do: "#{number}"
 
   defp weekday_name(1), do: "Mon"
   defp weekday_name(2), do: "Tue"

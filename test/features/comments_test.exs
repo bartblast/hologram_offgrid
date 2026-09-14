@@ -4,9 +4,9 @@ defmodule Offgrid.Features.CommentsTest do
 
   alias Hologram.Auth
   alias Hologram.DB
-  alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
+  alias Offgrid.Utils.DateFormat
   alias Wallaby.Element
 
   setup do
@@ -155,7 +155,7 @@ defmodule Offgrid.Features.CommentsTest do
         5_000 -> flunk("the browser never answered its offset")
       end
 
-    Dates.clock(at, offset)
+    DateFormat.clock(at, offset)
   end
 
   defp draft(session) do

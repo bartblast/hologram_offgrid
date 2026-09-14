@@ -14,9 +14,9 @@ defmodule Offgrid.Pages.NewTripPage do
   alias Offgrid.Components.BasemapPicker
   alias Offgrid.Components.MemberChips
   alias Offgrid.Components.Terrain
-  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Utils.DateFormat
 
   route "/trips/new"
 
@@ -128,8 +128,8 @@ defmodule Offgrid.Pages.NewTripPage do
 
   # Checked in the order the form asks for the fields, so the message names the next one to fix.
   defp validate(state) do
-    starts_on = Dates.parse(state.starts_on)
-    ends_on = Dates.parse(state.ends_on)
+    starts_on = DateFormat.parse(state.starts_on)
+    ends_on = DateFormat.parse(state.ends_on)
 
     cond do
       state.name == "" -> {:error, "Give the trip a name."}

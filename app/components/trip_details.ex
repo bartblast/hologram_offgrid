@@ -9,11 +9,11 @@ defmodule Offgrid.Components.TripDetails do
   use Hologram.DB
 
   alias Hologram.Auth
-  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripsPage
   alias Offgrid.Queries
   alias Offgrid.Trips
+  alias Offgrid.Utils.DateFormat
 
   prop :trip, Trip, from_query: &trip_query/1
   prop :trip_id, :string
@@ -42,7 +42,7 @@ defmodule Offgrid.Components.TripDetails do
               class="inp"
               id="details_starts_on"
               type="date"
-              value={Dates.to_input(@trip.starts_on)}
+              value={DateFormat.to_input(@trip.starts_on)}
               $change={:edit_date, field: :starts_on}
             />
           </div>
@@ -53,7 +53,7 @@ defmodule Offgrid.Components.TripDetails do
               class="inp"
               id="details_ends_on"
               type="date"
-              value={Dates.to_input(@trip.ends_on)}
+              value={DateFormat.to_input(@trip.ends_on)}
               $change={:edit_date, field: :ends_on}
             />
           </div>
@@ -84,7 +84,7 @@ defmodule Offgrid.Components.TripDetails do
   # The date input emits half-typed dates on the way to a complete one. Writing them would empty
   # the field under the person typing.
   def action(:edit_date, params, component) do
-    write_date(component, params.field, Dates.parse(params.event.value))
+    write_date(component, params.field, DateFormat.parse(params.event.value))
   end
 
   # Organizers only. The server checks again when the batch lands.

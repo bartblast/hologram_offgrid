@@ -13,13 +13,13 @@ defmodule Offgrid.Components.StopEditor do
 
   alias Hologram.Auth.RoleGrant
   alias Offgrid.Components.TripCalendar
-  alias Offgrid.Dates
   alias Offgrid.Entities.Comment
   alias Offgrid.Entities.Stop
   alias Offgrid.MemberColor
   alias Offgrid.Presence
   alias Offgrid.Queries
   alias Offgrid.Utils.CSS
+  alias Offgrid.Utils.DateFormat
 
   # Half-hourly through the part of the day an itinerary actually uses.
   @times Enum.map(16..40, &Time.new!(div(&1, 2), rem(&1, 2) * 30, 0))
@@ -48,7 +48,7 @@ defmodule Offgrid.Components.StopEditor do
       <div class="ed-head">
         <div>
           <div class="ed-title">{@stop.name}</div>
-          <div class="ed-sub">{Dates.day_label(@stop.date)}</div>
+          <div class="ed-sub">{DateFormat.day_label(@stop.date)}</div>
         </div>
 
         <button
@@ -84,7 +84,7 @@ defmodule Offgrid.Components.StopEditor do
 
         {%for time <- times()}
           <button type="button" class={CSS.class(on: same_time?(time, @stop.time))} $click={:set_time, time: time}>
-            {Dates.time_label(time)}
+            {DateFormat.time_label(time)}
           </button>
         {/for}
       </div>
@@ -92,7 +92,7 @@ defmodule Offgrid.Components.StopEditor do
       <label>{field_label(:comment)} {%for person <- others_in(@editing, @stop_id, :comment, @grants, @user_id)}<b class={"tag " <> person.color}>{person.initials}</b>{/for}</label>
       {%for remark <- remarks(@comments, @grants, @user_id)}
         <div class="cmt">
-          <b><i class={remark.color}></i>{remark.comment.author.name} · {Dates.clock(remark.comment.created_at, @tz_offset)}</b>
+          <b><i class={remark.color}></i>{remark.comment.author.name} · {DateFormat.clock(remark.comment.created_at, @tz_offset)}</b>
           <p>{remark.comment.body}</p>
         </div>
       {/for}

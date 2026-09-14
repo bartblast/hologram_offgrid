@@ -12,9 +12,9 @@ defmodule Offgrid.Components.TripList do
 
   alias Hologram.UI.Link
   alias Offgrid.Components.BasemapThumb
-  alias Offgrid.Dates
   alias Offgrid.Entities.Trip
   alias Offgrid.Pages.TripPage
+  alias Offgrid.Utils.DateFormat
 
   prop :trips, [Trip], from_query: &trips_query/0
 
@@ -34,7 +34,7 @@ defmodule Offgrid.Components.TripList do
 
           <div>
             <b>{trip.name}</b>
-            <span>{Dates.span(trip.starts_on, trip.ends_on)}</span>
+            <span>{DateFormat.span(trip.starts_on, trip.ends_on)}</span>
           </div>
         </Link>
       {/for}
