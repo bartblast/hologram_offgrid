@@ -51,9 +51,10 @@ defmodule Offgrid.Components.StopsLayer do
     """
   end
 
-  # The canvas is measured once, when a pin is pressed, and held for the drag.
-  def action(:drag_start, params, component) do
-    put_state(component, :drag, %{id: params.id, rect: Device.rect("canvas"), x: nil, y: nil})
+  # A press that never moved writes nothing. It is a click, and the pin's own binding opens the
+  # stop, as it also does when a drag ends over the pin.
+  def action(:drag_finish, _params, component) do
+    drop(component, component.state.drag, component.props.trip)
   end
 
   # In hundredths of the map, which is what the pin's style takes, whatever the map's size.
@@ -69,10 +70,9 @@ defmodule Offgrid.Components.StopsLayer do
     })
   end
 
-  # A press that never moved writes nothing. It is a click, and the pin's own binding opens the
-  # stop, as it also does when a drag ends over the pin.
-  def action(:drag_finish, _params, component) do
-    drop(component, component.state.drag, component.props.trip)
+  # The canvas is measured once, when a pin is pressed, and held for the drag.
+  def action(:drag_start, params, component) do
+    put_state(component, :drag, %{id: params.id, rect: Device.rect("canvas"), x: nil, y: nil})
   end
 
   defp drop(component, %{x: nil}, _trip), do: put_state(component, :drag, nil)

@@ -93,13 +93,6 @@ defmodule Offgrid.Pages.NewTripPage do
     """
   end
 
-  def action(:create, _params, component) do
-    case validate(component.state) do
-      {:ok, starts_on, ends_on} -> start(component, component.state, starts_on, ends_on)
-      {:error, message} -> put_state(component, :error, message)
-    end
-  end
-
   def action(:add_invite, params, component) do
     invites = component.state.invites
 
@@ -109,6 +102,13 @@ defmodule Offgrid.Pages.NewTripPage do
       # Invites keep the order they were added in, which is the order they are coloured by.
       # credo:disable-for-next-line Credo.Check.Refactor.AppendSingleItem
       put_state(component, :invites, invites ++ [params.user])
+    end
+  end
+
+  def action(:create, _params, component) do
+    case validate(component.state) do
+      {:ok, starts_on, ends_on} -> start(component, component.state, starts_on, ends_on)
+      {:error, message} -> put_state(component, :error, message)
     end
   end
 

@@ -141,6 +141,13 @@ defmodule Offgrid.Components.StopEditor do
     end
   end
 
+  # Every keystroke is a write, to the client's own database first.
+  def action(:edit, params, component) do
+    :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
+
+    component
+  end
+
   def action(:edit_draft, params, component) do
     put_state(component, draft: params.event.value, draft_stop_id: component.props.stop_id)
   end
@@ -148,13 +155,6 @@ defmodule Offgrid.Components.StopEditor do
   # Clearing the time is as valid as setting one - an untimed stop sinks to the end of its day.
   def action(:set_time, params, component) do
     :ok = DB.update(Stop, component.props.stop_id, %{time: params.time})
-
-    component
-  end
-
-  # Every keystroke is a write, to the client's own database first.
-  def action(:edit, params, component) do
-    :ok = DB.update(Stop, component.props.stop_id, %{params.field => params.event.value})
 
     component
   end

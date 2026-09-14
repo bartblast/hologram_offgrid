@@ -210,12 +210,15 @@ defmodule Offgrid.Pages.TripPage do
     """
   end
 
-  # The panel closes in this same action rather than a follow-up, so the editor is not left
-  # open for a render on a row that is gone.
-  def action(:delete_stop, params, component) do
-    :ok = Trips.delete_stop(params.id)
+  # A ping is a gesture, so nothing stores it. It lasts long enough for the ring to travel its
+  # full width twice.
+  def action(:clear_ping, _params, component) do
+    put_state(component, :ping, nil)
+  end
 
-    close_panel(component)
+  # Nothing renders the panel after this.
+  def action(:clear_stop, _params, component) do
+    put_state(component, :open_stop_id, nil)
   end
 
   def action(:close_details, _params, component) do
@@ -224,35 +227,6 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:close_stop, _params, component) do
     close_panel(component)
-  end
-
-  # Nothing renders the panel after this.
-  def action(:clear_stop, _params, component) do
-    put_state(component, :open_stop_id, nil)
-  end
-
-  # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
-  def action(:editing_changed, params, component) do
-    component
-    |> put_state(
-      editing: Presence.edit(component.state.editing, params),
-      present: Presence.arrive(component.state.present, params)
-    )
-    |> watch(params)
-  end
-
-  # Kept on the page because the mark on the other screens names both the stop and the field,
-  # and the open stop is the page's state.
-  def action(:field_focused, params, component) do
-    component
-    |> put_state(:focused_field, params.field)
-    |> announce_editing()
-  end
-
-  def action(:field_blurred, _params, component) do
-    component
-    |> put_state(:focused_field, nil)
-    |> announce_editing()
   end
 
   # Keeps somebody's newest pointer position and queues a check that drops it unless a newer one
@@ -269,30 +243,30 @@ defmodule Offgrid.Pages.TripPage do
     )
   end
 
+  # The panel closes in this same action rather than a follow-up, so the editor is not left
+  # open for a render on a row that is gone.
+  def action(:delete_stop, params, component) do
+    :ok = Trips.delete_stop(params.id)
+
+    close_panel(component)
+  end
+
+  # Somebody else's pointer landed in a field, or left one, or they opened or closed a stop.
+  def action(:editing_changed, params, component) do
+    component
+    |> put_state(
+      editing: Presence.edit(component.state.editing, params),
+      present: Presence.arrive(component.state.present, params)
+    )
+    |> watch(params)
+  end
+
   def action(:expire_cursor, params, component) do
     put_state(
       component,
       :cursors,
       Presence.expire(component.state.cursors, params.id, params.seq)
     )
-  end
-
-  # Everything that needs the page on screen: the browser's clock offset and joining the trip's
-  # channel.
-  def action(:mounted, _params, component) do
-    component
-    |> put_state(:tz_offset, Device.utc_offset_minutes())
-    |> join()
-  end
-
-  # The app is not told when a browser goes, so everyone keeps saying they are here and silence
-  # means gone.
-  def action(:heartbeat, _params, component) do
-    said = said_something(component)
-
-    said
-    |> TripChannel.tell(:editing, whereabouts(said))
-    |> put_action(name: :heartbeat, delay: @heartbeat_ms)
   end
 
   # Nothing newer from them within `@forget_after_ms`, so their face and their marks go.
@@ -308,6 +282,30 @@ defmodule Offgrid.Pages.TripPage do
     put_state(component, editing: editing, present: present)
   end
 
+  def action(:field_blurred, _params, component) do
+    component
+    |> put_state(:focused_field, nil)
+    |> announce_editing()
+  end
+
+  # Kept on the page because the mark on the other screens names both the stop and the field,
+  # and the open stop is the page's state.
+  def action(:field_focused, params, component) do
+    component
+    |> put_state(:focused_field, params.field)
+    |> announce_editing()
+  end
+
+  # The app is not told when a browser goes, so everyone keeps saying they are here and silence
+  # means gone.
+  def action(:heartbeat, _params, component) do
+    said = said_something(component)
+
+    said
+    |> TripChannel.tell(:editing, whereabouts(said))
+    |> put_action(name: :heartbeat, delay: @heartbeat_ms)
+  end
+
   # Tried again after a pause. The server refuses a trip it has not heard of, which a trip made
   # offline is until its batch lands.
   def action(:join_refused, _params, component) do
@@ -316,10 +314,6 @@ defmodule Offgrid.Pages.TripPage do
     else
       component
     end
-  end
-
-  def action(:rejoin, _params, component) do
-    join(component)
   end
 
   # Announces only once the subscription is in place. Subscribing in `init/3` let broadcasts land
@@ -365,12 +359,24 @@ defmodule Offgrid.Pages.TripPage do
     |> watch(params)
   end
 
+  # Everything that needs the page on screen: the browser's clock offset and joining the trip's
+  # channel.
+  def action(:mounted, _params, component) do
+    component
+    |> put_state(:tz_offset, Device.utc_offset_minutes())
+    |> join()
+  end
+
   def action(:open_details, _params, component) do
     put_state(component, :details_open, true)
   end
 
   def action(:open_stop, params, component) do
     open_panel(component, params.id)
+  end
+
+  def action(:rejoin, _params, component) do
+    join(component)
   end
 
   # Somebody else's ping. The sender's own is shown by `ping/2`, without waiting for this.
@@ -380,10 +386,8 @@ defmodule Offgrid.Pages.TripPage do
     |> put_action(name: :clear_ping, delay: @ping_ms)
   end
 
-  # A ping is a gesture, so nothing stores it. It lasts long enough for the ring to travel its
-  # full width twice.
-  def action(:clear_ping, _params, component) do
-    put_state(component, :ping, nil)
+  def action(:toggle_drawing, _params, component) do
+    put_state(component, mode: toggle(component.state.mode, :drawing), ping: nil)
   end
 
   def action(:toggle_maps, _params, component) do
@@ -392,10 +396,6 @@ defmodule Offgrid.Pages.TripPage do
 
   def action(:toggle_members, _params, component) do
     put_state(component, :members_open, !component.state.members_open)
-  end
-
-  def action(:toggle_drawing, _params, component) do
-    put_state(component, mode: toggle(component.state.mode, :drawing), ping: nil)
   end
 
   # + arms placing rather than creating a stop, and a second press disarms it. The click on the
