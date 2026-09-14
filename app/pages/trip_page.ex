@@ -3,13 +3,13 @@ defmodule Offgrid.Pages.TripPage do
   The trip planning screen: the map, the itinerary panel over it, and the people on it.
 
   Everything drawn here is a row in the browser's own database, except three gestures that are
-  not records: the stroke being drawn, the ping, and who is here. The stroke belongs to
-  `InkTools`. The ping and who is here live in this page's state and travel as broadcasts on
-  the trip's channel, because several components read them and state only flows down.
+  not records: the stroke being drawn, the ping, and who is here. The stroke belongs to `Ink`.
+  The ping and who is here live in this page's state and travel as broadcasts on the trip's
+  channel, because several components read them and state only flows down.
 
   The page holds the screen's mode (idle, placing a stop, or drawing) and the ids the panels
   are open on. The map's parts are components: `MapSurface` takes clicks and the pointer,
-  `StopsLayer` draws the pins and the route, and `InkTools` handles drawing.
+  `StopsLayer` draws the pins and the route, and `Ink` handles drawing.
   """
 
   use Hologram.Page
@@ -17,7 +17,7 @@ defmodule Offgrid.Pages.TripPage do
 
   alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
-  alias Offgrid.Components.InkTools
+  alias Offgrid.Components.Ink
   alias Offgrid.Components.LogOutButton
   alias Offgrid.Components.MapPicker
   alias Offgrid.Components.MapSurface
@@ -106,8 +106,8 @@ defmodule Offgrid.Pages.TripPage do
 
         <StopsLayer cid="stops_layer" open_stop_id={@open_stop_id} trip_id={@trip_id} />
 
-        <InkTools
-          cid="ink_tools"
+        <Ink
+          cid="ink"
           drawing={@mode == :drawing}
           panel_open={@panel_open}
           trip_id={@trip_id}
