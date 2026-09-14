@@ -13,7 +13,7 @@ defmodule Offgrid.Components.MapSurface do
 
   import Offgrid.Classes
 
-  alias Offgrid.Browser.Box
+  alias Offgrid.Device
   alias Offgrid.TripChannel
 
   # How often this browser sends its pointer position while it moves. It has its own timer
@@ -53,7 +53,7 @@ defmodule Offgrid.Components.MapSurface do
   end
 
   def action(:measure, _params, component) do
-    put_state(component, :box, Box.rect("canvas"))
+    put_state(component, :box, Device.rect("canvas"))
   end
 
   # Only remembered here. `:send_pointer` sends it on its own timer.

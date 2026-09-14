@@ -16,7 +16,7 @@ defmodule Offgrid.Components.StopsLayer do
 
   import Offgrid.Classes
 
-  alias Offgrid.Browser.Box
+  alias Offgrid.Device
   alias Offgrid.Entities.Stop
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
@@ -54,7 +54,7 @@ defmodule Offgrid.Components.StopsLayer do
 
   # The canvas is measured once, when a pin is pressed, and held for the drag.
   def action(:drag_start, params, component) do
-    put_state(component, :drag, %{id: params.id, rect: Box.rect("canvas"), x: nil, y: nil})
+    put_state(component, :drag, %{id: params.id, rect: Device.rect("canvas"), x: nil, y: nil})
   end
 
   # In hundredths of the map, which is what the pin's style takes, whatever the map's size.

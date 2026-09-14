@@ -17,7 +17,6 @@ defmodule Offgrid.Pages.TripPage do
 
   import Offgrid.Classes
 
-  alias Offgrid.Browser.Clock
   alias Offgrid.Components.Cursors
   alias Offgrid.Components.Faces
   alias Offgrid.Components.InkTools
@@ -32,6 +31,7 @@ defmodule Offgrid.Pages.TripPage do
   alias Offgrid.Components.Terrain
   alias Offgrid.Components.TripDetails
   alias Offgrid.Components.TripHeader
+  alias Offgrid.Device
   alias Offgrid.Entities.Stop
   alias Offgrid.Geo
   alias Offgrid.Presence
@@ -282,7 +282,7 @@ defmodule Offgrid.Pages.TripPage do
   # channel.
   def action(:mounted, _params, component) do
     component
-    |> put_state(:tz_offset, Clock.offset_minutes())
+    |> put_state(:tz_offset, Device.utc_offset_minutes())
     |> join()
   end
 

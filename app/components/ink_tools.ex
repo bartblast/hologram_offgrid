@@ -12,8 +12,8 @@ defmodule Offgrid.Components.InkTools do
 
   import Offgrid.Classes
 
-  alias Offgrid.Browser.Box
   alias Offgrid.Components.Ink
+  alias Offgrid.Device
   alias Offgrid.Entities.Sketch
   alias Offgrid.Entities.Trip
   alias Offgrid.Geo
@@ -108,7 +108,7 @@ defmodule Offgrid.Components.InkTools do
   # only decides what the pointer hits.
   def action(:ink_start, params, component) do
     if component.props.drawing do
-      box = Box.rect("canvas")
+      box = Device.rect("canvas")
 
       put_state(component, box: box, stroke: [ink_point(box, params.event)])
     else

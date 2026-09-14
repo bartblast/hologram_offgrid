@@ -12,8 +12,8 @@ defmodule Offgrid.TripChannel do
   alias Hologram.Auth
   alias Hologram.Component
   alias Hologram.Server
-  alias Offgrid.Browser.Network
   alias Offgrid.Cast
+  alias Offgrid.Device
   alias Offgrid.Entities.Trip
   alias Offgrid.Entities.User
 
@@ -75,6 +75,6 @@ defmodule Offgrid.TripChannel do
   """
   @spec tell(Component.t(), atom, keyword) :: Component.t()
   def tell(component, command, params) do
-    if Network.online?(), do: Component.put_command(component, command, params), else: component
+    if Device.online?(), do: Component.put_command(component, command, params), else: component
   end
 end
