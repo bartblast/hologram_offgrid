@@ -10,21 +10,34 @@ the network off and syncs when it comes back.
 
 It runs inside a Phoenix endpoint, and every page, component and layout in it is Hologram's.
 
+Offgrid tracks Hologram's unreleased development: `mix.exs` pins the dependency to a commit
+rather than a Hex version.
+
+## Requirements
+
+- Elixir 1.19 or later and Erlang/OTP 28.1 or later
+- Node.js, for the formatting and linting tools `mix setup` installs
+- PostgreSQL 15 or later, running locally with a `postgres` user whose password is `postgres`
+
+`.tool-versions` pins the exact Elixir, Erlang and Node.js versions CI uses.
+
 ## Setup
 
-You need Elixir 1.19 or later, Erlang/OTP 28 or later, and PostgreSQL running locally with a
-`postgres` user whose password is `postgres`.
-
 ```bash
-git clone https://github.com/bartblast/offgrid.git
-cd offgrid
+git clone https://github.com/bartblast/hologram_offgrid.git
+cd hologram_offgrid
 mix setup
 createdb -U postgres offgrid_dev
 mix seed
 ```
 
 The seeds add the three maps a trip can be drawn on, four accounts, and three trips to look at -
-one of them with stops, ink and a remark on it. Running them again is safe.
+one of them with stops, ink and a remark on it. Running them again is safe: anything already
+there is left alone, including a trip you have since changed. To start over:
+
+```bash
+dropdb -U postgres offgrid_dev && createdb -U postgres offgrid_dev && mix seed
+```
 
 ## Running it
 
@@ -43,9 +56,45 @@ pointers, edits and ink live.
 ## Tests
 
 ```bash
-mix test                  # unit tests
-mix test --only feature   # feature tests, in a real browser
+mix test                  # everything that does not need a browser
+mix test --only feature   # feature tests, in a real browser, plus the tests that need the database
 ```
 
 Feature tests drive Chrome through Wallaby, so they need Chrome and a matching ChromeDriver on
-your PATH.
+your PATH. They create and reset their own `offgrid_test` database.
+
+## Checks and formatting
+
+```bash
+mix check   # compiler, formatters, Credo, Dialyzer, Sobelow, audits, ESLint, migrations and `mix test`
+mix f       # formats the Elixir, CSS, JavaScript, JSON and YAML
+```
+
+With [lefthook](https://github.com/evilmartians/lefthook) installed, `lefthook install` adds a
+pre-commit hook that checks the formatting.
+
+## Production
+
+Offgrid has no release configuration of its own. To run it with `MIX_ENV=prod`, set:
+
+- `DATABASE_URL` - the database, for example `postgres://USER:PASS@HOST/offgrid`
+- `SECRET_KEY_BASE` - generate one with `mix phx.gen.secret`
+- `PHX_HOST` - the public host name
+- `PORT` - optional, `4000` by default
+- `POOL_SIZE` - optional, `10` by default
+
+```bash
+MIX_ENV=prod mix deps.get --only prod
+MIX_ENV=prod mix compile
+MIX_ENV=prod mix assets.deploy
+MIX_ENV=prod mix phx.server
+```
+
+`mix assets.deploy` writes the digested copy of the stylesheet that gives it a cache-busting URL.
+The schema is brought up to date from `priv/hologram/migrations` when the app boots, so the
+database only needs to exist. Public URLs are built as `https` on port 443, so put TLS in front
+of the app. In a release, set `PHX_SERVER=true` to start the endpoint.
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE).
