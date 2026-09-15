@@ -82,28 +82,6 @@ mix f       # formats the Elixir, CSS, JavaScript, JSON and YAML
 With [lefthook](https://github.com/evilmartians/lefthook) installed, `lefthook install` adds a
 pre-commit hook that checks the formatting.
 
-## Production
-
-Offgrid has no release configuration of its own. To run it with `MIX_ENV=prod`, set:
-
-- `DATABASE_URL` - the database, for example `postgres://USER:PASS@HOST/offgrid`
-- `SECRET_KEY_BASE` - generate one with `mix phx.gen.secret`
-- `PHX_HOST` - the public host name
-- `PORT` - optional, `4000` by default
-- `POOL_SIZE` - optional, `10` by default
-
-```bash
-MIX_ENV=prod mix deps.get --only prod
-MIX_ENV=prod mix compile
-MIX_ENV=prod mix assets.deploy
-MIX_ENV=prod mix phx.server
-```
-
-`mix assets.deploy` writes the digested copy of the stylesheet that gives it a cache-busting URL.
-The schema is brought up to date from `priv/hologram/migrations` when the app boots, so the
-database only needs to exist. Public URLs are built as `https` on port 443, so put TLS in front
-of the app. In a release, set `PHX_SERVER=true` to start the endpoint.
-
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE).
