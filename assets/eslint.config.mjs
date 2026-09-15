@@ -21,14 +21,4 @@ export default [
       ],
     },
   },
-  {
-    // Tool configs such as tailwind.config.js are CommonJS modules run by Node.
-    files: ["**/*.js"],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-      sourceType: "commonjs",
-    },
-  },
 ];

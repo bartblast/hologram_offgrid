@@ -226,14 +226,6 @@ jobs:
           timeout_minutes: 3
           max_attempts: 10
 
-      # Step: Download the Tailwind CLI, which builds the stylesheet before the tests run.
-      - name: Download Tailwind CLI
-        uses: nick-fields/retry@v4
-        with:
-          command: mix tailwind.install --if-missing
-          timeout_minutes: 3
-          max_attempts: 10
-
       # Step: Execute Elixir unit tests.
       - name: Run Elixir unit tests
         run: mix test --warnings-as-errors
@@ -301,14 +293,6 @@ jobs:
         with:
           command: cd assets && npm clean-install
           shell: bash
-          timeout_minutes: 3
-          max_attempts: 10
-
-      # Step: Download the Tailwind CLI, which builds the stylesheet the browser is served.
-      - name: Download Tailwind CLI
-        uses: nick-fields/retry@v4
-        with:
-          command: mix tailwind.install --if-missing
           timeout_minutes: 3
           max_attempts: 10
 

@@ -8,17 +8,14 @@ config :hologram, :database,
   password: "postgres",
   user: "postgres"
 
-# Code reloading, debug error pages, and a Tailwind watcher that rebuilds the stylesheet.
+# Code reloading and debug error pages.
 config :offgrid, OffgridWeb.Endpoint,
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "3dMMe+LJHQF3UZQxCvYtsSJ7pg0u7G4HGVlJhJ3u65/FbYOz0rnOkj+iqYJd85Pn",
-  watchers: [
-    tailwind: {Tailwind, :install_and_run, [:offgrid, ~w(--watch)]}
-  ]
+  secret_key_base: "3dMMe+LJHQF3UZQxCvYtsSJ7pg0u7G4HGVlJhJ3u65/FbYOz0rnOkj+iqYJd85Pn"
 
 # ## SSL Support
 #

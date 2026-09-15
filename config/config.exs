@@ -16,18 +16,6 @@ config :offgrid, OffgridWeb.Endpoint,
     layout: false
   ]
 
-# Configure tailwind (the version is required)
-config :tailwind,
-  version: "3.4.3",
-  offgrid: [
-    args: ~w(
-      --config=tailwind.config.js
-      --input=css/app.css
-      --output=../priv/static/assets/app.css
-    ),
-    cd: Path.expand("../assets", __DIR__)
-  ]
-
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

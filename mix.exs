@@ -44,7 +44,6 @@ defmodule Offgrid.MixProject do
       {:phoenix, "~> 1.7.20"},
       # Phoenix renders its HTML error pages through Phoenix.HTML's engine.
       {:phoenix_html, "~> 4.1"},
-      {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
       {:jason, "~> 1.2"},
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
@@ -67,16 +66,12 @@ defmodule Offgrid.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build"],
+      setup: ["deps.get", "assets.setup"],
       # Hologram stays off in dev and test unless HOLOGRAM_START is set, and the seeds write
       # through it.
       seed: [fn _args -> System.put_env("HOLOGRAM_START", "1") end, "run priv/seeds.exs"],
-      # assets.build, because feature tests serve the built stylesheet: without it a CSS change
-      # is invisible to them and they fail describing something else entirely.
-      test: ["assets.build", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "cmd --cd assets npm install"],
-      "assets.build": ["tailwind offgrid"],
-      "assets.deploy": ["tailwind offgrid --minify", "phx.digest"],
+      "assets.setup": ["cmd --cd assets npm install"],
+      "assets.deploy": ["phx.digest"],
       eslint:
         "cmd assets/node_modules/.bin/eslint --color --config assets/eslint.config.mjs 'assets/*.js' 'assets/*.mjs' --no-error-on-unmatched-pattern",
       f: ["format", "format.js"],
