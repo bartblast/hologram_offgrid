@@ -16,12 +16,16 @@
 ::before,
 ::after {
   box-sizing: border-box;
+
   /* 1 */
   border-width: 0;
+
   /* 2 */
   border-style: solid;
+
   /* 2 */
   border-color: #e5e7eb;
+
   /* 2 */
 }
 
@@ -43,23 +47,31 @@
 html,
 :host {
   line-height: 1.5;
+
   /* 1 */
   -webkit-text-size-adjust: 100%;
+
   /* 2 */
   -moz-tab-size: 4;
+
   /* 3 */
   -o-tab-size: 4;
   tab-size: 4;
+
   /* 3 */
   font-family:
     ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
+
   /* 4 */
   font-feature-settings: normal;
+
   /* 5 */
   font-variation-settings: normal;
+
   /* 6 */
   -webkit-tap-highlight-color: transparent;
+
   /* 7 */
 }
 
@@ -70,8 +82,10 @@ html,
 
 body {
   margin: 0;
+
   /* 1 */
   line-height: inherit;
+
   /* 2 */
 }
 
@@ -83,10 +97,13 @@ body {
 
 hr {
   height: 0;
+
   /* 1 */
   color: inherit;
+
   /* 2 */
   border-top-width: 1px;
+
   /* 3 */
 }
 
@@ -145,12 +162,16 @@ pre {
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+
   /* 1 */
   font-feature-settings: normal;
+
   /* 2 */
   font-variation-settings: normal;
+
   /* 3 */
   font-size: 1em;
+
   /* 4 */
 }
 
@@ -190,10 +211,13 @@ sup {
 
 table {
   text-indent: 0;
+
   /* 1 */
   border-color: inherit;
+
   /* 2 */
   border-collapse: collapse;
+
   /* 3 */
 }
 
@@ -209,24 +233,34 @@ optgroup,
 select,
 textarea {
   font-family: inherit;
+
   /* 1 */
   font-feature-settings: inherit;
+
   /* 1 */
   font-variation-settings: inherit;
+
   /* 1 */
   font-size: 100%;
+
   /* 1 */
   font-weight: inherit;
+
   /* 1 */
   line-height: inherit;
+
   /* 1 */
   letter-spacing: inherit;
+
   /* 1 */
   color: inherit;
+
   /* 1 */
   margin: 0;
+
   /* 2 */
   padding: 0;
+
   /* 3 */
 }
 
@@ -249,10 +283,13 @@ input:where([type="button"]),
 input:where([type="reset"]),
 input:where([type="submit"]) {
   -webkit-appearance: button;
+
   /* 1 */
   background-color: transparent;
+
   /* 2 */
   background-image: none;
+
   /* 2 */
 }
 
@@ -296,8 +333,10 @@ Correct the cursor style of increment and decrement buttons in Safari.
 
 [type="search"] {
   -webkit-appearance: textfield;
+
   /* 1 */
   outline-offset: -2px;
+
   /* 2 */
 }
 
@@ -316,8 +355,10 @@ Remove the inner padding in Chrome and Safari on macOS.
 
 ::-webkit-file-upload-button {
   -webkit-appearance: button;
+
   /* 1 */
   font: inherit;
+
   /* 2 */
 }
 
@@ -390,16 +431,20 @@ textarea {
 input::-moz-placeholder,
 textarea::-moz-placeholder {
   opacity: 1;
+
   /* 1 */
   color: #9ca3af;
+
   /* 2 */
 }
 
 input::placeholder,
 textarea::placeholder {
   opacity: 1;
+
   /* 1 */
   color: #9ca3af;
+
   /* 2 */
 }
 
@@ -435,8 +480,10 @@ iframe,
 embed,
 object {
   display: block;
+
   /* 1 */
   vertical-align: middle;
+
   /* 2 */
 }
 
@@ -701,12 +748,14 @@ select {
   --accent: #007aff;
   --accentc: #ffffff;
   --route: #007aff;
+
   /* The cast: the first and second other member of a trip, and you. */
   --member-1: #af52de;
   --member-2: #30b0c7;
   --you: #ff2d55;
   --r: 10px;
   --rl: 16px;
+
   /* One width for both panels, so the map sits between equal margins. It grows with the
        window up to a reading width; 21vw keeps the edge off Japan's road at 18.2% of the map. */
   --panel-w: clamp(320px, 21vw, 400px);
@@ -743,18 +792,21 @@ body {
 * {
   box-sizing: border-box;
 }
+
 /* map */
 .map {
   position: absolute;
   inset: 0;
   background: var(--water);
 }
+
 .map .terrain {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
+
 .lay {
   position: absolute;
   inset: 0;
@@ -762,6 +814,7 @@ body {
   height: 100%;
   pointer-events: none;
 }
+
 /* Nothing on the map is prose, and dragging a pin would otherwise select the other pins'
    names as the pointer passes them. The panels keep their text selectable. */
 .pin,
@@ -770,11 +823,13 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
 .pin {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 2;
 }
+
 /* The white collar every map marker wears, so a stop sits on the map rather than in it. 16px
    so the fill survives the collar, and the route breaks at each stop into countable beads. */
 .pin i {
@@ -787,6 +842,7 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
   cursor: grab;
 }
+
 .pin em {
   position: absolute;
   left: 50%;
@@ -805,17 +861,21 @@ body {
   padding: 1px 6px;
   white-space: nowrap;
 }
+
 /* The open stop takes the accent and keeps the collar - a halo would fight the pin's shadow. */
 .pin.mine i {
   background: var(--you);
 }
+
 .pin.mine em {
   color: var(--you);
 }
+
 .lay .rt {
   stroke: var(--route);
   stroke-width: 4;
 }
+
 /* A pin-sized dot in the same collar, with a wash and a hairline edge spreading from it as one
    ripple. The dot is painted last, so both pass behind it. */
 .ping {
@@ -825,6 +885,7 @@ body {
   transform: translate(-50%, -50%);
   z-index: 2;
 }
+
 .ping b {
   position: absolute;
   inset: 0;
@@ -833,28 +894,34 @@ body {
   border: 2.5px solid var(--panel);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
 }
+
 .ping i {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   animation: rip 1.8s ease-out infinite;
 }
+
 .ping .wash {
   background: color-mix(in srgb, var(--you) 26%, transparent);
 }
+
 .ping .edge {
   border: 1.5px solid var(--you);
 }
+
 @keyframes rip {
   0% {
     transform: scale(1);
     opacity: 0.55;
   }
+
   100% {
     transform: scale(6);
     opacity: 0;
   }
 }
+
 /* An arrow with its tip at the place it names, so no offset transform. The transition runs a
    little longer than positions arrive, so the pointer glides rather than hops. */
 .cursor {
@@ -865,6 +932,7 @@ body {
     left 0.13s linear,
     top 0.13s linear;
 }
+
 .cursor .cur {
   display: block;
   width: 14px;
@@ -875,6 +943,7 @@ body {
   stroke-linejoin: round;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
 }
+
 .cursor b {
   position: absolute;
   left: 13px;
@@ -895,6 +964,7 @@ body {
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
+
 .cursor b i {
   width: 8px;
   height: 8px;
@@ -902,18 +972,23 @@ body {
   flex: none;
   background: var(--muted);
 }
+
 .cursor.a .cur {
   fill: var(--member-1);
 }
+
 .cursor.a b i {
   background: var(--member-1);
 }
+
 .cursor.t .cur {
   fill: var(--member-2);
 }
+
 .cursor.t b i {
   background: var(--member-2);
 }
+
 .pen {
   position: absolute;
   right: var(--clear-editor);
@@ -930,11 +1005,13 @@ body {
   cursor: pointer;
   z-index: 5;
 }
+
 .pen svg {
   display: block;
   width: 17px;
   height: 17px;
 }
+
 .pen path {
   stroke: currentColor;
   stroke-width: 1.7;
@@ -942,16 +1019,19 @@ body {
   stroke-linejoin: round;
   fill: none;
 }
+
 .pen path.solid {
   fill: currentColor;
   stroke: none;
 }
+
 .pen.flush,
 .faces.flush,
 .members.flush,
 .cpop.flush {
   right: 16px;
 }
+
 /* The editor's duration, so the panel arriving and the controls making room move as one. */
 .pen,
 .faces,
@@ -959,6 +1039,7 @@ body {
 .cpop {
   transition: right 0.22s ease;
 }
+
 .faces {
   position: absolute;
   top: 16px;
@@ -971,6 +1052,7 @@ body {
   padding: 5px 11px;
   z-index: 4;
 }
+
 .face {
   width: 28px;
   height: 28px;
@@ -985,18 +1067,23 @@ body {
   margin-left: -7px;
   border: 2px solid var(--panel);
 }
+
 .face:first-child {
   margin-left: 0;
 }
+
 .face.a {
   background: var(--member-1);
 }
+
 .face.t {
   background: var(--member-2);
 }
+
 .face.y {
   background: var(--you);
 }
+
 .facepile {
   display: flex;
   align-items: center;
@@ -1005,16 +1092,19 @@ body {
   border: 0;
   cursor: pointer;
 }
+
 .faces.open {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
+
 .sep {
   width: 1px;
   align-self: stretch;
   margin: 0 9px 0 11px;
   background: var(--line);
 }
+
 .signout {
   font-family: var(--f-body);
   font-size: 12.5px;
@@ -1025,9 +1115,11 @@ body {
   padding: 0 2px;
   cursor: pointer;
 }
+
 .signout:hover {
   color: var(--accent);
 }
+
 /* left panel */
 .lpanel {
   position: absolute;
@@ -1043,6 +1135,7 @@ body {
   padding: 14px;
   z-index: 4;
 }
+
 .lp-head {
   display: flex;
   align-items: center;
@@ -1050,6 +1143,7 @@ body {
   gap: 8px;
   margin-bottom: 9px;
 }
+
 .lp-title {
   display: block;
   text-align: left;
@@ -1059,6 +1153,7 @@ body {
   letter-spacing: -0.018em;
   cursor: pointer;
 }
+
 .lp-dates {
   font-family: var(--f-label);
   font-size: 11px;
@@ -1067,10 +1162,12 @@ body {
   color: var(--muted);
   margin-top: 1px;
 }
+
 .lp-tools {
   display: flex;
   gap: 6px;
 }
+
 .swatch {
   width: 40px;
   height: 27px;
@@ -1081,6 +1178,7 @@ body {
   background: var(--panel);
   cursor: pointer;
 }
+
 .swatch .thumb-svg {
   display: block;
   width: 100%;
@@ -1088,6 +1186,7 @@ body {
   border: 0;
   border-radius: 0;
 }
+
 .addb {
   width: 27px;
   height: 27px;
@@ -1099,6 +1198,7 @@ body {
   border-radius: 50%;
   cursor: pointer;
 }
+
 /* Strokes rather than a character, so the mark sits in the middle of the circle. currentColor
    follows the button's inversion on hover. */
 .addb svg,
@@ -1107,6 +1207,7 @@ body {
   width: 12px;
   height: 12px;
 }
+
 .addb path,
 .ed-close path {
   stroke: currentColor;
@@ -1114,29 +1215,35 @@ body {
   stroke-linecap: round;
   fill: none;
 }
+
 .addb:hover,
 .addb.on {
   background: var(--ink);
   color: var(--panel);
   border-color: var(--ink);
 }
+
 .canvas {
   position: absolute;
   inset: 0;
 }
+
 .canvas.placing {
   cursor: crosshair;
 }
+
 .ink {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 3;
 }
+
 .ink.on {
   pointer-events: auto;
   cursor: cell;
 }
+
 .ink-paper,
 .ink-saved {
   position: absolute;
@@ -1146,12 +1253,14 @@ body {
   pointer-events: none;
   z-index: 3;
 }
+
 .ink-saved path {
   fill: none;
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
 /* An eraser over a line you may rub out, since a click here removes it. The hotspot is the
    rubber's leading corner. */
 .ink-hit {
@@ -1163,15 +1272,18 @@ body {
       6 20,
     pointer;
 }
+
 .ink-hit:hover + .ink-line {
   opacity: 0.5;
 }
+
 .ink-paper path {
   fill: none;
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
 /* Armed is the ring, not the colour: black is one of the inks, so a pen loaded with it would
    otherwise look exactly like a pen at rest. */
 .pen.on {
@@ -1180,6 +1292,7 @@ body {
     0 0 0 3px color-mix(in srgb, var(--panel) 55%, transparent),
     0 0 0 5px color-mix(in srgb, var(--ink) 22%, transparent);
 }
+
 .day {
   font-family: var(--f-label);
   font-size: 12px;
@@ -1188,6 +1301,7 @@ body {
   color: var(--muted);
   padding: 11px 3px 6px;
 }
+
 .stop {
   position: relative;
   display: block;
@@ -1199,6 +1313,7 @@ body {
   padding: 9px 12px;
   margin-bottom: 6px;
 }
+
 .stop-name {
   display: block;
   font-family: var(--f-disp);
@@ -1207,15 +1322,18 @@ body {
   letter-spacing: -0.018em;
   margin: 0 0 2px;
 }
+
 .stop-summary {
   display: block;
   font-size: 12.5px;
   color: var(--ink2);
 }
+
 .stop.open {
   border-color: color-mix(in srgb, var(--you) 55%, var(--line));
   background: color-mix(in srgb, var(--you) 5%, var(--panel));
 }
+
 .sel {
   position: absolute;
   inset: -3px;
@@ -1223,6 +1341,7 @@ body {
   border-radius: calc(var(--r) + 2px);
   pointer-events: none;
 }
+
 .sel b {
   position: absolute;
   top: -10px;
@@ -1236,22 +1355,28 @@ body {
   border-radius: 4px;
   padding: 1px 7px;
 }
+
 .sel.a {
   border-color: var(--member-1);
 }
+
 .sel.a b {
   background: var(--member-1);
 }
+
 .sel.t {
   border-color: var(--member-2);
 }
+
 .sel.t b {
   background: var(--member-2);
 }
+
 .sel + .sel b {
   left: auto;
   right: 9px;
 }
+
 label .tag {
   display: inline-block;
   margin-left: 6px;
@@ -1265,16 +1390,20 @@ label .tag {
   padding: 0 5px;
   text-transform: uppercase;
 }
+
 label .tag.a {
   background: var(--member-1);
 }
+
 label .tag.t {
   background: var(--member-2);
 }
+
 .inp.busy {
   border-color: var(--line2);
   box-shadow: inset 0 0 0 1px var(--line2);
 }
+
 /* editor */
 .editor {
   position: absolute;
@@ -1292,19 +1421,23 @@ label .tag.t {
   transition: transform 0.22s ease;
   animation: editor-in 0.22s ease;
 }
+
 /* In on the animation, out on the class - the panel has to still be on the page to slide off
    it, so the page holds the stop for a moment after the panel is told to go. */
 .editor.away {
   transform: translateX(100%);
 }
+
 @keyframes editor-in {
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
 }
+
 /* Mirrors .lp-head and .addb, so the two panels read as a pair. The close button sits on the
    title's line, lifted a hair because it is taller than the line. */
 .ed-head {
@@ -1314,9 +1447,11 @@ label .tag.t {
   gap: 8px;
   margin-bottom: 6px;
 }
+
 .ed-head .ed-close {
   margin-top: -2px;
 }
+
 .ed-close {
   width: 27px;
   height: 27px;
@@ -1329,17 +1464,20 @@ label .tag.t {
   border-radius: 50%;
   cursor: pointer;
 }
+
 .ed-close:hover {
   background: var(--ink);
   color: var(--panel);
   border-color: var(--ink);
 }
+
 .ed-title {
   font-family: var(--f-disp);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.018em;
 }
+
 /* No bottom margin here - the header row owns the gap, so the row stays as tall as its text. */
 .ed-sub {
   font-family: var(--f-label);
@@ -1349,6 +1487,7 @@ label .tag.t {
   color: var(--muted);
   margin: 2px 0 0;
 }
+
 label {
   display: block;
   font-family: var(--f-label);
@@ -1358,6 +1497,7 @@ label {
   color: var(--muted);
   margin: 13px 0 5px;
 }
+
 .inp {
   display: block;
   width: 100%;
@@ -1369,16 +1509,19 @@ label {
   border-radius: var(--r);
   padding: 7px 10px;
 }
+
 .inp:focus {
   outline: 0;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
+
 .cal {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 3px;
 }
+
 .cal button {
   font-family: var(--f-label);
   background: var(--panel2);
@@ -1387,6 +1530,7 @@ label {
   padding: 3px 0 4px;
   cursor: pointer;
 }
+
 .cal .dw {
   display: block;
   font-size: 8.5px;
@@ -1395,6 +1539,7 @@ label {
   text-transform: uppercase;
   color: var(--muted);
 }
+
 .cal .nm {
   display: block;
   font-size: 12.5px;
@@ -1402,6 +1547,7 @@ label {
   color: var(--ink);
   line-height: 1.25;
 }
+
 .cal .dt {
   display: flex;
   justify-content: center;
@@ -1409,28 +1555,34 @@ label {
   height: 3px;
   margin-top: 2px;
 }
+
 .cal .dt i {
   width: 3px;
   height: 3px;
   border-radius: 50%;
   background: var(--line2);
 }
+
 .cal button.on {
   background: var(--ink);
   border-color: var(--ink);
 }
+
 .cal button.on .dw,
 .cal button.on .nm {
   color: var(--panel);
 }
+
 .cal button.on .dt i {
   background: color-mix(in srgb, var(--panel) 55%, transparent);
 }
+
 .times {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
+
 .times button {
   font-family: var(--f-label);
   font-size: 11.5px;
@@ -1443,11 +1595,13 @@ label {
   cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
+
 .times button.on {
   background: var(--ink);
   border-color: var(--ink);
   color: var(--panel);
 }
+
 .cmt {
   background: var(--panel2);
   border: 1px solid var(--line);
@@ -1455,6 +1609,7 @@ label {
   padding: 7px 10px;
   margin-bottom: 6px;
 }
+
 .cmt b {
   display: flex;
   align-items: center;
@@ -1466,30 +1621,37 @@ label {
   text-transform: uppercase;
   color: var(--muted);
 }
+
 .cmt b i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--muted);
 }
+
 .cmt b i.y {
   background: var(--you);
 }
+
 .cmt b i.off {
   background: transparent;
   border: 1.5px solid var(--line2);
 }
+
 .cmt b i.a {
   background: var(--member-1);
 }
+
 .cmt b i.t {
   background: var(--member-2);
 }
+
 .cmt p {
   margin: 3px 0 0;
   font-size: 13px;
   color: var(--ink2);
 }
+
 .ed-foot {
   display: flex;
   justify-content: flex-end;
@@ -1497,6 +1659,7 @@ label {
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+
 .danger {
   font-family: var(--f-body);
   font-size: 12.5px;
@@ -1507,6 +1670,7 @@ label {
   padding: 0;
   cursor: pointer;
 }
+
 /* cards (auth, new trip, details) */
 .card {
   position: absolute;
@@ -1523,15 +1687,18 @@ label {
   overflow: auto;
   z-index: 6;
 }
+
 .card.wide {
   width: 400px;
 }
+
 .scrim {
   position: absolute;
   inset: 0;
   background: rgba(20, 20, 24, 0.2);
   z-index: 5;
 }
+
 .card h2 {
   font-family: var(--f-disp);
   font-size: 20px;
@@ -1539,11 +1706,13 @@ label {
   margin: 0;
   letter-spacing: -0.018em;
 }
+
 .card .sub {
   margin: 2px 0 4px;
   font-size: 13px;
   color: var(--muted);
 }
+
 .btn {
   display: block;
   width: 100%;
@@ -1559,14 +1728,17 @@ label {
   padding: 9px 12px;
   cursor: pointer;
 }
+
 a.btn {
   text-align: center;
   text-decoration: none;
   box-sizing: border-box;
 }
+
 .btn:hover {
   background: #0071eb;
 }
+
 .alt {
   margin: 12px 0 0;
   font-size: 12.5px;
@@ -1579,6 +1751,7 @@ a.btn {
 .rowlist {
   margin-top: 12px;
 }
+
 .triprow {
   display: grid;
   grid-template-columns: 78px 1fr;
@@ -1590,25 +1763,30 @@ a.btn {
   text-decoration: none;
   color: inherit;
 }
+
 .triprow + .triprow {
   border-top: 1px solid var(--line);
   border-radius: 0;
 }
+
 .triprow:hover {
   background: var(--panel2);
 }
+
 .triprow b {
   display: block;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
+
 .triprow span {
   display: block;
   margin-top: 1px;
   font-size: 12px;
   color: var(--muted);
 }
+
 .thumb-svg {
   display: block;
   width: 78px;
@@ -1616,10 +1794,12 @@ a.btn {
   border-radius: 7px;
   border: 1px solid var(--line);
 }
+
 .blank {
   text-align: center;
   padding: 26px 6px 10px;
 }
+
 .blank b {
   display: block;
   font-family: var(--f-disp);
@@ -1627,29 +1807,35 @@ a.btn {
   font-weight: 600;
   letter-spacing: -0.012em;
 }
+
 .blank span {
   display: block;
   margin-top: 4px;
   font-size: 13px;
   color: var(--muted);
 }
+
 .err {
   margin: 6px 0 0;
   font-size: 12.5px;
   color: #d70015;
 }
+
 .alt a {
   color: var(--ink2);
 }
+
 .pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
 .thumbs {
   display: flex;
   gap: 6px;
 }
+
 .thumb {
   flex: 1;
   background: var(--panel2);
@@ -1659,12 +1845,14 @@ a.btn {
   cursor: pointer;
   text-align: center;
 }
+
 .thumb svg {
   display: block;
   width: 100%;
   height: 42px;
   border-radius: calc(var(--r) - 2px);
 }
+
 .thumb b {
   font-family: var(--f-label);
   font-size: 10px;
@@ -1675,16 +1863,19 @@ a.btn {
   margin-top: 3px;
   display: block;
 }
+
 .thumb.on {
   border-color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--ink);
 }
+
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-bottom: 6px;
 }
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -1696,22 +1887,27 @@ a.btn {
   border-radius: 980px;
   padding: 3px 9px;
 }
+
 .chip i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--muted);
 }
+
 .chip i.a {
   background: var(--member-1);
 }
+
 .chip i.t {
   background: var(--member-2);
 }
+
 .chip button {
   font-weight: 400;
   color: var(--muted);
 }
+
 .note {
   margin: 7px 0 0;
   font-family: var(--f-label);
@@ -1720,6 +1916,7 @@ a.btn {
   letter-spacing: 0;
   color: var(--muted);
 }
+
 .members {
   position: absolute;
   top: 56px;
@@ -1733,6 +1930,7 @@ a.btn {
   padding: 10px 13px;
   z-index: 4;
 }
+
 .mrow {
   display: flex;
   align-items: center;
@@ -1740,6 +1938,7 @@ a.btn {
   padding: 4px 0;
   font-size: 13.5px;
 }
+
 .mrow i {
   width: 8px;
   height: 8px;
@@ -1747,19 +1946,24 @@ a.btn {
   flex: none;
   background: var(--muted);
 }
+
 .mrow i.a {
   background: var(--member-1);
 }
+
 .mrow i.t {
   background: var(--member-2);
 }
+
 .mrow i.y {
   background: var(--you);
 }
+
 .mrow i.off {
   background: transparent;
   border: 1.5px solid var(--line2);
 }
+
 .mrow em {
   font-style: normal;
   margin-left: auto;
@@ -1770,6 +1974,7 @@ a.btn {
   text-transform: uppercase;
   color: var(--muted);
 }
+
 .mrow .remove {
   display: grid;
   place-items: center;
@@ -1780,23 +1985,28 @@ a.btn {
   color: var(--muted);
   cursor: pointer;
 }
+
 .mrow .remove svg {
   display: block;
   width: 9px;
   height: 9px;
 }
+
 .mrow .remove path {
   stroke: currentColor;
   stroke-width: 1.7;
   stroke-linecap: round;
   fill: none;
 }
+
 .mrow .remove:hover {
   color: #b3564a;
 }
+
 .members .inp {
   margin-top: 9px;
 }
+
 /* ink color pop */
 .cpop {
   position: absolute;
@@ -1811,6 +2021,7 @@ a.btn {
   box-shadow: var(--shadow);
   z-index: 5;
 }
+
 .cdot {
   width: 22px;
   height: 22px;
@@ -1818,6 +2029,7 @@ a.btn {
   border: 0;
   cursor: pointer;
 }
+
 .cdot.on {
   box-shadow:
     0 0 0 2px var(--panel),
@@ -1833,16 +2045,19 @@ a.btn {
     opacity: 0.3;
     transform: scale(3);
   }
+
   .editor {
     animation: none;
     transition: none;
   }
+
   .pen,
   .faces,
   .members,
   .cpop {
     transition: none;
   }
+
   .cursor {
     transition: none;
   }
