@@ -10,8 +10,17 @@ the network off and syncs when it comes back.
 
 It runs inside a Phoenix endpoint, and every page, component and layout in it is Hologram's.
 
+## Status
+
 Offgrid tracks Hologram's unreleased development: `mix.exs` pins the dependency to a commit
 rather than a Hex version.
+
+Hologram's local-first data layer, which keeps the browser's database in sync with the server,
+is still being worked on, so expect small changes to how the app reads and writes data. Not
+everything here is how a Hologram app will look once that work lands, either. Presence (who is
+here, their pointers and what they are editing) is built by hand from realtime broadcasts, and
+the forms keep each field in page state themselves - both will get abstractions of their own in
+Hologram soon.
 
 ## Requirements
 
