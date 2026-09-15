@@ -5,6 +5,7 @@ opts = [enabled: true, env: %{"MIX_ENV" => "test"}]
   tools: [
     {:compiler, opts},
     {:credo, opts},
+    {:css_formatter, "mix format.css.check", opts},
     {:dialyzer, opts},
     {:eslint, "mix eslint", opts},
     {:ex_doc, enabled: false},

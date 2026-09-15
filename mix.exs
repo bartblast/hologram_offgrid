@@ -74,7 +74,11 @@ defmodule Offgrid.MixProject do
       "assets.deploy": ["phx.digest"],
       eslint:
         "cmd assets/node_modules/.bin/eslint --color --config assets/eslint.config.mjs 'assets/*.js' 'assets/*.mjs' --no-error-on-unmatched-pattern",
-      f: ["format", "format.js"],
+      f: ["format", "format.css", "format.js"],
+      "format.css":
+        "cmd assets/node_modules/.bin/prettier 'priv/static/assets/*.css' --config assets/.prettierrc.json -u --write",
+      "format.css.check":
+        "cmd assets/node_modules/.bin/prettier 'priv/static/assets/*.css' --check --config assets/.prettierrc.json -u",
       "format.js":
         "cmd assets/node_modules/.bin/prettier '*.yml' '.github/**' 'assets/*.json' 'assets/*.js' 'assets/*.mjs' --config assets/.prettierrc.json --no-error-on-unmatched-pattern -u --write",
       "format.js.check":

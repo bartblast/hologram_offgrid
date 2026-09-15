@@ -104,6 +104,10 @@ jobs:
       - name: Check Elixir code formatted
         run: mix format --check-formatted
 
+      # Step: Check that the CSS code has already been formatted.
+      - name: Check CSS code formatted
+        run: mix format.css.check
+
       # Step: Check that the JavaScript, JSON & YAML code has already been formatted.
       - name: Check JavaScript, JSON & YAML code formatted
         run: mix format.js.check
