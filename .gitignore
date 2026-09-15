@@ -45,3 +45,6 @@ npm-debug.log
 # Dialyzer PLTs.
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+
+# ElixirLS build and cache files.
+/.elixir_ls/
